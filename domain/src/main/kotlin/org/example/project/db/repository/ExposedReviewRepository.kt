@@ -35,10 +35,12 @@ class ExposedReviewRepository {
             .map(::mapToReview)
 
     context(_: Transaction)
-    fun getAverageRatingForProduct(productId: ProductId): Double =
-        Reviews.selectAll().where { Reviews.product eq productId.value }
+    fun averageRatingForProductOrNull(productId: ProductId): Double? {
+        val reviews = Reviews.selectAll().where { Reviews.product eq productId.value }
             .map { it[Reviews.rating] }
-            .average()
+
+        return if (reviews.isEmpty()) null else reviews.average()
+    }
 
     private fun mapToReview(row: ResultRow) = Review(
         id = ReviewId(row[Reviews.id].value),

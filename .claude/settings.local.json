@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:www.jetbrains.com)"
+      "WebFetch(domain:www.jetbrains.com)",
+      "Bash(grep -r serialization /Users/simonvergauwen/Developer/agent-fantasy-store --include=*.gradle*)",
+      "Bash(xargs cat:*)",
+      "Bash(grep -r \"json\\\\|serialize\\\\|Json\\\\|Serializer\" /Users/simonvergauwen/Developer/agent-fantasy-store --include=*.kt --include=*.gradle*)"
     ]
   }
 }
