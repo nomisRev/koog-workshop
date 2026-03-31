@@ -9,5 +9,8 @@ sealed interface DashboardUiState {
     data class Error(val message: String) : DashboardUiState
     data class Ready(
         val recentOrders: PersistentList<RecentOrderSummary>
-    ) : DashboardUiState
+    ) : DashboardUiState {
+        val orders: PersistentList<RecentOrderSummary>
+            get() = recentOrders
+    }
 }

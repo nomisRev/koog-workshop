@@ -18,13 +18,19 @@ class AdminDashboardRepository {
         .innerJoin(Currencies)
 
     context(_: Transaction)
-    fun getRecentOrders(limit: Int = 5): List<RecentOrderSummary> {
-        if (limit <= 0) return emptyList()
+    fun getRecentOrders(limit: Int = 5): List<RecentOrderSummary> =
+        getOrderSummaries(limit)
 
-        return recentOrdersJoin.selectAll()
+    context(_: Transaction)
+    fun getOrderSummaries(limit: Int? = null): List<RecentOrderSummary> {
+        if (limit != null && limit <= 0) return emptyList()
+
+        val query = recentOrdersJoin.selectAll()
             .orderBy(Orders.createdAt to SortOrder.DESC, Orders.id to SortOrder.DESC)
-            .limit(limit)
-            .map(::mapToRecentOrderSummary)
+
+        val limitedQuery = limit?.let { query.limit(it) } ?: query
+
+        return limitedQuery.map(::mapToRecentOrderSummary)
     }
 
     private fun mapToRecentOrderSummary(row: ResultRow) = RecentOrderSummary(

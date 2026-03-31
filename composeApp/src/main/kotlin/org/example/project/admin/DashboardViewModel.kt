@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.collections.immutable.toPersistentList
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.reflect.KClass
+import org.example.project.domain.id.OrderId
+import org.example.project.domain.model.AdminOrderDetail
 import org.example.project.domain.model.RecentOrderSummary
 import org.example.project.service.AdminDashboardService
 
@@ -23,15 +25,35 @@ class DashboardViewModel(
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     suspend fun loadRecentOrders() {
+        loadOrders(
+            loader = { dashboardService.loadRecentOrders() },
+            errorMessage = "Unable to load recent orders."
+        )
+    }
+
+    suspend fun loadOrderHistory() {
+        loadOrders(
+            loader = { dashboardService.loadOrderHistory() },
+            errorMessage = "Unable to load order history."
+        )
+    }
+
+    suspend fun loadOrderDetails(orderId: OrderId): AdminOrderDetail? =
+        dashboardService.loadOrderDetails(orderId)
+
+    private suspend fun loadOrders(
+        loader: suspend () -> List<RecentOrderSummary>,
+        errorMessage: String
+    ) {
         val version = loadVersion.incrementAndGet()
         _uiState.value = DashboardUiState.Loading
 
         val nextState = try {
-            dashboardService.loadRecentOrders().toUiState()
+            loader().toUiState()
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (throwable: Throwable) {
-            DashboardUiState.Error(throwable.message ?: "Unable to load recent orders.")
+            DashboardUiState.Error(throwable.message ?: errorMessage)
         }
 
         if (loadVersion.get() == version) {

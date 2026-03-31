@@ -6,12 +6,14 @@ import org.example.project.domain.id.*
 import org.example.project.domain.model.Order
 import org.example.project.domain.model.OrderItem
 import org.example.project.domain.model.SubOrder
+import org.example.project.domain.model.Transaction as OrderTransaction
 import org.example.project.domain.model.Page
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.Transaction
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
@@ -63,6 +65,15 @@ class OrderRepository {
     fun getOrderItems(subOrderId: SubOrderId): List<OrderItem> =
         OrderItems.selectAll().where { OrderItems.subOrder eq subOrderId.value }
             .map(::mapToOrderItem)
+
+    context(_: Transaction)
+    fun getOrderTransactions(orderId: OrderId): List<OrderTransaction> =
+        Transactions.selectAll()
+            .where {
+                (Transactions.referenceType eq "ORDER") and (Transactions.referenceId eq orderId.value)
+            }
+            .orderBy(Transactions.createdAt to SortOrder.ASC, Transactions.id to SortOrder.ASC)
+            .map(::mapToTransaction)
 
     context(_: Transaction)
     fun updateSubOrderStatus(subOrderId: SubOrderId, status: OrderStatus): Boolean =
@@ -166,5 +177,18 @@ class OrderRepository {
         snapshottedCurrencyId = CurrencyId(row[OrderItems.snapshottedCurrency].value),
         createdAt = row[OrderItems.createdAt],
         updatedAt = row[OrderItems.updatedAt]
+    )
+
+    private fun mapToTransaction(row: ResultRow) = OrderTransaction(
+        id = TransactionId(row[Transactions.id].value),
+        characterId = CharacterId(row[Transactions.character].value),
+        currencyId = CurrencyId(row[Transactions.currency].value),
+        amount = row[Transactions.amount],
+        type = org.example.project.domain.enums.TransactionType.valueOf(row[Transactions.type]),
+        referenceId = row[Transactions.referenceId],
+        referenceType = row[Transactions.referenceType],
+        description = row[Transactions.description],
+        createdAt = row[Transactions.createdAt],
+        updatedAt = row[Transactions.updatedAt]
     )
 }
