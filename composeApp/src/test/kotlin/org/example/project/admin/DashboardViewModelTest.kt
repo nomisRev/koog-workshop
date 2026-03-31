@@ -4,10 +4,7 @@ import kotlinx.coroutines.runBlocking
 import org.example.project.db.createTables
 import org.example.project.db.tables.Characters
 import org.example.project.db.tables.Currencies
-import org.example.project.db.tables.Merchants
 import org.example.project.db.tables.Orders
-import org.example.project.db.tables.Products
-import org.example.project.db.tables.ShippingMethods
 import org.example.project.domain.enums.OrderStatus
 import org.example.project.service.AdminDashboardService
 import org.jetbrains.exposed.v1.jdbc.Database
@@ -23,35 +20,27 @@ import kotlin.time.Instant
 class DashboardViewModelTest {
 
     @Test
-    fun `loadDashboard maps an empty database to Empty`() = runBlocking {
+    fun `loadRecentOrders maps an empty database to Ready with no orders`() = runBlocking {
         val database = createDatabase()
         val viewModel = DashboardViewModel(AdminDashboardService(database))
 
-        viewModel.loadDashboard()
+        viewModel.loadRecentOrders()
 
-        assertEquals(DashboardUiState.Empty, viewModel.uiState.value)
+        val state = viewModel.uiState.value
+        assertIs<DashboardUiState.Ready>(state)
+        assertTrue(state.recentOrders.isEmpty())
     }
 
     @Test
-    fun `loadDashboard maps dashboard data to Ready`() = runBlocking {
+    fun `loadRecentOrders maps dashboard data to Ready`() = runBlocking {
         val database = createDatabase()
         seedDashboardData(database)
         val viewModel = DashboardViewModel(AdminDashboardService(database))
 
-        viewModel.loadDashboard()
+        viewModel.loadRecentOrders()
 
         val state = viewModel.uiState.value
         assertIs<DashboardUiState.Ready>(state)
-        assertEquals(4L, state.summary.totalProducts)
-        assertEquals(2L, state.summary.totalMerchants)
-        assertEquals(2L, state.summary.totalOrders)
-        assertEquals(1L, state.summary.totalCharacters)
-        assertEquals(1L, state.summary.totalShippingMethods)
-        assertEquals(listOf(1, 3, 5), state.lowStockProducts.map { it.stock })
-        assertEquals(
-            listOf("Mana Potion", "Healing Potion", "Steel Shield"),
-            state.lowStockProducts.map { it.productName }
-        )
         assertEquals(
             listOf(Instant.fromEpochMilliseconds(2_000), Instant.fromEpochMilliseconds(1_000)),
             state.recentOrders.map { it.createdAt }
@@ -60,6 +49,7 @@ class DashboardViewModelTest {
             listOf(OrderStatus.DELIVERED, OrderStatus.PENDING),
             state.recentOrders.map { it.status }
         )
+        assertEquals(listOf(2_000L, 1_000L), state.recentOrders.map { it.totalPrice })
         assertTrue(state.recentOrders.all { it.totalCurrencyCode == "GOLD" })
     }
 
@@ -78,58 +68,8 @@ class DashboardViewModelTest {
                 it[symbol] = "G"
             }
 
-            val blacksmithId = Merchants.insertAndGetId {
-                it[name] = "Blacksmith"
-            }
-            val alchemistId = Merchants.insertAndGetId {
-                it[name] = "Alchemist"
-            }
             val characterId = Characters.insertAndGetId {
                 it[name] = "Aldric"
-            }
-
-            ShippingMethods.insertAndGetId {
-                it[name] = "Courier Raven"
-                it[baseCost] = 50
-                it[currency] = goldId
-                it[estimatedDays] = 3
-            }
-
-            Products.insertAndGetId {
-                it[name] = "Mana Potion"
-                it[category] = "POTIONS"
-                it[rarity] = "COMMON"
-                it[price] = 70
-                it[currency] = goldId
-                it[merchant] = alchemistId
-                it[stock] = 1
-            }
-            Products.insertAndGetId {
-                it[name] = "Healing Potion"
-                it[category] = "POTIONS"
-                it[rarity] = "COMMON"
-                it[price] = 80
-                it[currency] = goldId
-                it[merchant] = alchemistId
-                it[stock] = 3
-            }
-            Products.insertAndGetId {
-                it[name] = "Steel Shield"
-                it[category] = "ARMOR"
-                it[rarity] = "COMMON"
-                it[price] = 250
-                it[currency] = goldId
-                it[merchant] = blacksmithId
-                it[stock] = 5
-            }
-            Products.insertAndGetId {
-                it[name] = "Plate Armour"
-                it[category] = "ARMOR"
-                it[rarity] = "RARE"
-                it[price] = 900
-                it[currency] = goldId
-                it[merchant] = blacksmithId
-                it[stock] = 12
             }
 
             Orders.insertAndGetId {

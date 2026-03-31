@@ -9,7 +9,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import org.example.project.admin.AdminRoute
 import org.example.project.admin.createAdminDatabase
-import org.example.project.admin.adminDatabasePath
 import org.example.project.service.AdminDashboardService
 
 private val AdminColorScheme: ColorScheme = lightColorScheme(
@@ -45,8 +44,7 @@ fun App() {
 
     MaterialTheme(colorScheme = AdminColorScheme) {
         AdminRoute(
-            dashboardService = dashboardService,
-            databasePath = adminDatabasePath()
+            dashboardService = dashboardService
         )
     }
 }

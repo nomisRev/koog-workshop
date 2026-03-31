@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.collections.immutable.toPersistentList
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.reflect.KClass
-import org.example.project.domain.model.DashboardSnapshot
+import org.example.project.domain.model.RecentOrderSummary
 import org.example.project.service.AdminDashboardService
 
 class DashboardViewModel(
@@ -22,16 +22,16 @@ class DashboardViewModel(
 
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
-    suspend fun loadDashboard() {
+    suspend fun loadRecentOrders() {
         val version = loadVersion.incrementAndGet()
         _uiState.value = DashboardUiState.Loading
 
         val nextState = try {
-            dashboardService.loadDashboard().toUiState()
+            dashboardService.loadRecentOrders().toUiState()
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (throwable: Throwable) {
-            DashboardUiState.Error(throwable.message ?: "Unable to load the dashboard.")
+            DashboardUiState.Error(throwable.message ?: "Unable to load recent orders.")
         }
 
         if (loadVersion.get() == version) {
@@ -59,17 +59,8 @@ class DashboardViewModel(
             }
     }
 
-    private fun DashboardSnapshot.toUiState(): DashboardUiState {
-        val readyState = DashboardUiState.Ready(
-            summary = summary,
-            lowStockProducts = lowStockProducts.toPersistentList(),
-            recentOrders = recentOrders.toPersistentList()
+    private fun List<RecentOrderSummary>.toUiState(): DashboardUiState =
+        DashboardUiState.Ready(
+            recentOrders = toPersistentList()
         )
-
-        return if (readyState.isDashboardEmpty()) {
-            DashboardUiState.Empty
-        } else {
-            readyState
-        }
-    }
 }
