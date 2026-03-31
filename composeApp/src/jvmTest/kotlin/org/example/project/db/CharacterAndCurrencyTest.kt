@@ -12,7 +12,7 @@ class CharacterAndCurrencyTest {
 
     @BeforeTest
     fun setup() {
-        Database.connect("jdbc:sqlite::memory:", "org.sqlite.JDBC")
+        Database.connect("jdbc:sqlite:file:test?mode=memory&cache=shared&foreign_keys=on", "org.sqlite.JDBC")
     }
 
     @Test
@@ -177,17 +177,16 @@ class CharacterAndCurrencyTest {
     fun testForeignKeyConstraint() {
         transaction {
             SchemaUtils.create(Currencies, Characters, Transactions)
-            // exec("PRAGMA foreign_keys=ON")
             val goldId = Currencies.insertAndGetId { it[code] = "GOLD"; it[name] = "Gold"; it[symbol] = "G" }
             
-            // assertFails {
-            //     Transactions.insert {
-            //         it[character] = 999L // Nonexistent character
-            //         it[currency] = goldId
-            //         it[amount] = 100
-            //         it[type] = TransactionType.DEPOSIT.name
-            //     }
-            // }
+            assertFails {
+                Transactions.insert {
+                    it[character] = EntityID(999L, Characters) // Nonexistent character
+                    it[currency] = goldId
+                    it[amount] = 100
+                    it[type] = TransactionType.DEPOSIT.name
+                }
+            }
         }
     }
 }
