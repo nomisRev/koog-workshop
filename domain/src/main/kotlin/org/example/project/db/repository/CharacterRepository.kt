@@ -7,12 +7,16 @@ import org.example.project.domain.id.CharacterId
 import org.example.project.domain.id.CurrencyId
 import org.example.project.domain.id.TransactionId
 import org.example.project.domain.model.Character
+import org.example.project.domain.model.Page
 import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.Transaction
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.uuid.Uuid
 import kotlin.uuid.ExperimentalUuidApi
 
@@ -44,6 +48,16 @@ class CharacterRepository {
             }.toMap()
 
     context(_: Transaction)
+    fun updateCharacter(id: CharacterId, name: String): Boolean =
+        Characters.update({ Characters.id eq id.value }) {
+            it[Characters.name] = name
+        } > 0
+
+    context(_: Transaction)
+    fun deleteCharacter(id: CharacterId): Boolean =
+        Characters.deleteWhere { Characters.id eq id.value } > 0
+
+    context(_: Transaction)
     fun addTransaction(
         characterId: CharacterId,
         currencyId: CurrencyId,
@@ -65,10 +79,34 @@ class CharacterRepository {
             }.value
         )
 
+    context(_: Transaction)
+    fun getTransactionHistory(characterId: CharacterId, offset: Long, limit: Long): Page<org.example.project.domain.model.Transaction> {
+        val query = Transactions.selectAll().where { Transactions.character eq characterId.value }
+            .orderBy(Transactions.createdAt, SortOrder.DESC)
+        val items = query.copy()
+            .limit(limit.toInt()).offset(offset)
+            .map(::mapToTransaction)
+        val total = query.count()
+        return Page(items, total, offset, limit)
+    }
+
     private fun mapToCharacter(row: ResultRow) = Character(
         id = CharacterId(row[Characters.id].value),
         name = row[Characters.name],
         createdAt = row[Characters.createdAt],
         updatedAt = row[Characters.updatedAt]
+    )
+
+    private fun mapToTransaction(row: ResultRow) = org.example.project.domain.model.Transaction(
+        id = TransactionId(row[Transactions.id].value),
+        characterId = CharacterId(row[Transactions.character].value),
+        currencyId = CurrencyId(row[Transactions.currency].value),
+        amount = row[Transactions.amount],
+        type = TransactionType.valueOf(row[Transactions.type]),
+        referenceId = row[Transactions.referenceId],
+        referenceType = row[Transactions.referenceType],
+        description = row[Transactions.description],
+        createdAt = row[Transactions.createdAt],
+        updatedAt = row[Transactions.updatedAt]
     )
 }

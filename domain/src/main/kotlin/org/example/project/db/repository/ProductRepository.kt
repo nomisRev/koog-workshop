@@ -11,6 +11,9 @@ import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.Transaction
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.insertAndGetId
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
 
@@ -70,6 +73,97 @@ class ProductRepository {
         return Products.update({ Products.id eq productId.value }) {
             it[stock] = newStock
         } > 0
+    }
+
+    context(_: Transaction)
+    fun createProduct(product: Product): ProductId {
+        val productId = ProductId(
+            Products.insertAndGetId {
+                it[name] = product.name
+                it[description] = product.description
+                it[category] = product.category.name
+                it[rarity] = product.rarity.name
+                it[price] = product.price
+                it[currency] = product.currencyId.value
+                it[merchant] = product.merchantId.value
+                it[stock] = product.stock
+                it[imageUrl] = product.imageUrl
+                it[isActive] = product.isActive
+            }.value
+        )
+        when (product) {
+            is Product.Weapon -> Weapons.insert {
+                it[id] = productId.value
+                it[damage] = product.damage
+                it[damageType] = product.damageType.name
+                it[weaponSlot] = product.weaponSlot.name
+            }
+            is Product.Armor -> Armors.insert {
+                it[id] = productId.value
+                it[defense] = product.defense
+                it[armorSlot] = product.armorSlot.name
+            }
+            is Product.Potion -> Potions.insert {
+                it[id] = productId.value
+                it[effect] = product.effect
+                it[duration] = product.duration ?: 0
+            }
+            is Product.Scroll -> Scrolls.insert {
+                it[id] = productId.value
+                it[spellName] = product.spellName
+                it[spellLevel] = product.spellLevel
+            }
+            is Product.MiscItem -> { /* No detail table for misc items */ }
+        }
+        return productId
+    }
+
+    context(_: Transaction)
+    fun updateProduct(product: Product): Boolean {
+        val updated = Products.update({ Products.id eq product.id.value }) {
+            it[name] = product.name
+            it[description] = product.description
+            it[category] = product.category.name
+            it[rarity] = product.rarity.name
+            it[price] = product.price
+            it[currency] = product.currencyId.value
+            it[merchant] = product.merchantId.value
+            it[stock] = product.stock
+            it[imageUrl] = product.imageUrl
+            it[isActive] = product.isActive
+        } > 0
+        if (!updated) return false
+        when (product) {
+            is Product.Weapon -> Weapons.update({ Weapons.id eq product.id.value }) {
+                it[damage] = product.damage
+                it[damageType] = product.damageType.name
+                it[weaponSlot] = product.weaponSlot.name
+            }
+            is Product.Armor -> Armors.update({ Armors.id eq product.id.value }) {
+                it[defense] = product.defense
+                it[armorSlot] = product.armorSlot.name
+            }
+            is Product.Potion -> Potions.update({ Potions.id eq product.id.value }) {
+                it[effect] = product.effect
+                it[duration] = product.duration ?: 0
+            }
+            is Product.Scroll -> Scrolls.update({ Scrolls.id eq product.id.value }) {
+                it[spellName] = product.spellName
+                it[spellLevel] = product.spellLevel
+            }
+            is Product.MiscItem -> { /* No detail table for misc items */ }
+        }
+        return true
+    }
+
+    context(_: Transaction)
+    fun deleteProduct(id: ProductId): Boolean {
+        // Delete detail rows first (they reference Products)
+        Weapons.deleteWhere { Weapons.id eq id.value }
+        Armors.deleteWhere { Armors.id eq id.value }
+        Potions.deleteWhere { Potions.id eq id.value }
+        Scrolls.deleteWhere { Scrolls.id eq id.value }
+        return Products.deleteWhere { Products.id eq id.value } > 0
     }
 
     private fun mapToProduct(row: ResultRow): Product {

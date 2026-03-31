@@ -43,6 +43,10 @@ class WishlistRepository {
     fun removeFromWishlist(wishlistItemId: WishlistItemId): Boolean =
         WishlistItems.deleteWhere { id eq wishlistItemId.value } > 0
 
+    context(_: Transaction)
+    fun clearWishlist(characterId: CharacterId): Int =
+        WishlistItems.deleteWhere { character eq characterId.value }
+
     private fun mapToWishlistItem(row: ResultRow) = WishlistItem(
         id = WishlistItemId(row[WishlistItems.id].value),
         characterId = CharacterId(row[WishlistItems.character].value),

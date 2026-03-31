@@ -6,9 +6,14 @@ import org.example.project.domain.id.CurrencyId
 import org.example.project.domain.model.Currency
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.Transaction
+import org.example.project.domain.id.CurrencyConversionId
+import org.example.project.domain.model.CurrencyConversion
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.update
 
 @OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 class CurrencyRepository {
@@ -30,6 +35,60 @@ class CurrencyRepository {
             .map { it[CurrencyConversions.rate] }
             .singleOrNull()
 
+    context(_: Transaction)
+    fun createCurrency(code: String, name: String, symbol: String, iconPath: String? = null): CurrencyId =
+        CurrencyId(
+            Currencies.insertAndGetId {
+                it[Currencies.code] = code
+                it[Currencies.name] = name
+                it[Currencies.symbol] = symbol
+                it[Currencies.iconPath] = iconPath
+            }.value
+        )
+
+    context(_: Transaction)
+    fun updateCurrency(
+        id: CurrencyId,
+        code: String? = null,
+        name: String? = null,
+        symbol: String? = null,
+        iconPath: String? = null
+    ): Boolean =
+        Currencies.update({ Currencies.id eq id.value }) {
+            if (code != null) it[Currencies.code] = code
+            if (name != null) it[Currencies.name] = name
+            if (symbol != null) it[Currencies.symbol] = symbol
+            if (iconPath != null) it[Currencies.iconPath] = iconPath
+        } > 0
+
+    context(_: Transaction)
+    fun deleteCurrency(id: CurrencyId): Boolean =
+        Currencies.deleteWhere { Currencies.id eq id.value } > 0
+
+    context(_: Transaction)
+    fun createConversionRate(fromId: CurrencyId, toId: CurrencyId, rate: Double): CurrencyConversionId =
+        CurrencyConversionId(
+            CurrencyConversions.insertAndGetId {
+                it[fromCurrency] = fromId.value
+                it[toCurrency] = toId.value
+                it[CurrencyConversions.rate] = rate
+            }.value
+        )
+
+    context(_: Transaction)
+    fun updateConversionRate(id: CurrencyConversionId, rate: Double): Boolean =
+        CurrencyConversions.update({ CurrencyConversions.id eq id.value }) {
+            it[CurrencyConversions.rate] = rate
+        } > 0
+
+    context(_: Transaction)
+    fun deleteConversionRate(id: CurrencyConversionId): Boolean =
+        CurrencyConversions.deleteWhere { CurrencyConversions.id eq id.value } > 0
+
+    context(_: Transaction)
+    fun getAllConversionRates(): List<CurrencyConversion> =
+        CurrencyConversions.selectAll().map(::mapToConversion)
+
     private fun mapToCurrency(row: ResultRow) = Currency(
         id = CurrencyId(row[Currencies.id].value),
         code = row[Currencies.code],
@@ -38,5 +97,14 @@ class CurrencyRepository {
         iconPath = row[Currencies.iconPath],
         createdAt = row[Currencies.createdAt],
         updatedAt = row[Currencies.updatedAt],
+    )
+
+    private fun mapToConversion(row: ResultRow) = CurrencyConversion(
+        id = CurrencyConversionId(row[CurrencyConversions.id].value),
+        fromCurrencyId = CurrencyId(row[CurrencyConversions.fromCurrency].value),
+        toCurrencyId = CurrencyId(row[CurrencyConversions.toCurrency].value),
+        rate = row[CurrencyConversions.rate],
+        createdAt = row[CurrencyConversions.createdAt],
+        updatedAt = row[CurrencyConversions.updatedAt]
     )
 }

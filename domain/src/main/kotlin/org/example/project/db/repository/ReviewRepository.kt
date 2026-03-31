@@ -9,8 +9,10 @@ import kotlinx.coroutines.flow.flow
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.Transaction
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.update
 
 class ReviewRepository {
 
@@ -57,6 +59,23 @@ class ReviewRepository {
     fun getReviewsForProduct(productId: ProductId): List<Review> =
         Reviews.selectAll().where { Reviews.product eq productId.value }
             .map(::mapToReview)
+
+    context(_: Transaction)
+    fun getReviewOrNull(id: ReviewId): Review? =
+        Reviews.selectAll().where { Reviews.id eq id.value }
+            .map(::mapToReview)
+            .singleOrNull()
+
+    context(_: Transaction)
+    fun updateReview(id: ReviewId, rating: Int? = null, text: String? = null): Boolean =
+        Reviews.update({ Reviews.id eq id.value }) {
+            if (rating != null) it[Reviews.rating] = rating
+            if (text != null) it[Reviews.text] = text
+        } > 0
+
+    context(_: Transaction)
+    fun deleteReview(id: ReviewId): Boolean =
+        Reviews.deleteWhere { Reviews.id eq id.value } > 0
 
     context(_: Transaction)
     fun averageRatingForProductOrNull(productId: ProductId): Double? {

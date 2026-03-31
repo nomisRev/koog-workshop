@@ -13,6 +13,8 @@ import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.Transaction
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
 
@@ -67,6 +69,71 @@ class OrderRepository {
         SubOrders.update({ SubOrders.id eq subOrderId.value }) {
             it[SubOrders.status] = status.name
         } > 0
+
+    context(_: Transaction)
+    fun createOrder(characterId: CharacterId, totalPrice: Long, totalCurrencyId: CurrencyId): OrderId =
+        OrderId(
+            Orders.insertAndGetId {
+                it[character] = characterId.value
+                it[status] = OrderStatus.PENDING.name
+                it[Orders.totalPrice] = totalPrice
+                it[totalCurrency] = totalCurrencyId.value
+            }.value
+        )
+
+    context(_: Transaction)
+    fun createSubOrder(
+        orderId: OrderId,
+        merchantId: MerchantId,
+        shippingMethodId: ShippingMethodId,
+        shippingCost: Long,
+        merchantTotalPrice: Long
+    ): SubOrderId =
+        SubOrderId(
+            SubOrders.insertAndGetId {
+                it[order] = orderId.value
+                it[merchant] = merchantId.value
+                it[status] = OrderStatus.PENDING.name
+                it[shippingMethod] = shippingMethodId.value
+                it[SubOrders.shippingCost] = shippingCost
+                it[SubOrders.merchantTotalPrice] = merchantTotalPrice
+            }.value
+        )
+
+    context(_: Transaction)
+    fun createOrderItem(
+        subOrderId: SubOrderId,
+        productId: ProductId,
+        quantity: Int,
+        snapshottedPrice: Long,
+        snapshottedCurrencyId: CurrencyId
+    ): OrderItemId =
+        OrderItemId(
+            OrderItems.insertAndGetId {
+                it[subOrder] = subOrderId.value
+                it[product] = productId.value
+                it[OrderItems.quantity] = quantity
+                it[OrderItems.snapshottedPrice] = snapshottedPrice
+                it[snapshottedCurrency] = snapshottedCurrencyId.value
+            }.value
+        )
+
+    context(_: Transaction)
+    fun updateOrderStatus(orderId: OrderId, status: OrderStatus): Boolean =
+        Orders.update({ Orders.id eq orderId.value }) {
+            it[Orders.status] = status.name
+        } > 0
+
+    context(_: Transaction)
+    fun deleteOrder(orderId: OrderId): Boolean {
+        val subOrderIds = SubOrders.selectAll().where { SubOrders.order eq orderId.value }
+            .map { it[SubOrders.id].value }
+        for (subOrderId in subOrderIds) {
+            OrderItems.deleteWhere { OrderItems.subOrder eq subOrderId }
+        }
+        SubOrders.deleteWhere { SubOrders.order eq orderId.value }
+        return Orders.deleteWhere { Orders.id eq orderId.value } > 0
+    }
 
     private fun mapToOrder(row: ResultRow) = Order(
         id = OrderId(row[Orders.id].value),

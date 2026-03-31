@@ -8,8 +8,13 @@ import org.example.project.domain.id.ShippingMethodId
 import org.example.project.domain.model.ShippingMethod
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.Transaction
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.update
 
 @OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 class ShippingRepository {
@@ -30,6 +35,65 @@ class ShippingRepository {
             .selectAll()
             .where { MerchantShippingMethods.merchant eq merchantId.value }
             .map(::mapToShippingMethod)
+
+    context(_: Transaction)
+    fun createShippingMethod(
+        name: String,
+        description: String? = null,
+        baseCost: Long,
+        currencyId: CurrencyId,
+        estimatedDays: Int
+    ): ShippingMethodId =
+        ShippingMethodId(
+            ShippingMethods.insertAndGetId {
+                it[ShippingMethods.name] = name
+                it[ShippingMethods.description] = description
+                it[ShippingMethods.baseCost] = baseCost
+                it[currency] = currencyId.value
+                it[ShippingMethods.estimatedDays] = estimatedDays
+            }.value
+        )
+
+    context(_: Transaction)
+    fun updateShippingMethod(
+        id: ShippingMethodId,
+        name: String? = null,
+        description: String? = null,
+        baseCost: Long? = null,
+        currencyId: CurrencyId? = null,
+        estimatedDays: Int? = null,
+        isActive: Boolean? = null
+    ): Boolean =
+        ShippingMethods.update({ ShippingMethods.id eq id.value }) {
+            if (name != null) it[ShippingMethods.name] = name
+            if (description != null) it[ShippingMethods.description] = description
+            if (baseCost != null) it[ShippingMethods.baseCost] = baseCost
+            if (currencyId != null) it[currency] = currencyId.value
+            if (estimatedDays != null) it[ShippingMethods.estimatedDays] = estimatedDays
+            if (isActive != null) it[ShippingMethods.isActive] = isActive
+        } > 0
+
+    context(_: Transaction)
+    fun deleteShippingMethod(id: ShippingMethodId): Boolean {
+        MerchantShippingMethods.deleteWhere { shippingMethod eq id.value }
+        return ShippingMethods.deleteWhere { ShippingMethods.id eq id.value } > 0
+    }
+
+    context(_: Transaction)
+    fun addShippingMethodToMerchant(merchantId: MerchantId, shippingMethodId: ShippingMethodId): Boolean {
+        MerchantShippingMethods.insert {
+            it[merchant] = merchantId.value
+            it[shippingMethod] = shippingMethodId.value
+        }
+        return true
+    }
+
+    context(_: Transaction)
+    fun removeShippingMethodFromMerchant(merchantId: MerchantId, shippingMethodId: ShippingMethodId): Boolean =
+        MerchantShippingMethods.deleteWhere {
+            (MerchantShippingMethods.merchant eq merchantId.value) and
+            (MerchantShippingMethods.shippingMethod eq shippingMethodId.value)
+        } > 0
 
     private fun mapToShippingMethod(row: ResultRow) = ShippingMethod(
         id = ShippingMethodId(row[ShippingMethods.id].value),

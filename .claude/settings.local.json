@@ -5,7 +5,9 @@
       "Bash(grep -r serialization /Users/simonvergauwen/Developer/agent-fantasy-store --include=*.gradle*)",
       "Bash(xargs cat:*)",
       "Bash(grep -r \"json\\\\|serialize\\\\|Json\\\\|Serializer\" /Users/simonvergauwen/Developer/agent-fantasy-store --include=*.kt --include=*.gradle*)",
-      "mcp__gradle__kotlin_repl"
+      "mcp__gradle__kotlin_repl",
+      "mcp__gradle__gradle",
+      "mcp__gradle__inspect_build"
     ]
   }
 }
