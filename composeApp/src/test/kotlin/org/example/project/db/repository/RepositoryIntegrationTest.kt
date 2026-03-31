@@ -2,13 +2,22 @@ package org.example.project.db.repository
 
 import kotlinx.coroutines.runBlocking
 import org.example.project.db.createTables
+import org.example.project.db.tables.Weapons.damage
+import org.example.project.db.tables.Weapons.damageType
+import org.example.project.db.tables.Weapons.weaponSlot
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.example.project.domain.enums.ProductCategory
 import org.example.project.domain.enums.TransactionType
+import org.example.project.domain.id.CurrencyId
+import org.example.project.domain.repository.CharacterRepository
+import org.example.project.domain.repository.CurrencyRepository
+import org.example.project.domain.repository.MerchantRepository
+import org.example.project.domain.repository.ProductRepository
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.test.*
+import kotlin.uuid.ExperimentalUuidApi
 
 class RepositoryIntegrationTest {
 
@@ -22,25 +31,25 @@ class RepositoryIntegrationTest {
     fun setup() {
         val testDbFile = java.io.File.createTempFile("test_repos_", ".db").apply { deleteOnExit() }
         database = Database.connect("jdbc:sqlite:${testDbFile.absolutePath}").createTables()
-        characterRepo = CharacterRepository(database)
-        productRepo = ProductRepository(database)
-        merchantRepo = MerchantRepository(database)
-        currencyRepo = CurrencyRepository(database)
+        characterRepo = ExposedCharacterRepository(database)
+        productRepo = ExposedProductRepository(database)
+        merchantRepo = ExposedMerchantRepository(database)
+        currencyRepo = ExposedCurrencyRepository(database)
     }
 
     @Test
     fun testCharacterAndWallet() = runBlocking {
         // Seed currency first
-        val currencyId = transaction(database) {
+        val currencyId = CurrencyId(transaction(database) {
             org.example.project.db.tables.Currencies.insertAndGetId {
                 it[code] = "GOLD"
                 it[name] = "Gold"
                 it[symbol] = "G"
             }.value
-        }
+        })
 
         val charId = characterRepo.createCharacter("Test Aldric")
-        val character = characterRepo.getCharacter(charId)
+        val character = characterRepo.getCharacterOrNull(charId)
         assertNotNull(character)
         assertEquals("Test Aldric", character.name)
 

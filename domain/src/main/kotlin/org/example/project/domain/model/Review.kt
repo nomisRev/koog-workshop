@@ -1,12 +1,18 @@
 package org.example.project.domain.model
 
+import kotlin.time.Instant
+import org.example.project.domain.id.CharacterId
+import org.example.project.domain.id.OrderItemId
+import org.example.project.domain.id.ProductId
+import org.example.project.domain.id.ReviewId
+
 data class Review(
-    val id: Long,
-    val characterId: Long,
-    val productId: Long,
-    val orderItemId: Long,
+    val id: ReviewId,
+    val characterId: CharacterId,
+    val productId: ProductId,
+    val orderItemId: OrderItemId,
     val rating: Int,
     val text: String?,
-    val createdAt: Long,
-    val updatedAt: Long
+    val createdAt: Instant,
+    val updatedAt: Instant
 )

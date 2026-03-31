@@ -1,7 +1,10 @@
 package org.example.project.domain.model
 
+import org.example.project.domain.id.CharacterId
+import kotlin.time.Instant
+
 data class Character(
-    val id: Long,
+    val id: CharacterId,
     val name: String,
-    val createdAt: Long
+    val createdAt: Instant
 )

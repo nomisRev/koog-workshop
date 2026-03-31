@@ -114,10 +114,14 @@ class FullSchemaTest {
                 it[currency] = goldId
                 it[merchant] = grimtoothId
                 it[stock] = 5
+            }
+            Weapons.insert {
+                it[id] = swordId
                 it[damage] = 15
                 it[damageType] = "Fire"
                 it[weaponSlot] = WeaponSlot.MAIN_HAND.name
             }
+
             val potionId = Products.insertAndGetId {
                 it[name] = "Healing Potion"
                 it[category] = ProductCategory.POTIONS.name
@@ -126,8 +130,13 @@ class FullSchemaTest {
                 it[currency] = crownsId
                 it[merchant] = arcaneId
                 it[stock] = 50
-                it[effect] = "Heals 2d4+2 HP"
             }
+            Potions.insert {
+                it[id] = potionId
+                it[effect] = "Heals 2d4+2 HP"
+                it[duration] = 0 // duration column in Potions table
+            }
+
             val scrollId = Products.insertAndGetId {
                 it[name] = "Scroll of Fireball"
                 it[category] = ProductCategory.SCROLLS.name
@@ -136,6 +145,9 @@ class FullSchemaTest {
                 it[currency] = crownsId
                 it[merchant] = arcaneId
                 it[stock] = 3
+            }
+            Scrolls.insert {
+                it[id] = scrollId
                 it[spellName] = "Fireball"
                 it[spellLevel] = 3
             }
@@ -288,7 +300,7 @@ class FullSchemaTest {
 
             // 24. Count tables
             val tables = SchemaUtils.listTables()
-            assertEquals(14, tables.size)
+            assertEquals(18, tables.size)
         }
     }
 }

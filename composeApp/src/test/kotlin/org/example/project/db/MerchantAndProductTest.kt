@@ -6,8 +6,11 @@ import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.core.dao.id.*
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import java.util.UUID
+import kotlin.uuid.toKotlinUuid
 import kotlin.test.*
 
+@OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 class MerchantAndProductTest {
 
     @BeforeTest
@@ -54,7 +57,7 @@ class MerchantAndProductTest {
     @Test
     fun testInsertWeapon() {
         transaction {
-            SchemaUtils.create(Currencies, Merchants, Products)
+            SchemaUtils.create(Currencies, Merchants, Products, Weapons)
             val goldId = Currencies.insertAndGetId { it[code] = "GOLD"; it[name] = "Gold"; it[symbol] = "G" }
             val merchantId = Merchants.insertAndGetId { it[name] = "Weapon Smith" }
 
@@ -65,6 +68,9 @@ class MerchantAndProductTest {
                 it[price] = 150
                 it[currency] = goldId
                 it[merchant] = merchantId
+            }
+            Weapons.insert {
+                it[id] = productId
                 it[damage] = 8
                 it[damageType] = DamageType.SLASHING.name
                 it[weaponSlot] = WeaponSlot.MAIN_HAND.name
@@ -72,16 +78,16 @@ class MerchantAndProductTest {
 
             val product = Products.selectAll().where { Products.id eq productId }.single()
             assertEquals("Longsword", product[Products.name])
-            assertEquals(8, product[Products.damage])
-            assertNull(product[Products.defense])
-            assertNull(product[Products.effect])
+
+            val weapon = Weapons.selectAll().where { Weapons.id eq productId }.single()
+            assertEquals(8, weapon[Weapons.damage])
         }
     }
 
     @Test
     fun testInsertArmor() {
         transaction {
-            SchemaUtils.create(Currencies, Merchants, Products)
+            SchemaUtils.create(Currencies, Merchants, Products, Armors)
             val goldId = Currencies.insertAndGetId { it[code] = "GOLD"; it[name] = "Gold"; it[symbol] = "G" }
             val merchantId = Merchants.insertAndGetId { it[name] = "Armor Smith" }
 
@@ -92,20 +98,25 @@ class MerchantAndProductTest {
                 it[price] = 500
                 it[currency] = goldId
                 it[merchant] = merchantId
+            }
+            Armors.insert {
+                it[id] = productId
                 it[defense] = 18
                 it[armorSlot] = ArmorSlot.CHEST.name
             }
 
             val product = Products.selectAll().where { Products.id eq productId }.single()
-            assertEquals(18, product[Products.defense])
-            assertNull(product[Products.damage])
+            assertEquals("Plate Mail", product[Products.name])
+
+            val armor = Armors.selectAll().where { Armors.id eq productId }.single()
+            assertEquals(18, armor[Armors.defense])
         }
     }
 
     @Test
     fun testInsertPotion() {
         transaction {
-            SchemaUtils.create(Currencies, Merchants, Products)
+            SchemaUtils.create(Currencies, Merchants, Products, Potions)
             val goldId = Currencies.insertAndGetId { it[code] = "GOLD"; it[name] = "Gold"; it[symbol] = "G" }
             val merchantId = Merchants.insertAndGetId { it[name] = "Alchemist" }
 
@@ -116,19 +127,25 @@ class MerchantAndProductTest {
                 it[price] = 50
                 it[currency] = goldId
                 it[merchant] = merchantId
+            }
+            Potions.insert {
+                it[id] = productId
                 it[effect] = "Heals 50 HP"
                 it[duration] = 0
             }
 
             val product = Products.selectAll().where { Products.id eq productId }.single()
-            assertEquals("Heals 50 HP", product[Products.effect])
+            assertEquals("Health Potion", product[Products.name])
+
+            val potion = Potions.selectAll().where { Potions.id eq productId }.single()
+            assertEquals("Heals 50 HP", potion[Potions.effect])
         }
     }
 
     @Test
     fun testInsertScroll() {
         transaction {
-            SchemaUtils.create(Currencies, Merchants, Products)
+            SchemaUtils.create(Currencies, Merchants, Products, Scrolls)
             val goldId = Currencies.insertAndGetId { it[code] = "GOLD"; it[name] = "Gold"; it[symbol] = "G" }
             val merchantId = Merchants.insertAndGetId { it[name] = "Wizard" }
 
@@ -139,13 +156,19 @@ class MerchantAndProductTest {
                 it[price] = 200
                 it[currency] = goldId
                 it[merchant] = merchantId
+            }
+            Scrolls.insert {
+                it[id] = productId
                 it[spellName] = "Fireball"
                 it[spellLevel] = 3
             }
 
             val product = Products.selectAll().where { Products.id eq productId }.single()
-            assertEquals("Fireball", product[Products.spellName])
-            assertEquals(3, product[Products.spellLevel])
+            assertEquals("Fireball Scroll", product[Products.name])
+
+            val scroll = Scrolls.selectAll().where { Scrolls.id eq productId }.single()
+            assertEquals("Fireball", scroll[Scrolls.spellName])
+            assertEquals(3, scroll[Scrolls.spellLevel])
         }
     }
 
@@ -167,10 +190,6 @@ class MerchantAndProductTest {
 
             val product = Products.selectAll().where { Products.id eq productId }.single()
             assertEquals("Rope", product[Products.name])
-            assertNull(product[Products.damage])
-            assertNull(product[Products.defense])
-            assertNull(product[Products.effect])
-            assertNull(product[Products.spellName])
         }
     }
 
@@ -189,7 +208,7 @@ class MerchantAndProductTest {
                     it[rarity] = Rarity.COMMON.name
                     it[price] = 10
                     it[currency] = goldId
-                    it[merchant] = EntityID(999L, Merchants)
+                    it[merchant] = EntityID(UUID.randomUUID().toKotlinUuid(), Merchants)
                 }
             }
 
@@ -200,7 +219,7 @@ class MerchantAndProductTest {
                     it[category] = ProductCategory.MISCELLANEOUS.name
                     it[rarity] = Rarity.COMMON.name
                     it[price] = 10
-                    it[currency] = EntityID(999L, Currencies)
+                    it[currency] = EntityID(UUID.randomUUID().toKotlinUuid(), Currencies)
                     it[merchant] = merchantId
                 }
             }

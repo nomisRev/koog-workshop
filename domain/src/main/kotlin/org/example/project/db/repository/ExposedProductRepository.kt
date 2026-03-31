@@ -1,43 +1,53 @@
 package org.example.project.db.repository
 
 import org.example.project.db.suspendTransaction
-import org.example.project.db.tables.Products
+import org.example.project.db.tables.*
 import org.example.project.domain.enums.*
+import org.example.project.domain.id.*
 import org.example.project.domain.model.Product
+import org.example.project.domain.repository.ProductRepository
 import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
 
-class ProductRepository(
+@OptIn(kotlin.uuid.ExperimentalUuidApi::class)
+class ExposedProductRepository(
     private val database: Database
-) {
+) : ProductRepository {
 
-    suspend fun getAllProducts(): List<Product> = database.suspendTransaction {
-        Products.selectAll().map(::mapToProduct)
+    private val joinedTable = Products
+        .join(Weapons, JoinType.LEFT, Products.id, Weapons.id)
+        .join(Armors, JoinType.LEFT, Products.id, Armors.id)
+        .join(Potions, JoinType.LEFT, Products.id, Potions.id)
+        .join(Scrolls, JoinType.LEFT, Products.id, Scrolls.id)
+
+    override suspend fun getAllProducts(): List<Product> = database.suspendTransaction {
+        joinedTable.selectAll().map(::mapToProduct)
     }
 
-    suspend fun getProductById(id: Long): Product? = database.suspendTransaction {
-        Products.selectAll().where { Products.id eq id }
+    override suspend fun getProductOrNull(id: ProductId): Product? = database.suspendTransaction {
+        joinedTable.selectAll().where { Products.id eq id.value }
             .map(::mapToProduct)
             .singleOrNull()
     }
 
-    suspend fun getProductsByCategory(category: ProductCategory): List<Product> = database.suspendTransaction {
-        Products.selectAll().where { Products.category eq category.name }
+    override suspend fun getProductsByCategory(category: ProductCategory): List<Product> = database.suspendTransaction {
+        joinedTable.selectAll().where { Products.category eq category.name }
             .map(::mapToProduct)
     }
 
-    suspend fun updateStock(productId: Long, quantityChange: Int): Boolean = database.suspendTransaction {
-        val currentStock = Products.selectAll().where { Products.id eq productId }
+    override suspend fun updateStock(productId: ProductId, quantityChange: Int): Boolean = database.suspendTransaction {
+        val currentStock = Products.selectAll().where { Products.id eq productId.value }
             .map { it[Products.stock] }
             .singleOrNull() ?: return@suspendTransaction false
         
         val newStock = currentStock + quantityChange
         if (newStock < 0) return@suspendTransaction false
         
-        Products.update({ Products.id eq productId }) {
+        Products.update({ Products.id eq productId.value }) {
             it[stock] = newStock
         } > 0
     }
@@ -48,74 +58,74 @@ class ProductRepository(
         
         return when (category) {
             ProductCategory.WEAPONS -> Product.Weapon(
-                id = row[Products.id].value,
+                id = ProductId(row[Products.id].value),
                 name = row[Products.name],
                 description = row[Products.description],
                 rarity = Rarity.valueOf(row[Products.rarity]),
                 price = row[Products.price],
-                currencyId = row[Products.currency].value,
-                merchantId = row[Products.merchant].value,
+                currencyId = CurrencyId(row[Products.currency].value),
+                merchantId = MerchantId(row[Products.merchant].value),
                 stock = row[Products.stock],
                 imageUrl = row[Products.imageUrl],
                 isActive = row[Products.isActive],
                 createdAt = row[Products.createdAt],
-                damage = row[Products.damage] ?: 0,
-                damageType = DamageType.valueOf(row[Products.damageType] ?: DamageType.PHYSICAL.name),
-                weaponSlot = WeaponSlot.valueOf(row[Products.weaponSlot] ?: WeaponSlot.MAIN_HAND.name)
+                damage = row[Weapons.damage],
+                damageType = DamageType.valueOf(row[Weapons.damageType]),
+                weaponSlot = WeaponSlot.valueOf(row[Weapons.weaponSlot])
             )
             ProductCategory.ARMOR -> Product.Armor(
-                id = row[Products.id].value,
+                id = ProductId(row[Products.id].value),
                 name = row[Products.name],
                 description = row[Products.description],
                 rarity = Rarity.valueOf(row[Products.rarity]),
                 price = row[Products.price],
-                currencyId = row[Products.currency].value,
-                merchantId = row[Products.merchant].value,
+                currencyId = CurrencyId(row[Products.currency].value),
+                merchantId = MerchantId(row[Products.merchant].value),
                 stock = row[Products.stock],
                 imageUrl = row[Products.imageUrl],
                 isActive = row[Products.isActive],
                 createdAt = row[Products.createdAt],
-                defense = row[Products.defense] ?: 0,
-                armorSlot = ArmorSlot.valueOf(row[Products.armorSlot] ?: ArmorSlot.CHEST.name)
+                defense = row[Armors.defense],
+                armorSlot = ArmorSlot.valueOf(row[Armors.armorSlot])
             )
             ProductCategory.POTIONS -> Product.Potion(
-                id = row[Products.id].value,
+                id = ProductId(row[Products.id].value),
                 name = row[Products.name],
                 description = row[Products.description],
                 rarity = Rarity.valueOf(row[Products.rarity]),
                 price = row[Products.price],
-                currencyId = row[Products.currency].value,
-                merchantId = row[Products.merchant].value,
+                currencyId = CurrencyId(row[Products.currency].value),
+                merchantId = MerchantId(row[Products.merchant].value),
                 stock = row[Products.stock],
                 imageUrl = row[Products.imageUrl],
                 isActive = row[Products.isActive],
                 createdAt = row[Products.createdAt],
-                effect = row[Products.effect] ?: "",
-                duration = row[Products.duration]
+                effect = row[Potions.effect],
+                duration = row[Potions.duration]
             )
             ProductCategory.SCROLLS -> Product.Scroll(
-                id = row[Products.id].value,
+                id = ProductId(row[Products.id].value),
                 name = row[Products.name],
                 description = row[Products.description],
                 rarity = Rarity.valueOf(row[Products.rarity]),
                 price = row[Products.price],
-                currencyId = row[Products.currency].value,
-                merchantId = row[Products.merchant].value,
+                currencyId = CurrencyId(row[Products.currency].value),
+                merchantId = MerchantId(row[Products.merchant].value),
                 stock = row[Products.stock],
                 imageUrl = row[Products.imageUrl],
                 isActive = row[Products.isActive],
                 createdAt = row[Products.createdAt],
-                spellName = row[Products.spellName] ?: "",
-                spellLevel = row[Products.spellLevel] ?: 0
+                spellName = row[Scrolls.spellName],
+                spellLevel = row[Scrolls.spellLevel]
             )
             ProductCategory.MISCELLANEOUS -> Product.MiscItem(
-                id = row[Products.id].value,
+                id = ProductId(row[Products.id].value),
                 name = row[Products.name],
                 description = row[Products.description],
                 rarity = Rarity.valueOf(row[Products.rarity]),
                 price = row[Products.price],
-                currencyId = row[Products.currency].value,
-                merchantId = row[Products.merchant].value,
+                currencyId = CurrencyId(row[Products.currency].value),
+                merchantId = MerchantId(row[Products.merchant].value),
                 stock = row[Products.stock],
                 imageUrl = row[Products.imageUrl],
                 isActive = row[Products.isActive],

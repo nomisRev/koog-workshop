@@ -1,9 +1,11 @@
 package org.example.project.domain.model
 
+import kotlin.time.Instant
 import org.example.project.domain.enums.TransactionType
+import org.example.project.domain.id.*
 
 data class Currency(
-    val id: Long,
+    val id: CurrencyId,
     val code: String,
     val name: String,
     val symbol: String,
@@ -11,27 +13,27 @@ data class Currency(
 )
 
 data class CurrencyConversion(
-    val id: Long,
-    val fromCurrencyId: Long,
-    val toCurrencyId: Long,
+    val id: CurrencyConversionId,
+    val fromCurrencyId: CurrencyId,
+    val toCurrencyId: CurrencyId,
     val rate: Double
 )
 
 data class WalletBalance(
-    val currencyId: Long,
+    val currencyId: CurrencyId,
     val currencyCode: String,
     val currencyName: String,
     val balance: Long
 )
 
 data class Transaction(
-    val id: Long,
-    val characterId: Long,
-    val currencyId: Long,
+    val id: TransactionId,
+    val characterId: CharacterId,
+    val currencyId: CurrencyId,
     val amount: Long,
     val type: TransactionType,
     val referenceId: Long?,
     val referenceType: String?,
     val description: String?,
-    val createdAt: Long
+    val createdAt: Instant
 )

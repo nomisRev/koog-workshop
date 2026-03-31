@@ -6,8 +6,11 @@ import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.core.dao.id.*
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import java.util.UUID
+import kotlin.uuid.toKotlinUuid
 import kotlin.test.*
 
+@OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 class CharacterAndCurrencyTest {
 
     @BeforeTest
@@ -143,7 +146,7 @@ class CharacterAndCurrencyTest {
             val goldId = Currencies.insertAndGetId { it[code] = "GOLD"; it[name] = "Gold"; it[symbol] = "G" }
             val crownId = Currencies.insertAndGetId { it[code] = "CROWN"; it[name] = "Crown"; it[symbol] = "C" }
             
-            val exchangeRefId = 12345L
+            val exchangeRefId = UUID.randomUUID().toKotlinUuid()
             
             // Debit Gold
             Transactions.insert {
@@ -181,7 +184,7 @@ class CharacterAndCurrencyTest {
             
             assertFails {
                 Transactions.insert {
-                    it[character] = EntityID(999L, Characters) // Nonexistent character
+                    it[character] = EntityID(UUID.randomUUID().toKotlinUuid(), Characters) // Nonexistent character
                     it[currency] = goldId
                     it[amount] = 100
                     it[type] = TransactionType.DEPOSIT.name

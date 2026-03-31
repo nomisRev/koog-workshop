@@ -1,9 +1,8 @@
 package org.example.project.db.tables
 
-import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
 import org.jetbrains.exposed.v1.core.Table
 
-object ShippingMethods : LongIdTable("shipping_methods") {
+object ShippingMethods : StoreTable("shipping_methods") {
     val name = varchar("name", 255).uniqueIndex()
     val description = text("description").nullable()
     val baseCost = long("base_cost")

@@ -1,11 +1,14 @@
 package org.example.project.domain.model
 
+import org.example.project.domain.id.CurrencyId
+import org.example.project.domain.id.ShippingMethodId
+
 data class ShippingMethod(
-    val id: Long,
+    val id: ShippingMethodId,
     val name: String,
     val description: String?,
     val baseCost: Long,
-    val currencyId: Long,
+    val currencyId: CurrencyId,
     val estimatedDays: Int,
     val isActive: Boolean
 )

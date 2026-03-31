@@ -1,8 +1,6 @@
 package org.example.project.db.tables
 
-import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
-
-object Currencies : LongIdTable("currencies") {
+object Currencies : StoreTable("currencies") {
     val code = varchar("code", 50).uniqueIndex()
     val name = varchar("name", 255)
     val symbol = varchar("symbol", 10)

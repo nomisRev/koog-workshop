@@ -1,35 +1,37 @@
 package org.example.project.domain.model
 
+import kotlin.time.Instant
 import org.example.project.domain.enums.OrderStatus
+import org.example.project.domain.id.*
 
 data class Order(
-    val id: Long,
-    val characterId: Long,
+    val id: OrderId,
+    val characterId: CharacterId,
     val status: OrderStatus,
     val totalPrice: Long,
-    val totalCurrencyId: Long,
-    val createdAt: Long,
-    val updatedAt: Long
+    val totalCurrencyId: CurrencyId,
+    val createdAt: Instant,
+    val updatedAt: Instant
 )
 
 data class SubOrder(
-    val id: Long,
-    val orderId: Long,
-    val merchantId: Long,
+    val id: SubOrderId,
+    val orderId: OrderId,
+    val merchantId: MerchantId,
     val status: OrderStatus,
-    val shippingMethodId: Long,
+    val shippingMethodId: ShippingMethodId,
     val shippingCost: Long,
     val merchantTotalPrice: Long,
-    val createdAt: Long,
-    val updatedAt: Long
+    val createdAt: Instant,
+    val updatedAt: Instant
 )
 
 data class OrderItem(
-    val id: Long,
-    val subOrderId: Long,
-    val productId: Long,
+    val id: OrderItemId,
+    val subOrderId: SubOrderId,
+    val productId: ProductId,
     val quantity: Int,
     val snapshottedPrice: Long,
-    val snapshottedCurrencyId: Long,
-    val createdAt: Long
+    val snapshottedCurrencyId: CurrencyId,
+    val createdAt: Instant
 )

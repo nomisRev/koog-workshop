@@ -1,33 +1,37 @@
 package org.example.project.domain.model
 
+import kotlin.time.Instant
 import org.example.project.domain.enums.*
+import org.example.project.domain.id.CurrencyId
+import org.example.project.domain.id.MerchantId
+import org.example.project.domain.id.ProductId
 
 sealed class Product {
-    abstract val id: Long
+    abstract val id: ProductId
     abstract val name: String
     abstract val description: String?
     abstract val category: ProductCategory
     abstract val rarity: Rarity
     abstract val price: Long
-    abstract val currencyId: Long
-    abstract val merchantId: Long
+    abstract val currencyId: CurrencyId
+    abstract val merchantId: MerchantId
     abstract val stock: Int
     abstract val imageUrl: String?
     abstract val isActive: Boolean
-    abstract val createdAt: Long
+    abstract val createdAt: Instant
 
     data class Weapon(
-        override val id: Long,
+        override val id: ProductId,
         override val name: String,
         override val description: String?,
         override val rarity: Rarity,
         override val price: Long,
-        override val currencyId: Long,
-        override val merchantId: Long,
+        override val currencyId: CurrencyId,
+        override val merchantId: MerchantId,
         override val stock: Int,
         override val imageUrl: String?,
         override val isActive: Boolean,
-        override val createdAt: Long,
+        override val createdAt: Instant,
         val damage: Int,
         val damageType: DamageType,
         val weaponSlot: WeaponSlot
@@ -36,17 +40,17 @@ sealed class Product {
     }
 
     data class Armor(
-        override val id: Long,
+        override val id: ProductId,
         override val name: String,
         override val description: String?,
         override val rarity: Rarity,
         override val price: Long,
-        override val currencyId: Long,
-        override val merchantId: Long,
+        override val currencyId: CurrencyId,
+        override val merchantId: MerchantId,
         override val stock: Int,
         override val imageUrl: String?,
         override val isActive: Boolean,
-        override val createdAt: Long,
+        override val createdAt: Instant,
         val defense: Int,
         val armorSlot: ArmorSlot
     ) : Product() {
@@ -54,17 +58,17 @@ sealed class Product {
     }
 
     data class Potion(
-        override val id: Long,
+        override val id: ProductId,
         override val name: String,
         override val description: String?,
         override val rarity: Rarity,
         override val price: Long,
-        override val currencyId: Long,
-        override val merchantId: Long,
+        override val currencyId: CurrencyId,
+        override val merchantId: MerchantId,
         override val stock: Int,
         override val imageUrl: String?,
         override val isActive: Boolean,
-        override val createdAt: Long,
+        override val createdAt: Instant,
         val effect: String,
         val duration: Int?
     ) : Product() {
@@ -72,17 +76,17 @@ sealed class Product {
     }
 
     data class Scroll(
-        override val id: Long,
+        override val id: ProductId,
         override val name: String,
         override val description: String?,
         override val rarity: Rarity,
         override val price: Long,
-        override val currencyId: Long,
-        override val merchantId: Long,
+        override val currencyId: CurrencyId,
+        override val merchantId: MerchantId,
         override val stock: Int,
         override val imageUrl: String?,
         override val isActive: Boolean,
-        override val createdAt: Long,
+        override val createdAt: Instant,
         val spellName: String,
         val spellLevel: Int
     ) : Product() {
@@ -90,17 +94,17 @@ sealed class Product {
     }
 
     data class MiscItem(
-        override val id: Long,
+        override val id: ProductId,
         override val name: String,
         override val description: String?,
         override val rarity: Rarity,
         override val price: Long,
-        override val currencyId: Long,
-        override val merchantId: Long,
+        override val currencyId: CurrencyId,
+        override val merchantId: MerchantId,
         override val stock: Int,
         override val imageUrl: String?,
         override val isActive: Boolean,
-        override val createdAt: Long
+        override val createdAt: Instant
     ) : Product() {
         override val category = ProductCategory.MISCELLANEOUS
     }

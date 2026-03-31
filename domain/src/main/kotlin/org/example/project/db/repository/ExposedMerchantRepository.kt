@@ -4,36 +4,41 @@ import org.example.project.db.suspendTransaction
 import org.example.project.db.tables.MerchantShippingMethods
 import org.example.project.db.tables.Merchants
 import org.example.project.db.tables.ShippingMethods
+import org.example.project.domain.id.CurrencyId
+import org.example.project.domain.id.MerchantId
+import org.example.project.domain.id.ShippingMethodId
 import org.example.project.domain.model.Merchant
 import org.example.project.domain.model.ShippingMethod
+import org.example.project.domain.repository.MerchantRepository
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.selectAll
 
-class MerchantRepository(
+@OptIn(kotlin.uuid.ExperimentalUuidApi::class)
+class ExposedMerchantRepository(
     private val database: Database
-) {
+) : MerchantRepository {
 
-    suspend fun getAllMerchants(): List<Merchant> = database.suspendTransaction {
+    override suspend fun getAllMerchants(): List<Merchant> = database.suspendTransaction {
         Merchants.selectAll().map(::mapToMerchant)
     }
 
-    suspend fun getMerchantById(id: Long): Merchant? = database.suspendTransaction {
-        Merchants.selectAll().where { Merchants.id eq id }
+    override suspend fun getMerchantOrNull(id: MerchantId): Merchant? = database.suspendTransaction {
+        Merchants.selectAll().where { Merchants.id eq id.value }
             .map(::mapToMerchant)
             .singleOrNull()
     }
 
-    suspend fun getShippingMethodsForMerchant(merchantId: Long): List<ShippingMethod> = database.suspendTransaction {
+    override suspend fun getShippingMethodsForMerchant(merchantId: MerchantId): List<ShippingMethod> = database.suspendTransaction {
         (ShippingMethods innerJoin MerchantShippingMethods)
             .selectAll()
-            .where { MerchantShippingMethods.merchant eq merchantId }
+            .where { MerchantShippingMethods.merchant eq merchantId.value }
             .map(::mapToShippingMethod)
     }
 
     private fun mapToMerchant(row: ResultRow) = Merchant(
-        id = row[Merchants.id].value,
+        id = MerchantId(row[Merchants.id].value),
         name = row[Merchants.name],
         description = row[Merchants.description],
         location = row[Merchants.location],
@@ -43,11 +48,11 @@ class MerchantRepository(
     )
 
     private fun mapToShippingMethod(row: ResultRow) = ShippingMethod(
-        id = row[ShippingMethods.id].value,
+        id = ShippingMethodId(row[ShippingMethods.id].value),
         name = row[ShippingMethods.name],
         description = row[ShippingMethods.description],
         baseCost = row[ShippingMethods.baseCost],
-        currencyId = row[ShippingMethods.currency].value,
+        currencyId = CurrencyId(row[ShippingMethods.currency].value),
         estimatedDays = row[ShippingMethods.estimatedDays],
         isActive = row[ShippingMethods.isActive]
     )

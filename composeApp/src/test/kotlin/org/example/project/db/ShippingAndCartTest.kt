@@ -7,6 +7,7 @@ import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.test.*
 
+@OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 class ShippingAndCartTest {
 
     @BeforeTest

@@ -1,8 +1,6 @@
 package org.example.project.db.tables
 
-import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
-
-object Merchants : LongIdTable("merchants") {
+object Merchants : StoreTable("merchants") {
     val name = varchar("name", 255).uniqueIndex()
     val description = text("description").nullable()
     val location = varchar("location", 255).nullable()

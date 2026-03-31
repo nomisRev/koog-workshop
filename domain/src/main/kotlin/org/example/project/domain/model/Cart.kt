@@ -1,9 +1,14 @@
 package org.example.project.domain.model
 
+import kotlin.time.Instant
+import org.example.project.domain.id.CartItemId
+import org.example.project.domain.id.CharacterId
+import org.example.project.domain.id.ProductId
+
 data class CartItem(
-    val id: Long,
-    val characterId: Long,
-    val productId: Long,
+    val id: CartItemId,
+    val characterId: CharacterId,
+    val productId: ProductId,
     val quantity: Int,
-    val addedAt: Long
+    val addedAt: Instant
 )
