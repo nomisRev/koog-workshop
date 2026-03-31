@@ -1,0 +1,1 @@
+ - Exposed v1 uses v1 in their packages i.e. `org.jetbrains.exposed.v1.core.*`
