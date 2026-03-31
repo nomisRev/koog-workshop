@@ -3,13 +3,37 @@ package org.example.project.db.repository
 import org.example.project.db.tables.Merchants
 import org.example.project.domain.id.MerchantId
 import org.example.project.domain.model.Merchant
+import org.example.project.domain.model.Page
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.Transaction
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 @OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 class ExposedMerchantRepository {
+
+    context(_: Transaction)
+    fun getMerchants(offset: Long, limit: Long): Page<Merchant> {
+        val items = Merchants.selectAll()
+            .limit(limit.toInt()).offset(offset)
+            .map(::mapToMerchant)
+        val total = Merchants.selectAll().count()
+        return Page(items, total, offset, limit)
+    }
+
+    context(_: Transaction)
+    fun getAllMerchants(chunkSize: Long = 50L): Flow<List<Merchant>> = flow {
+        var offset = 0L
+        while (true) {
+            val page = getMerchants(offset, chunkSize)
+            if (page.items.isEmpty()) break
+            emit(page.items)
+            offset += chunkSize
+        }
+    }
 
     context(_: Transaction)
     fun getAllMerchants(): List<Merchant> =

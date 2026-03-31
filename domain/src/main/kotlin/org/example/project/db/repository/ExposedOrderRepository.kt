@@ -6,12 +6,16 @@ import org.example.project.domain.id.*
 import org.example.project.domain.model.Order
 import org.example.project.domain.model.OrderItem
 import org.example.project.domain.model.SubOrder
+import org.example.project.domain.model.Page
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.Transaction
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 class ExposedOrderRepository {
 
@@ -20,6 +24,28 @@ class ExposedOrderRepository {
         Orders.selectAll().where { Orders.id eq id.value }
             .map(::mapToOrder)
             .singleOrNull()
+
+    context(_: Transaction)
+    fun getOrderHistory(characterId: CharacterId, offset: Long, limit: Long): Page<Order> {
+        val query = Orders.selectAll().where { Orders.character eq characterId.value }
+            .orderBy(Orders.createdAt, SortOrder.DESC)
+        val items = query.copy()
+            .limit(limit.toInt()).offset(offset)
+            .map(::mapToOrder)
+        val total = query.count()
+        return Page(items, total, offset, limit)
+    }
+
+    context(_: Transaction)
+    fun getOrderHistory(characterId: CharacterId, chunkSize: Long = 50L): Flow<List<Order>> = flow {
+        var offset = 0L
+        while (true) {
+            val page = getOrderHistory(characterId, offset, chunkSize)
+            if (page.items.isEmpty()) break
+            emit(page.items)
+            offset += chunkSize
+        }
+    }
 
     context(_: Transaction)
     fun getOrderHistory(characterId: CharacterId): List<Order> =

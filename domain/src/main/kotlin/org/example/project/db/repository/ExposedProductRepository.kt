@@ -4,6 +4,9 @@ import org.example.project.db.tables.*
 import org.example.project.domain.enums.*
 import org.example.project.domain.id.*
 import org.example.project.domain.model.Product
+import org.example.project.domain.model.Page
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.Transaction
@@ -19,6 +22,26 @@ class ExposedProductRepository {
         .join(Armors, JoinType.LEFT, Products.id, Armors.id)
         .join(Potions, JoinType.LEFT, Products.id, Potions.id)
         .join(Scrolls, JoinType.LEFT, Products.id, Scrolls.id)
+
+    context(_: Transaction)
+    fun getProducts(offset: Long, limit: Long): Page<Product> {
+        val items = joinedTable.selectAll()
+            .limit(limit.toInt()).offset(offset)
+            .map(::mapToProduct)
+        val total = joinedTable.selectAll().count()
+        return Page(items, total, offset, limit)
+    }
+
+    context(_: Transaction)
+    fun getAllProducts(chunkSize: Long = 50L): Flow<List<Product>> = flow {
+        var offset = 0L
+        while (true) {
+            val page = getProducts(offset, chunkSize)
+            if (page.items.isEmpty()) break
+            emit(page.items)
+            offset += chunkSize
+        }
+    }
 
     context(_: Transaction)
     fun getAllProducts(): List<Product> =
