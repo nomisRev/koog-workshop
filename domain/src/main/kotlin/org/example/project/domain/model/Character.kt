@@ -6,5 +6,6 @@ import kotlin.time.Instant
 data class Character(
     val id: CharacterId,
     val name: String,
-    val createdAt: Instant
+    val createdAt: Instant,
+    val updatedAt: Instant
 )

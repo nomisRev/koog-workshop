@@ -33,5 +33,6 @@ data class OrderItem(
     val quantity: Int,
     val snapshottedPrice: Long,
     val snapshottedCurrencyId: CurrencyId,
-    val createdAt: Instant
+    val createdAt: Instant,
+    val updatedAt: Instant
 )

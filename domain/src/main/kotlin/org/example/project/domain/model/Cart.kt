@@ -10,5 +10,6 @@ data class CartItem(
     val characterId: CharacterId,
     val productId: ProductId,
     val quantity: Int,
-    val addedAt: Instant
+    val createdAt: Instant,
+    val updatedAt: Instant
 )

@@ -1,5 +1,6 @@
 package org.example.project.domain.model
 
+import kotlin.time.Instant
 import org.example.project.domain.id.MerchantId
 
 data class Merchant(
@@ -9,5 +10,7 @@ data class Merchant(
     val location: String?,
     val theme: String?,
     val iconPath: String?,
-    val isActive: Boolean
+    val isActive: Boolean,
+    val createdAt: Instant,
+    val updatedAt: Instant
 )

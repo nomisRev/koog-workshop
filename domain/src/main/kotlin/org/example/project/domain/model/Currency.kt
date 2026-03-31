@@ -1,6 +1,7 @@
 package org.example.project.domain.model
 
 import kotlin.time.Instant
+import kotlin.uuid.Uuid
 import org.example.project.domain.enums.TransactionType
 import org.example.project.domain.id.*
 
@@ -9,14 +10,18 @@ data class Currency(
     val code: String,
     val name: String,
     val symbol: String,
-    val iconPath: String?
+    val iconPath: String?,
+    val createdAt: Instant,
+    val updatedAt: Instant
 )
 
 data class CurrencyConversion(
     val id: CurrencyConversionId,
     val fromCurrencyId: CurrencyId,
     val toCurrencyId: CurrencyId,
-    val rate: Double
+    val rate: Double,
+    val createdAt: Instant,
+    val updatedAt: Instant
 )
 
 data class WalletBalance(
@@ -32,8 +37,9 @@ data class Transaction(
     val currencyId: CurrencyId,
     val amount: Long,
     val type: TransactionType,
-    val referenceId: Long?,
+    val referenceId: Uuid?,
     val referenceType: String?,
     val description: String?,
-    val createdAt: Instant
+    val createdAt: Instant,
+    val updatedAt: Instant
 )

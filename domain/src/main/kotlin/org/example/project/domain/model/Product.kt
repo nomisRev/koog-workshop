@@ -19,6 +19,7 @@ sealed class Product {
     abstract val imageUrl: String?
     abstract val isActive: Boolean
     abstract val createdAt: Instant
+    abstract val updatedAt: Instant
 
     data class Weapon(
         override val id: ProductId,
@@ -32,6 +33,7 @@ sealed class Product {
         override val imageUrl: String?,
         override val isActive: Boolean,
         override val createdAt: Instant,
+        override val updatedAt: Instant,
         val damage: Int,
         val damageType: DamageType,
         val weaponSlot: WeaponSlot
@@ -51,6 +53,7 @@ sealed class Product {
         override val imageUrl: String?,
         override val isActive: Boolean,
         override val createdAt: Instant,
+        override val updatedAt: Instant,
         val defense: Int,
         val armorSlot: ArmorSlot
     ) : Product() {
@@ -69,6 +72,7 @@ sealed class Product {
         override val imageUrl: String?,
         override val isActive: Boolean,
         override val createdAt: Instant,
+        override val updatedAt: Instant,
         val effect: String,
         val duration: Int?
     ) : Product() {
@@ -87,6 +91,7 @@ sealed class Product {
         override val imageUrl: String?,
         override val isActive: Boolean,
         override val createdAt: Instant,
+        override val updatedAt: Instant,
         val spellName: String,
         val spellLevel: Int
     ) : Product() {
@@ -104,7 +109,8 @@ sealed class Product {
         override val stock: Int,
         override val imageUrl: String?,
         override val isActive: Boolean,
-        override val createdAt: Instant
+        override val createdAt: Instant,
+        override val updatedAt: Instant
     ) : Product() {
         override val category = ProductCategory.MISCELLANEOUS
     }

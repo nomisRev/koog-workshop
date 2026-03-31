@@ -9,5 +9,6 @@ data class WishlistItem(
     val id: WishlistItemId,
     val characterId: CharacterId,
     val productId: ProductId,
-    val addedAt: Instant
+    val createdAt: Instant,
+    val updatedAt: Instant
 )
