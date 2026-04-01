@@ -10,24 +10,27 @@ Use a REPL when you need to validate a small Kotlin/JVM idea against compiled pr
 
 ## 2. Refresh compiled outputs
 
-- Compile the target before launching the REPL so you are testing current outputs.
+- Prefer this skill's Gradle launcher for Gradle projects. It compiles the target first so you are testing current outputs.
 - Use the project's normal build tool. Prefer the narrowest task that refreshes the code you need.
-- Gradle examples: `:module:compileKotlin`, `:module:compileKotlinJvm`, `:module:classes`
+- Gradle JVM defaults: `:module:classes` with `runtimeClasspath`
+- Gradle KMP/JVM defaults: `:module:compileKotlinJvm` with `jvmRuntimeClasspath`
 - Maven example: `mvn -pl <module> -DskipTests compile`
 
 ## 3. Assemble the classpath
 
 - Put compiled module outputs first.
-- Add project modules only when the snippet touches them.
 - Add resources only when the directory exists and the snippet needs them.
-- Add dependency jars using build-tool output or IDE metadata rather than guessing file paths manually.
+- Resolve dependency jars from the build tool rather than guessing file paths manually.
+- For Gradle projects, use `scripts/start-gradle-repl.sh` so the runtime jars come from the resolved configuration instead of a hand-built classpath.
 
 Common output roots:
 
 - Gradle JVM: `<module>/build/classes/kotlin/main`
 - Gradle multiplatform JVM: `<module>/build/classes/kotlin/jvm/main`
 - Java interop: `<module>/build/classes/java/main`
+- Java interop for KMP/JVM: `<module>/build/classes/java/jvm/main`
 - Gradle resources: `<module>/build/resources/main`
+- Gradle KMP resources: `<module>/build/processedResources/jvm/main` or `<module>/build/resources/jvm/main`
 - Maven JVM: `<module>/target/classes`
 
 ## 4. Launch the session
@@ -35,18 +38,45 @@ Common output roots:
 - Start `kotlinc -Xrepl` with the assembled classpath.
 - Keep REPL state inside the current project by setting `HOME` and `-J-Duser.home` to a build-owned directory.
 - Resolve `<skill-dir>` in the example below to the directory that contains this skill.
-- If this skill's launcher script is available, prefer it once you know the classpath.
+- For Gradle projects, prefer `scripts/start-gradle-repl.sh` instead of assembling the classpath yourself.
+- If you already know the classpath and want the low-level launcher only, use `scripts/start-repl.sh`.
 - Keep the first input small: imports, one helper function, one assertion or print.
 - Use `println` and small sample values to confirm behavior.
 - Reset the session when switching to a different experiment.
 
-Example:
+Gradle JVM example:
 
 ```bash
-CLASSPATH="$PWD/<module>/build/classes/kotlin/main"
-STATE_DIR="$PWD/build/codex-repl"
+bash <skill-dir>/scripts/start-gradle-repl.sh --module domain
+```
 
-bash <skill-dir>/scripts/start-repl.sh --classpath "$CLASSPATH" --state-dir "$STATE_DIR"
+Inspect the resolved classpath without launching:
+
+```bash
+bash <skill-dir>/scripts/start-gradle-repl.sh --module domain --print-classpath
+```
+
+Gradle KMP/JVM example:
+
+```bash
+bash <skill-dir>/scripts/start-gradle-repl.sh --module shared --kind kmp-jvm
+```
+
+Discover configuration names when the project uses a custom JVM target:
+
+```bash
+bash <skill-dir>/scripts/start-gradle-repl.sh --module shared --list-configurations
+```
+
+Override the defaults for a custom target name:
+
+```bash
+bash <skill-dir>/scripts/start-gradle-repl.sh \
+  --module shared \
+  --kind kmp-jvm \
+  --configuration desktopRuntimeClasspath \
+  --build-task compileKotlinDesktop \
+  --classpath-entry "$PWD/shared/build/classes/kotlin/desktop/main"
 ```
 
 ## 5. Session discipline
@@ -55,3 +85,9 @@ bash <skill-dir>/scripts/start-repl.sh --classpath "$CLASSPATH" --state-dir "$ST
 - Narrow the input shape before changing the code path.
 - If the session becomes noisy, stop and restart with a smaller classpath.
 - Record the exact snippet that proved the behavior before translating it into source.
+
+## 6. Kotlin version mismatches
+
+- A standalone `kotlinc` binary can lag behind the Kotlin stdlib jars on the project's Gradle classpath.
+- `scripts/start-gradle-repl.sh` warns when the resolved classpath mixes Kotlin stdlib versions, or when `kotlinc -version` does not match the resolved stdlib version.
+- If you hit metadata or symbol errors, point the script at the matching compiler with `--kotlinc <path>`.
