@@ -24,6 +24,7 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -194,17 +195,18 @@ private fun AdminAppBar(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    AdminWorkspaceTab.entries.forEach { tab ->
-                        FilterChip(
-                            selected = tab == selectedTab,
-                            onClick = { onTabSelected(tab) },
-                            label = { Text(tab.title) }
-                        )
-                    }
-                }
+                val filtersLabel =
+                    if (activeFilterCount > 0 && !filtersOpen) "Filters ($activeFilterCount)" else "Filters"
 
-                VerticalDivider(modifier = Modifier.height(24.dp))
+                FilterChip(
+                    modifier = Modifier.semantics {
+                        stateDescription = if (filtersOpen) "Expanded" else "Collapsed"
+                    },
+                    selected = filtersOpen || activeFilterCount > 0,
+                    onClick = { filtersOpen = !filtersOpen },
+                    label = { Text(filtersLabel) },
+                    enabled = filterContent != null
+                )
 
                 OutlinedButton(
                     onClick = onRefresh,
@@ -213,17 +215,16 @@ private fun AdminAppBar(
                     Text("Refresh")
                 }
 
-                if (filterContent != null) {
-                    val filtersLabel =
-                        if (activeFilterCount > 0 && !filtersOpen) "Filters ($activeFilterCount)" else "Filters"
-                    FilterChip(
-                        modifier = Modifier.semantics {
-                            stateDescription = if (filtersOpen) "Expanded" else "Collapsed"
-                        },
-                        selected = filtersOpen || activeFilterCount > 0,
-                        onClick = { filtersOpen = !filtersOpen },
-                        label = { Text(filtersLabel) }
-                    )
+                VerticalDivider(modifier = Modifier.height(24.dp))
+
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    AdminWorkspaceTab.entries.forEach { tab ->
+                        FilterChip(
+                            selected = tab == selectedTab,
+                            onClick = { onTabSelected(tab) },
+                            label = { Text(tab.title) }
+                        )
+                    }
                 }
             }
 
