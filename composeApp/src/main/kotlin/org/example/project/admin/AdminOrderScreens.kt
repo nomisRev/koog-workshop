@@ -2,7 +2,6 @@
 
 package org.example.project.admin
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -132,25 +131,13 @@ fun OrderDetailScreen(
             detail = detail,
             onItemClick = onItemClick
         )
-        OrderHistorySection(detail = detail)
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = onBack) {
-                Text("Back to orders")
-            }
-            TextButton(onClick = onRefresh) {
-                Text("Reload order")
-            }
-        }
     }
 }
 
 @Composable
 fun OrderItemDetailScreen(
     detail: AdminOrderDetail,
-    item: AdminOrderItemDetail,
-    onBack: () -> Unit,
-    onRefresh: () -> Unit
+    item: AdminOrderItemDetail
 ) {
     val parentSubOrder = detail.subOrders.firstOrNull { it.subOrder.id == item.item.subOrderId }
 
@@ -167,15 +154,6 @@ fun OrderItemDetailScreen(
             parentSubOrder = parentSubOrder
         )
         OrderHistorySection(detail = detail)
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = onBack) {
-                Text("Back to order")
-            }
-            TextButton(onClick = onRefresh) {
-                Text("Reload order")
-            }
-        }
     }
 }
 
@@ -365,7 +343,7 @@ private fun OrderDetailSummaryCard(detail: AdminOrderDetail) {
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = "Order ${detail.order.id.value}",
+                        text = detail.order.id.value.toString(),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.SemiBold
                     )

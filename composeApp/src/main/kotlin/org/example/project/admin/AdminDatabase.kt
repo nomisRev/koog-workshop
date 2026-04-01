@@ -13,11 +13,8 @@ import kotlin.time.Clock
 private const val ADMIN_DATABASE_DIRECTORY = ".agent-fantasy-store"
 private const val ADMIN_DATABASE_FILE = "agent-fantasy-store.db"
 
-fun adminDatabasePath(): Path = Paths.get(
-    System.getProperty("user.home"),
-    ADMIN_DATABASE_DIRECTORY,
-    ADMIN_DATABASE_FILE
-)
+fun adminDatabasePath(): Path =
+    Paths.get(System.getProperty("user.home"), ADMIN_DATABASE_DIRECTORY, ADMIN_DATABASE_FILE)
 
 fun createAdminDatabase(
     path: Path = adminDatabasePath(),

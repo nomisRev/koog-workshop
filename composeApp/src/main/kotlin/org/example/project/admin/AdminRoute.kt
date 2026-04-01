@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -25,13 +24,10 @@ import kotlinx.coroutines.launch
 import org.example.project.domain.id.OrderId
 import org.example.project.domain.id.OrderItemId
 import org.example.project.domain.model.AdminOrderDetail
-import org.example.project.domain.model.AdminOrderItemDetail
 import org.example.project.service.AdminDashboardService
 
 @Composable
-fun AdminRoute(
-    dashboardService: AdminDashboardService
-) {
+fun AdminRoute(dashboardService: AdminDashboardService) {
     val dashboardViewModel: DashboardViewModel = viewModel(factory = DashboardViewModel.factory(dashboardService))
     val dashboardState by dashboardViewModel.uiState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
@@ -198,9 +194,7 @@ fun AdminRoute(
 
                                 detail != null && item != null -> OrderItemDetailScreen(
                                     detail = detail,
-                                    item = item,
-                                    onBack = { screen = AdminScreen.OrderDetail(current.orderId) },
-                                    onRefresh = ::refreshCurrentScreen
+                                    item = item
                                 )
 
                                 detail != null -> ErrorCard(
