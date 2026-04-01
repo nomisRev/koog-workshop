@@ -1,6 +1,7 @@
 package org.example.project.domain.character
 
 import kotlinx.coroutines.runBlocking
+import org.example.project.db.connectSqlite
 import org.example.project.db.createTables
 import org.example.project.domain.currency.CurrencyService
 import org.jetbrains.exposed.v1.jdbc.Database
@@ -14,7 +15,7 @@ class CharacterServiceTest {
     @BeforeTest
     fun setup() {
         val testDbFile = java.io.File.createTempFile("test_character_", ".db").apply { deleteOnExit() }
-        database = Database.connect("jdbc:sqlite:${testDbFile.absolutePath}").createTables()
+        database = connectSqlite(testDbFile).createTables()
         characterService = CharacterService(database)
         currencyService = CurrencyService(database)
     }

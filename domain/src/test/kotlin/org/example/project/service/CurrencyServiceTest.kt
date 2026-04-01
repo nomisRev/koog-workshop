@@ -1,6 +1,7 @@
 package org.example.project.domain.currency
 
 import kotlinx.coroutines.runBlocking
+import org.example.project.db.connectSqlite
 import org.example.project.db.createTables
 import org.jetbrains.exposed.v1.jdbc.Database
 import kotlin.test.*
@@ -12,7 +13,7 @@ class CurrencyServiceTest {
     @BeforeTest
     fun setup() {
         val testDbFile = java.io.File.createTempFile("test_currency_", ".db").apply { deleteOnExit() }
-        database = Database.connect("jdbc:sqlite:${testDbFile.absolutePath}").createTables()
+        database = connectSqlite(testDbFile).createTables()
         currencyService = CurrencyService(database)
     }
 

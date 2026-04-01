@@ -16,7 +16,7 @@ class ShippingAndCartTest {
 
     @BeforeTest
     fun setup() {
-        Database.connect("jdbc:sqlite:file:test?mode=memory&cache=shared&foreign_keys=on", "org.sqlite.JDBC")
+        connectSqlite("jdbc:sqlite:file:test?mode=memory&cache=shared")
     }
 
     @Test

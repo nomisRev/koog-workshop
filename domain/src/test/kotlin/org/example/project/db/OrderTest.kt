@@ -14,7 +14,7 @@ class OrderTest {
 
     @BeforeTest
     fun setup() {
-        Database.connect("jdbc:sqlite:file:test_orders?mode=memory&cache=shared&foreign_keys=on", "org.sqlite.JDBC")
+        connectSqlite("jdbc:sqlite:file:test_orders?mode=memory&cache=shared")
     }
 
     @Test

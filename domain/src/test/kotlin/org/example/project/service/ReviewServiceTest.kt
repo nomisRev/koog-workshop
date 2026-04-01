@@ -1,6 +1,7 @@
 package org.example.project.domain.review
 
 import kotlinx.coroutines.runBlocking
+import org.example.project.db.connectSqlite
 import org.example.project.db.createTables
 import org.example.project.db.suspendTransaction
 import org.example.project.domain.cart.CartService
@@ -37,7 +38,7 @@ class ReviewServiceTest {
     @BeforeTest
     fun setup() {
         val testDbFile = java.io.File.createTempFile("test_review_", ".db").apply { deleteOnExit() }
-        database = Database.connect("jdbc:sqlite:${testDbFile.absolutePath}").createTables()
+        database = connectSqlite(testDbFile).createTables()
 
         reviewService = ReviewService(database)
         orderService = OrderService(database)

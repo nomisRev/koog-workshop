@@ -1,10 +1,11 @@
-package org.example.project.admin
+package org.example.project.admin.orders.operations
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import org.example.project.db.connectSqlite
 import org.example.project.db.createTables
 import org.example.project.domain.admin.OrderAdminService
 import org.example.project.domain.catalog.Merchants
@@ -120,7 +121,7 @@ class OrderAdminViewModelTest {
         val databaseFile = java.io.File.createTempFile("order_vm_", ".db").apply {
             deleteOnExit()
         }
-        return Database.connect("jdbc:sqlite:${databaseFile.absolutePath}").createTables()
+        return connectSqlite(databaseFile).createTables()
     }
 
     private fun seedOrders(database: Database): OrderFixture =

@@ -1,6 +1,7 @@
 package org.example.project.domain.order
 
 import kotlinx.coroutines.runBlocking
+import org.example.project.db.connectSqlite
 import org.example.project.db.createTables
 import org.example.project.domain.cart.CartService
 import org.example.project.domain.catalog.*
@@ -34,7 +35,7 @@ class OrderServiceTest {
     @BeforeTest
     fun setup() {
         databaseFile = java.io.File.createTempFile("test_order_", ".db").apply { deleteOnExit() }
-        database = Database.connect("jdbc:sqlite:${databaseFile.absolutePath}").createTables()
+        database = connectSqlite(databaseFile).createTables()
 
         orderService = OrderService(database)
         cartService = CartService(database)

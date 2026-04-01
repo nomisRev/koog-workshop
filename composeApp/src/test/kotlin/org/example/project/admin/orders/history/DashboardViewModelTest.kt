@@ -1,6 +1,7 @@
-package org.example.project.admin
+package org.example.project.admin.orders.history
 
 import kotlinx.coroutines.runBlocking
+import org.example.project.db.connectSqlite
 import org.example.project.db.createTables
 import org.example.project.domain.character.Characters
 import org.example.project.domain.currency.Currencies
@@ -57,7 +58,7 @@ class DashboardViewModelTest {
         val databaseFile = java.io.File.createTempFile("dashboard_viewmodel_", ".db").apply {
             deleteOnExit()
         }
-        return Database.connect("jdbc:sqlite:${databaseFile.absolutePath}").createTables()
+        return connectSqlite(databaseFile).createTables()
     }
 
     private fun seedDashboardData(database: Database) {

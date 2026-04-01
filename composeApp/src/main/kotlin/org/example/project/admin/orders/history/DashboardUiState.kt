@@ -1,4 +1,4 @@
-package org.example.project.admin
+package org.example.project.admin.orders.history
 
 import androidx.compose.runtime.Immutable
 import kotlinx.collections.immutable.PersistentList

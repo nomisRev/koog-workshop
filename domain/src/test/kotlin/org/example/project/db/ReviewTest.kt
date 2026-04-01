@@ -17,7 +17,7 @@ class ReviewTest {
 
     @BeforeTest
     fun setup() {
-        Database.connect("jdbc:sqlite:file:test_reviews?mode=memory&cache=shared&foreign_keys=on", "org.sqlite.JDBC")
+        connectSqlite("jdbc:sqlite:file:test_reviews?mode=memory&cache=shared")
     }
 
     private fun setupInitialData() {

@@ -1,4 +1,4 @@
-package org.example.project.admin
+package org.example.project.admin.products
 
 import androidx.compose.runtime.Immutable
 import kotlinx.collections.immutable.PersistentList

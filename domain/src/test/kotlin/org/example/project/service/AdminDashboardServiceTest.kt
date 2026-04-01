@@ -1,6 +1,7 @@
 package org.example.project.domain.admin
 
 import kotlinx.coroutines.runBlocking
+import org.example.project.db.connectSqlite
 import org.example.project.db.createTables
 import org.example.project.domain.character.Characters
 import org.example.project.domain.currency.Currencies
@@ -78,7 +79,7 @@ class AdminDashboardServiceTest {
         val databaseFile = java.io.File.createTempFile("admin_dashboard_", ".db").apply {
             deleteOnExit()
         }
-        return Database.connect("jdbc:sqlite:${databaseFile.absolutePath}").createTables()
+        return connectSqlite(databaseFile).createTables()
     }
 
     private fun seedOrderHistory(database: Database) {

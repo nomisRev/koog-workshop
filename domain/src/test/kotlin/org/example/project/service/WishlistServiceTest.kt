@@ -1,6 +1,7 @@
 package org.example.project.domain.wishlist
 
 import kotlinx.coroutines.runBlocking
+import org.example.project.db.connectSqlite
 import org.example.project.db.createTables
 import org.example.project.domain.catalog.*
 import org.example.project.domain.character.CharacterService
@@ -25,7 +26,7 @@ class WishlistServiceTest {
     @BeforeTest
     fun setup() {
         val testDbFile = java.io.File.createTempFile("test_wishlist_", ".db").apply { deleteOnExit() }
-        database = Database.connect("jdbc:sqlite:${testDbFile.absolutePath}").createTables()
+        database = connectSqlite(testDbFile).createTables()
         wishlistService = WishlistService(database)
         catalogService = CatalogService(database)
         currencyService = CurrencyService(database)

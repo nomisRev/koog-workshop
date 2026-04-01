@@ -19,7 +19,7 @@ class FullSchemaTest {
     @Test
     fun testFullSchemaLifecycle() {
         val testDbFile = java.io.File.createTempFile("test_full_schema_", ".db").apply { deleteOnExit() }
-        val database = Database.connect("jdbc:sqlite:${testDbFile.absolutePath}").createTables()
+        val database = connectSqlite(testDbFile).createTables()
 
         transaction(database) {
             // 2. Seed currencies

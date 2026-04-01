@@ -1,6 +1,7 @@
 package org.example.project.domain.catalog
 
 import kotlinx.coroutines.runBlocking
+import org.example.project.db.connectSqlite
 import org.example.project.db.createTables
 import org.example.project.domain.currency.CurrencyService
 import org.example.project.domain.shared.*
@@ -18,7 +19,7 @@ class CatalogServiceTest {
     @BeforeTest
     fun setup() {
         val testDbFile = java.io.File.createTempFile("test_catalog_", ".db").apply { deleteOnExit() }
-        database = Database.connect("jdbc:sqlite:${testDbFile.absolutePath}").createTables()
+        database = connectSqlite(testDbFile).createTables()
         currencyService = CurrencyService(database)
         catalogService = CatalogService(database)
         runBlocking {

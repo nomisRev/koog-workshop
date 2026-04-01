@@ -1,10 +1,11 @@
-package org.example.project.admin
+package org.example.project.admin.products
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import org.example.project.db.connectSqlite
 import org.example.project.db.createTables
 import org.example.project.domain.admin.ProductActiveFilter
 import org.example.project.domain.admin.ProductAdminService
@@ -23,6 +24,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.time.Instant
+import kotlinx.coroutines.runBlocking
 
 @OptIn(ExperimentalCoroutinesApi::class, kotlin.uuid.ExperimentalUuidApi::class)
 class ProductAdminViewModelTest {
@@ -35,10 +37,10 @@ class ProductAdminViewModelTest {
             val fixture = seedProducts(database)
             val viewModel = ProductAdminViewModel(ProductAdminService(database))
 
-            viewModel.load()
+            viewModel.refresh()
             awaitCondition {
                 viewModel.uiState.value.products.isNotEmpty() &&
-                    viewModel.uiState.value.selectedProduct != null
+                        viewModel.uiState.value.selectedProduct != null
             }
 
             val state = viewModel.uiState.value
@@ -60,16 +62,16 @@ class ProductAdminViewModelTest {
             val fixture = seedProducts(database)
             val viewModel = ProductAdminViewModel(ProductAdminService(database))
 
-            viewModel.load()
+            viewModel.refresh()
             awaitCondition {
                 viewModel.uiState.value.products.isNotEmpty() &&
-                    viewModel.uiState.value.selectedProduct != null
+                        viewModel.uiState.value.selectedProduct != null
             }
 
             viewModel.updateActiveFilter(ProductActiveFilter.INACTIVE)
             awaitCondition {
                 viewModel.uiState.value.products.map { it.id } == listOf(fixture.moonwellDraughtId) &&
-                    viewModel.uiState.value.selectedProductId == fixture.moonwellDraughtId
+                        viewModel.uiState.value.selectedProductId == fixture.moonwellDraughtId
             }
 
             val state = viewModel.uiState.value
@@ -81,11 +83,51 @@ class ProductAdminViewModelTest {
         }
     }
 
+    @Test
+    fun `setSelectedProductActive updates selected product and persisted state`() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+        try {
+            val database = createDatabase()
+            val fixture = seedProducts(database)
+            val service = ProductAdminService(database)
+            val viewModel = ProductAdminViewModel(service)
+
+            viewModel.load()
+            awaitCondition {
+                viewModel.uiState.value.selectedProductId == fixture.bronzeBladeId &&
+                    viewModel.uiState.value.selectedProduct != null
+            }
+
+            viewModel.setSelectedProductActive(false)
+            awaitCondition {
+                viewModel.uiState.value.selectedProduct?.isActive == false &&
+                    viewModel.uiState.value.products
+                        .firstOrNull { product -> product.id == fixture.bronzeBladeId }
+                        ?.isActive == false
+            }
+
+            val state = viewModel.uiState.value
+            assertEquals(false, state.selectedProduct?.isActive)
+            assertEquals(
+                false,
+                state.products.firstOrNull { product -> product.id == fixture.bronzeBladeId }?.isActive
+            )
+            assertEquals(
+                false,
+                runBlocking {
+                    service.loadProductDetailOrNull(fixture.bronzeBladeId)?.isActive
+                }
+            )
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
     private fun createDatabase(): Database {
         val databaseFile = java.io.File.createTempFile("product_vm_", ".db").apply {
             deleteOnExit()
         }
-        return Database.connect("jdbc:sqlite:${databaseFile.absolutePath}").createTables()
+        return connectSqlite(databaseFile).createTables()
     }
 
     private fun seedProducts(database: Database): ProductFixture =

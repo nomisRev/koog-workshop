@@ -1,6 +1,6 @@
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 
-package org.example.project.admin
+package org.example.project.admin.orders.history.navigation
 
 import androidx.navigation.NavBackStackEntry
 import androidx.savedstate.read

@@ -1,6 +1,7 @@
 package org.example.project.db.repository
 
 import kotlinx.coroutines.runBlocking
+import org.example.project.db.connectSqlite
 import org.example.project.db.createTables
 import org.example.project.db.suspendTransaction
 import org.example.project.domain.catalog.*
@@ -22,7 +23,7 @@ class ExposedReviewRepositoryTest {
     @BeforeTest
     fun setup() {
         val testDbFile = java.io.File.createTempFile("test_review_repo_", ".db").apply { deleteOnExit() }
-        database = Database.connect("jdbc:sqlite:${testDbFile.absolutePath}").createTables()
+        database = connectSqlite(testDbFile).createTables()
         reviewRepo = ReviewRepository()
     }
 

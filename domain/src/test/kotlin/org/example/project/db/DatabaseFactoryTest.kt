@@ -16,7 +16,7 @@ class DatabaseFactoryTest {
         java.io.File(testDbFile).delete()
         
         try {
-            val database = Database.connect("jdbc:sqlite:$testDbFile")
+            val database = connectSqlite(java.io.File(testDbFile))
             database.createTables()
 
             transaction(database) {

@@ -1,6 +1,7 @@
 package org.example.project.db.repository
 
 import kotlinx.coroutines.runBlocking
+import org.example.project.db.connectSqlite
 import org.example.project.db.createTables
 import org.example.project.db.suspendTransaction
 import org.example.project.domain.character.*
@@ -35,7 +36,7 @@ class RepositoryIntegrationTest {
     @BeforeTest
     fun setup() {
         val testDbFile = java.io.File.createTempFile("test_repos_", ".db").apply { deleteOnExit() }
-        database = Database.connect("jdbc:sqlite:${testDbFile.absolutePath}").createTables()
+        database = connectSqlite(testDbFile).createTables()
         characterRepo = CharacterRepository()
         productRepo = ProductRepository()
         merchantRepo = MerchantRepository()

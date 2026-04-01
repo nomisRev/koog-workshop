@@ -7,11 +7,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
-import org.example.project.admin.AdminRoute
-import org.example.project.admin.createAdminDatabase
-import org.jetbrains.exposed.v1.jdbc.Database
+import org.example.project.admin.app.AdminRoute
+import org.example.project.admin.data.createAdminDatabase
 import org.example.project.domain.admin.OrderAdminService
 import org.example.project.domain.admin.ProductAdminService
+import org.jetbrains.exposed.v1.jdbc.Database
 
 private val AdminColorScheme: ColorScheme = lightColorScheme(
     primary = Color(0xFF0F766E),
