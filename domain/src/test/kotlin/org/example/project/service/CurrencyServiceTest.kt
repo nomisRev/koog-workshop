@@ -1,4 +1,4 @@
-package org.example.project.service
+package org.example.project.domain.currency
 
 import kotlinx.coroutines.runBlocking
 import org.example.project.db.createTables

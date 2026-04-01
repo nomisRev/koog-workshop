@@ -9,7 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import org.example.project.admin.AdminRoute
 import org.example.project.admin.createAdminDatabase
-import org.example.project.service.AdminDashboardService
+import org.example.project.domain.admin.AdminDashboardService
 
 private val AdminColorScheme: ColorScheme = lightColorScheme(
     primary = Color(0xFF0F766E),

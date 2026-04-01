@@ -2,11 +2,11 @@ package org.example.project.admin
 
 import kotlinx.coroutines.runBlocking
 import org.example.project.db.createTables
-import org.example.project.db.tables.Characters
-import org.example.project.db.tables.Currencies
-import org.example.project.db.tables.Orders
-import org.example.project.domain.enums.OrderStatus
-import org.example.project.service.AdminDashboardService
+import org.example.project.domain.character.Characters
+import org.example.project.domain.currency.Currencies
+import org.example.project.domain.order.Orders
+import org.example.project.domain.order.OrderStatus
+import org.example.project.domain.admin.AdminDashboardService
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction

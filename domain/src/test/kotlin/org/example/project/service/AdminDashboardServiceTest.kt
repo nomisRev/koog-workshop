@@ -1,20 +1,20 @@
-package org.example.project.service
+package org.example.project.domain.admin
 
 import kotlinx.coroutines.runBlocking
 import org.example.project.db.createTables
-import org.example.project.db.tables.Characters
-import org.example.project.db.tables.Currencies
-import org.example.project.db.tables.Merchants
-import org.example.project.db.tables.OrderItems
-import org.example.project.db.tables.Orders
-import org.example.project.db.tables.Products
-import org.example.project.db.tables.ShippingMethods
-import org.example.project.db.tables.SubOrders
-import org.example.project.db.tables.Transactions
-import org.example.project.domain.enums.OrderStatus
-import org.example.project.domain.enums.ProductCategory
-import org.example.project.domain.enums.Rarity
-import org.example.project.domain.enums.TransactionType
+import org.example.project.domain.character.Characters
+import org.example.project.domain.currency.Currencies
+import org.example.project.domain.catalog.Merchants
+import org.example.project.domain.order.OrderItems
+import org.example.project.domain.order.Orders
+import org.example.project.domain.catalog.Products
+import org.example.project.domain.shipping.ShippingMethods
+import org.example.project.domain.order.SubOrders
+import org.example.project.domain.character.Transactions
+import org.example.project.domain.order.OrderStatus
+import org.example.project.domain.catalog.ProductCategory
+import org.example.project.domain.catalog.Rarity
+import org.example.project.domain.character.TransactionType
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -112,7 +112,7 @@ class AdminDashboardServiceTest {
         }
     }
 
-    private fun seedOrderDetails(database: Database): org.example.project.domain.id.OrderId {
+    private fun seedOrderDetails(database: Database): org.example.project.domain.shared.OrderId {
         return transaction(database) {
             val goldId = Currencies.insertAndGetId {
                 it[code] = "GOLD"
@@ -200,7 +200,7 @@ class AdminDashboardServiceTest {
                 it[Transactions.updatedAt] = Instant.fromEpochMilliseconds(2_500)
             }
 
-            org.example.project.domain.id.OrderId(orderId.value)
+            org.example.project.domain.shared.OrderId(orderId.value)
         }
     }
 }

@@ -1,7 +1,8 @@
 package org.example.project.db
 
-import org.example.project.db.tables.*
-import org.example.project.domain.enums.TransactionType
+import org.example.project.domain.character.*
+import org.example.project.domain.currency.*
+import org.example.project.domain.character.TransactionType
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.core.dao.id.*
 import org.jetbrains.exposed.v1.jdbc.*

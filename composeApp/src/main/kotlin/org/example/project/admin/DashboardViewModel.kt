@@ -10,8 +10,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.collections.immutable.toPersistentList
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.reflect.KClass
-import org.example.project.domain.model.RecentOrderSummary
-import org.example.project.service.AdminDashboardService
+import org.example.project.domain.admin.RecentOrderSummary
+import org.example.project.domain.admin.AdminDashboardService
 
 class DashboardViewModel(
     private val dashboardService: AdminDashboardService

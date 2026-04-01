@@ -1,8 +1,10 @@
-package org.example.project.service
+package org.example.project.domain.shipping
 
 import kotlinx.coroutines.runBlocking
 import org.example.project.db.createTables
-import org.example.project.domain.id.*
+import org.example.project.domain.catalog.CatalogService
+import org.example.project.domain.currency.CurrencyService
+import org.example.project.domain.shared.*
 import org.jetbrains.exposed.v1.jdbc.Database
 import kotlin.test.*
 

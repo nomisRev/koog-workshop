@@ -1,7 +1,7 @@
 package org.example.project.admin
 
-import org.example.project.domain.id.OrderItemId
-import org.example.project.domain.model.AdminOrderDetail
+import org.example.project.domain.shared.OrderItemId
+import org.example.project.domain.admin.AdminOrderDetail
 
 sealed interface AdminOrderDetailUiState {
     data object Loading : AdminOrderDetailUiState

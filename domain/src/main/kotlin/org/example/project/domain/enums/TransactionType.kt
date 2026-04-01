@@ -1,4 +1,4 @@
-package org.example.project.domain.enums
+package org.example.project.domain.character
 
 enum class TransactionType {
     DEPOSIT,

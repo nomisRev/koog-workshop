@@ -1,7 +1,8 @@
-package org.example.project.service
+package org.example.project.domain.character
 
 import kotlinx.coroutines.runBlocking
 import org.example.project.db.createTables
+import org.example.project.domain.currency.CurrencyService
 import org.jetbrains.exposed.v1.jdbc.Database
 import kotlin.test.*
 

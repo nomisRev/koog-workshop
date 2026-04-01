@@ -11,10 +11,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.reflect.KClass
-import org.example.project.domain.id.OrderId
-import org.example.project.domain.id.OrderItemId
-import org.example.project.domain.model.AdminOrderDetail
-import org.example.project.service.AdminDashboardService
+import org.example.project.domain.shared.OrderId
+import org.example.project.domain.shared.OrderItemId
+import org.example.project.domain.admin.AdminOrderDetail
+import org.example.project.domain.admin.AdminDashboardService
 
 class OrderDetailViewModel(
     private val dashboardService: AdminDashboardService

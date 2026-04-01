@@ -1,4 +1,4 @@
-package org.example.project.domain.id
+package org.example.project.domain.shared
 
 import kotlin.jvm.JvmInline
 import kotlin.uuid.Uuid

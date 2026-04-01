@@ -3,8 +3,13 @@ package org.example.project.db.repository
 import kotlinx.coroutines.runBlocking
 import org.example.project.db.createTables
 import org.example.project.db.suspendTransaction
-import org.example.project.db.tables.*
-import org.example.project.domain.id.*
+import org.example.project.domain.catalog.*
+import org.example.project.domain.character.*
+import org.example.project.domain.currency.*
+import org.example.project.domain.order.*
+import org.example.project.domain.review.*
+import org.example.project.domain.shipping.*
+import org.example.project.domain.shared.*
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import kotlin.test.*

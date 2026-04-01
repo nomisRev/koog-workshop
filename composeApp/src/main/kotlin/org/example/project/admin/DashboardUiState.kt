@@ -1,7 +1,7 @@
 package org.example.project.admin
 
 import kotlinx.collections.immutable.PersistentList
-import org.example.project.domain.model.RecentOrderSummary
+import org.example.project.domain.admin.RecentOrderSummary
 
 sealed interface DashboardUiState {
     data object Uninitialized : DashboardUiState

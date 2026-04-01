@@ -3,21 +3,19 @@ package org.example.project.db.repository
 import kotlinx.coroutines.runBlocking
 import org.example.project.db.createTables
 import org.example.project.db.suspendTransaction
-import org.example.project.db.tables.Currencies
-import org.example.project.db.tables.Merchants
-import org.example.project.db.tables.Products
-import org.example.project.db.tables.Weapons
-import org.example.project.domain.enums.DamageType
+import org.example.project.domain.character.*
+import org.example.project.domain.catalog.*
+import org.example.project.domain.currency.*
 import org.jetbrains.exposed.v1.jdbc.Database
-import org.example.project.domain.enums.ProductCategory
-import org.example.project.domain.enums.Rarity
-import org.example.project.domain.enums.TransactionType
-import org.example.project.domain.enums.WeaponSlot
-import org.example.project.domain.id.CurrencyId
+import org.example.project.domain.shared.CurrencyId
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.test.*
+import org.example.project.domain.character.CharacterRepository
+import org.example.project.domain.catalog.MerchantRepository
+import org.example.project.domain.catalog.ProductRepository
+import org.example.project.domain.currency.CurrencyRepository
 
 class RepositoryIntegrationTest {
 
@@ -97,7 +95,7 @@ class RepositoryIntegrationTest {
         database.suspendTransaction {
             val products = productRepo.getAllProducts()
             assertEquals(1, products.size)
-            val sword = products.first() as org.example.project.domain.model.Product.Weapon
+            val sword = products.first() as org.example.project.domain.catalog.Product.Weapon
             assertEquals("Repo Sword", sword.name)
             assertEquals(5, sword.damage)
 
