@@ -1,20 +1,78 @@
 package org.example.project
 
-import androidx.compose.ui.unit.Dp
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import org.example.project.chat.ChatScreen
+import org.example.project.chat.ChatViewModel
+import org.example.project.domain.chat.ChatMemory
 
 fun main() = application {
+    var adminWindowOpen by remember { mutableStateOf(false) }
+    val chatMemory = remember { ChatMemory() }
+    
     Window(
         onCloseRequest = ::exitApplication,
-        title = "Fantasy Store Admin",
+        title = "Fantasy Store Chat",
         state = rememberWindowState(
-            size = DpSize(1500.dp, 800.dp)
+            size = DpSize(1200.dp, 800.dp)
         )
     ) {
-        App()
+        val chatViewModel: ChatViewModel = viewModel(factory = ChatViewModel.factory(chatMemory))
+        val chatUiState by chatViewModel.uiState.collectAsState()
+        
+        MaterialTheme {
+            Scaffold(
+                topBar = {
+                    Box(
+                        modifier = Modifier.padding(8.dp),
+                        contentAlignment = Alignment.CenterEnd
+                    ) {
+                        Button(onClick = { adminWindowOpen = true }) {
+                            Text("ADMIN")
+                        }
+                    }
+                }
+            ) { paddingValues ->
+                Box(modifier = Modifier.padding(paddingValues)) {
+                    ChatScreen(
+                        uiState = chatUiState,
+                        onInputChange = chatViewModel::updateInputText,
+                        onSendMessage = chatViewModel::sendMessage
+                    )
+                }
+            }
+        }
+    }
+    
+    if (adminWindowOpen) {
+        Window(
+            onCloseRequest = { adminWindowOpen = false },
+            title = "Fantasy Store Admin",
+            state = rememberWindowState(
+                size = DpSize(1500.dp, 800.dp),
+                position = WindowPosition(100.dp, 100.dp)
+            )
+        ) {
+            App()
+        }
     }
 }
