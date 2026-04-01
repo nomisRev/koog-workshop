@@ -330,13 +330,17 @@ private fun OrderDetailPanel(
                     )
 
                     AdminMetricsRow(
-                        AdminMetric("Status", order.order.status.labelize()),
-                        AdminMetric("Total", order.order.totalPrice.formatAmount(order.currencyCode)),
-                        AdminMetric("Sub-orders", order.subOrders.size.toString())
+                        persistentListOf(
+                            AdminMetric("Status", order.order.status.labelize()),
+                            AdminMetric("Total", order.order.totalPrice.formatAmount(order.currencyCode)),
+                            AdminMetric("Sub-orders", order.subOrders.size.toString())
+                        )
                     )
                     AdminMetricsRow(
-                        AdminMetric("Created", order.order.createdAt.formatAdminInstant()),
-                        AdminMetric("Updated", order.order.updatedAt.formatAdminInstant())
+                        persistentListOf(
+                            AdminMetric("Created", order.order.createdAt.formatAdminInstant()),
+                            AdminMetric("Updated", order.order.updatedAt.formatAdminInstant())
+                        )
                     )
 
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -450,14 +454,16 @@ private fun SubOrderCard(
             }
 
             AdminMetricsRow(
-                AdminMetric("Shipping", detail.shippingMethodName),
-                AdminMetric(
-                    "Shipping cost",
-                    detail.subOrder.shippingCost.formatAmount(detail.shippingCostCurrencyCode)
-                ),
-                AdminMetric(
-                    "Merchant total",
-                    detail.subOrder.merchantTotalPrice.formatAmount(detail.shippingCostCurrencyCode)
+                persistentListOf(
+                    AdminMetric("Shipping", detail.shippingMethodName),
+                    AdminMetric(
+                        "Shipping cost",
+                        detail.subOrder.shippingCost.formatAmount(detail.shippingCostCurrencyCode)
+                    ),
+                    AdminMetric(
+                        "Merchant total",
+                        detail.subOrder.merchantTotalPrice.formatAmount(detail.shippingCostCurrencyCode)
+                    )
                 )
             )
 

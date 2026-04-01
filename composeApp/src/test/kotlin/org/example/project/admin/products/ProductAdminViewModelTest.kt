@@ -92,18 +92,18 @@ class ProductAdminViewModelTest {
             val service = ProductAdminService(database)
             val viewModel = ProductAdminViewModel(service)
 
-            viewModel.load()
+            viewModel.refresh()
             awaitCondition {
                 viewModel.uiState.value.selectedProductId == fixture.bronzeBladeId &&
-                    viewModel.uiState.value.selectedProduct != null
+                        viewModel.uiState.value.selectedProduct != null
             }
 
             viewModel.setSelectedProductActive(false)
             awaitCondition {
                 viewModel.uiState.value.selectedProduct?.isActive == false &&
-                    viewModel.uiState.value.products
-                        .firstOrNull { product -> product.id == fixture.bronzeBladeId }
-                        ?.isActive == false
+                        viewModel.uiState.value.products
+                            .firstOrNull { product -> product.id == fixture.bronzeBladeId }
+                            ?.isActive == false
             }
 
             val state = viewModel.uiState.value

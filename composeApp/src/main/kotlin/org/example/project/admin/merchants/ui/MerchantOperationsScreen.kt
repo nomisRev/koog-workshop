@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.PersistentSet
+import kotlinx.collections.immutable.persistentListOf
 import org.example.project.admin.merchants.MerchantAdminUiState
 import org.example.project.admin.shared.ui.AdminAccessibility
 import org.example.project.admin.shared.ui.AdminChromeSectionPadding
@@ -201,8 +202,10 @@ private fun MerchantRow(
             }
 
             AdminMetricsRow(
-                AdminMetric("Products", merchant.productCount.toString()),
-                AdminMetric("Recent orders", merchant.recentOrderCount.toString())
+                persistentListOf(
+                    AdminMetric("Products", merchant.productCount.toString()),
+                    AdminMetric("Recent orders", merchant.recentOrderCount.toString())
+                )
             )
         }
     }
@@ -277,14 +280,18 @@ private fun MerchantDetailPanel(
                     }
 
                     AdminMetricsRow(
-                        AdminMetric("Products", merchantDetail.productCount.toString()),
-                        AdminMetric("Recent orders", merchantDetail.recentOrderCount.toString()),
-                        AdminMetric("Assigned shipping", merchantDetail.assignedShippingMethods.size.toString())
+                        persistentListOf(
+                            AdminMetric("Products", merchantDetail.productCount.toString()),
+                            AdminMetric("Recent orders", merchantDetail.recentOrderCount.toString()),
+                            AdminMetric("Assigned shipping", merchantDetail.assignedShippingMethods.size.toString())
+                        )
                     )
                     AdminMetricsRow(
-                        AdminMetric("Theme", merchant.theme ?: "Not set"),
-                        AdminMetric("Created", merchant.createdAt.formatAdminInstant()),
-                        AdminMetric("Updated", merchant.updatedAt.formatAdminInstant())
+                        persistentListOf(
+                            AdminMetric("Theme", merchant.theme ?: "Not set"),
+                            AdminMetric("Created", merchant.createdAt.formatAdminInstant()),
+                            AdminMetric("Updated", merchant.updatedAt.formatAdminInstant())
+                        )
                     )
 
                     merchant.iconPath?.takeIf(String::isNotBlank)?.let { iconPath ->
@@ -470,9 +477,11 @@ private fun ShippingMethodEditorRow(
             }
 
             AdminMetricsRow(
-                AdminMetric("Base cost", shippingMethod.baseCost.formatAmount(shippingMethod.currencyCode)),
-                AdminMetric("ETA", "${shippingMethod.estimatedDays} days"),
-                AdminMetric("Updated", shippingMethod.updatedAt.formatAdminInstant())
+                persistentListOf(
+                    AdminMetric("Base cost", shippingMethod.baseCost.formatAmount(shippingMethod.currencyCode)),
+                    AdminMetric("ETA", "${shippingMethod.estimatedDays} days"),
+                    AdminMetric("Updated", shippingMethod.updatedAt.formatAdminInstant())
+                )
             )
 
             Row(

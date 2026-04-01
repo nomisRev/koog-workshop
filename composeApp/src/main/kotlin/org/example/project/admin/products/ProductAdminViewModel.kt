@@ -29,77 +29,60 @@ class ProductAdminViewModel(
 
     val uiState: StateFlow<ProductAdminUiState> = _uiState.asStateFlow()
 
-    fun load() {
-        launchAction { reload() }
+    fun refresh() = viewModelScope.launch {
+        reload()
     }
 
-    fun refresh() {
-        launchAction { reload() }
+    fun updateNameQuery(query: String) = viewModelScope.launch {
+        _uiState.value = _uiState.value.copy(
+            filter = _uiState.value.filter.copy(nameQuery = query)
+        )
+        reload()
     }
 
-    fun updateNameQuery(query: String) {
-        launchAction {
-            _uiState.value = _uiState.value.copy(
-                filter = _uiState.value.filter.copy(nameQuery = query)
-            )
-            reload()
+    fun updateCategory(category: ProductCategory?) = viewModelScope.launch {
+        _uiState.value = _uiState.value.copy(
+            filter = _uiState.value.filter.copy(category = category)
+        )
+        reload()
+    }
+
+    fun updateMerchant(merchantId: MerchantId?) = viewModelScope.launch {
+        _uiState.value = _uiState.value.copy(
+            filter = _uiState.value.filter.copy(merchantId = merchantId)
+        )
+        reload()
+    }
+
+    fun updateActiveFilter(activeFilter: ProductActiveFilter) = viewModelScope.launch {
+        _uiState.value = _uiState.value.copy(
+            filter = _uiState.value.filter.copy(activeFilter = activeFilter)
+        )
+        reload()
+    }
+
+    fun selectProduct(productId: ProductId) = viewModelScope.launch {
+        selectProductInternal(productId)
+    }
+
+    fun adjustSelectedStock(quantityChange: Int) = viewModelScope.launch {
+        val productId1 = _uiState.value.selectedProductId ?: return@launch
+        this@ProductAdminViewModel.performMutation(
+            failureMessage = "Unable to update stock for product ${productId1.value}.",
+            productId = productId1
+        ) {
+            productAdminService.adjustStock(productId1, quantityChange)
         }
     }
 
-    fun updateCategory(category: ProductCategory?) {
-        launchAction {
-            _uiState.value = _uiState.value.copy(
-                filter = _uiState.value.filter.copy(category = category)
-            )
-            reload()
-        }
-    }
-
-    fun updateMerchant(merchantId: MerchantId?) {
-        launchAction {
-            _uiState.value = _uiState.value.copy(
-                filter = _uiState.value.filter.copy(merchantId = merchantId)
-            )
-            reload()
-        }
-    }
-
-    fun updateActiveFilter(activeFilter: ProductActiveFilter) {
-        launchAction {
-            _uiState.value = _uiState.value.copy(
-                filter = _uiState.value.filter.copy(activeFilter = activeFilter)
-            )
-            reload()
-        }
-    }
-
-    fun selectProduct(productId: ProductId) {
-        launchAction {
-            selectProductInternal(productId)
-        }
-    }
-
-    fun adjustSelectedStock(quantityChange: Int) {
-        launchAction {
-            val productId = _uiState.value.selectedProductId ?: return@launchAction
-            performMutation(
-                failureMessage = "Unable to update stock for product ${productId.value}.",
-                productId = productId
-            ) {
-                productAdminService.adjustStock(productId, quantityChange)
-            }
-        }
-    }
-
-    fun setSelectedProductActive(isActive: Boolean) {
-        launchAction {
-            val productId = _uiState.value.selectedProductId ?: return@launchAction
-            performMutation(
-                failureMessage = "Unable to update the product state for ${productId.value}.",
-                productId = productId
-            ) {
-                productAdminService.setProductActive(productId, isActive)
-            }
+    fun setSelectedProductActive(isActive: Boolean) = viewModelScope.launch {
+        val productId1 =
+            _uiState.value.selectedProductId ?: return@launch
+        this@ProductAdminViewModel.performMutation(
+            failureMessage = "Unable to update the product state for ${productId1.value}.",
+            productId = productId1
+        ) {
+            productAdminService.setProductActive(productId1, isActive)
         }
     }
 
@@ -238,12 +221,6 @@ class ProductAdminViewModel(
 
         if (loadVersion.get() == version) {
             _uiState.value = nextState
-        }
-    }
-
-    private fun launchAction(action: suspend () -> Unit) {
-        viewModelScope.launch {
-            action()
         }
     }
 

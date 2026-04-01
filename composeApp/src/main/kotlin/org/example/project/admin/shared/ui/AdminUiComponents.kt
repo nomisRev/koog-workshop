@@ -23,6 +23,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.collections.immutable.ImmutableList
 
 internal data class AdminMetric(
     val label: String,
@@ -133,7 +134,7 @@ internal fun ToolbarTextFilter(
 }
 
 @Composable
-internal fun AdminMetricsRow(vararg metrics: AdminMetric) {
+internal fun AdminMetricsRow(metrics: ImmutableList<AdminMetric>) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(16.dp)

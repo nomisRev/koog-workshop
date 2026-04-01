@@ -352,18 +352,24 @@ private fun ProductDetailPanel(
                     }
 
                     AdminMetricsRow(
-                        AdminMetric("Price", product.price.formatAmount(product.currencyCode)),
-                        AdminMetric("Stock", product.stock.toString()),
-                        AdminMetric("Rarity", product.rarity.labelize())
+                        persistentListOf(
+                            AdminMetric("Price", product.price.formatAmount(product.currencyCode)),
+                            AdminMetric("Stock", product.stock.toString()),
+                            AdminMetric("Rarity", product.rarity.labelize())
+                        )
                     )
                     AdminMetricsRow(
-                        AdminMetric("Merchant", product.merchantName),
-                        AdminMetric("Currency", "${product.currencyCode} (${product.currencySymbol})"),
-                        AdminMetric("Reviews", product.reviewSummary.toDisplayText())
+                        persistentListOf(
+                            AdminMetric("Merchant", product.merchantName),
+                            AdminMetric("Currency", "${product.currencyCode} (${product.currencySymbol})"),
+                            AdminMetric("Reviews", product.reviewSummary.toDisplayText())
+                        )
                     )
                     AdminMetricsRow(
-                        AdminMetric("Created", product.createdAt.formatAdminInstant()),
-                        AdminMetric("Updated", product.updatedAt.formatAdminInstant())
+                        persistentListOf(
+                            AdminMetric("Created", product.createdAt.formatAdminInstant()),
+                            AdminMetric("Updated", product.updatedAt.formatAdminInstant())
+                        )
                     )
 
                     product.imageUrl?.let { imageUrl ->
