@@ -106,7 +106,8 @@ class ProductAdminViewModel(
     suspend fun adjustSelectedStock(quantityChange: Int) {
         val productId = _uiState.value.selectedProductId ?: return
         performMutation(
-            failureMessage = "Unable to update stock for product ${productId.value}."
+            failureMessage = "Unable to update stock for product ${productId.value}.",
+            productId = productId
         ) {
             productAdminService.adjustStock(productId, quantityChange)
         }
@@ -115,7 +116,8 @@ class ProductAdminViewModel(
     suspend fun setSelectedProductActive(isActive: Boolean) {
         val productId = _uiState.value.selectedProductId ?: return
         performMutation(
-            failureMessage = "Unable to update the product state for ${productId.value}."
+            failureMessage = "Unable to update the product state for ${productId.value}.",
+            productId = productId
         ) {
             productAdminService.setProductActive(productId, isActive)
         }
@@ -158,6 +160,7 @@ class ProductAdminViewModel(
 
     private suspend fun performMutation(
         failureMessage: String,
+        productId: ProductId,
         action: suspend () -> Boolean
     ) {
         val current = _uiState.value
@@ -183,7 +186,47 @@ class ProductAdminViewModel(
             return
         }
 
-        reload()
+        // Only reload the specific product detail and update the list item
+        val version = loadVersion.incrementAndGet()
+        val nextState = try {
+            val updatedDetail = productAdminService.loadProductDetailOrNull(productId)
+            if (updatedDetail == null) {
+                current.copy(
+                    isLoading = false,
+                    errorMessage = "Product ${productId.value} was not found after update."
+                )
+            } else {
+                // Update the product in the list
+                val updatedProducts = current.products.map { product ->
+                    if (product.id == productId) {
+                        product.copy(
+                            stock = updatedDetail.stock,
+                            isActive = updatedDetail.isActive
+                        )
+                    } else {
+                        product
+                    }
+                }.toPersistentList()
+
+                current.copy(
+                    isLoading = false,
+                    errorMessage = null,
+                    products = updatedProducts,
+                    selectedProduct = updatedDetail
+                )
+            }
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (throwable: Throwable) {
+            current.copy(
+                isLoading = false,
+                errorMessage = throwable.message ?: failureMessage
+            )
+        }
+
+        if (loadVersion.get() == version) {
+            _uiState.value = nextState
+        }
     }
 
     companion object {

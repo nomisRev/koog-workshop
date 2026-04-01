@@ -1,4 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     alias(libs.plugins.kotlinJvm)
@@ -7,10 +8,35 @@ plugins {
     alias(libs.plugins.composeHotReload)
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+tasks.withType<KotlinCompile>().configureEach {
     compilerOptions {
         freeCompilerArgs.addAll("-Xcontext-parameters")
     }
+}
+
+// Compose Compiler Metrics - Development/Debug Only
+// Enable with: ./gradlew build -PenableComposeCompilerMetrics=true
+// Or set enableComposeCompilerMetrics=true in gradle.properties
+val enableMetrics = project.findProperty("enableComposeCompilerMetrics")?.toString()?.toBoolean() == true
+
+if (enableMetrics) {
+    tasks.withType<KotlinCompile>().configureEach {
+        compilerOptions {
+            freeCompilerArgs.addAll(
+                "-P",
+                "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=" +
+                    project.layout.buildDirectory.asFile.get().absolutePath + "/compose_metrics"
+            )
+            freeCompilerArgs.addAll(
+                "-P",
+                "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=" +
+                    project.layout.buildDirectory.asFile.get().absolutePath + "/compose_metrics"
+            )
+        }
+    }
+    println("🔍 Compose Compiler Metrics ENABLED - Reports will be generated in: build/compose_metrics/")
+} else {
+    println("ℹ️  Compose Compiler Metrics DISABLED - Enable with -PenableComposeCompilerMetrics=true")
 }
 
 dependencies {

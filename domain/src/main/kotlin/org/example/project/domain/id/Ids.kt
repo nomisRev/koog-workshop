@@ -1,5 +1,6 @@
 package org.example.project.domain.shared
 
+import androidx.compose.runtime.Immutable
 import kotlin.jvm.JvmInline
 import kotlin.uuid.Uuid
 
@@ -21,6 +22,7 @@ value class OrderId(val value: Uuid)
 @JvmInline
 value class SubOrderId(val value: Uuid)
 
+@Immutable
 @JvmInline
 value class OrderItemId(val value: Uuid)
 

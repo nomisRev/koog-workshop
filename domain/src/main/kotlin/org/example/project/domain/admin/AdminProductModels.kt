@@ -1,5 +1,6 @@
 package org.example.project.domain.admin
 
+import androidx.compose.runtime.Immutable
 import kotlin.time.Instant
 import org.example.project.domain.catalog.ProductCategory
 import org.example.project.domain.catalog.Rarity
@@ -14,6 +15,7 @@ enum class ProductActiveFilter {
     INACTIVE
 }
 
+@Immutable
 data class ProductFilter(
     val nameQuery: String = "",
     val category: ProductCategory? = null,
@@ -21,16 +23,19 @@ data class ProductFilter(
     val activeFilter: ProductActiveFilter = ProductActiveFilter.ALL
 )
 
+@Immutable
 data class ProductMerchantOption(
     val id: MerchantId,
     val name: String
 )
 
+@Immutable
 data class ProductReviewSummary(
     val averageRating: Double? = null,
     val reviewCount: Int = 0
 )
 
+@Immutable
 data class ProductListItem(
     val id: ProductId,
     val name: String,
@@ -43,11 +48,13 @@ data class ProductListItem(
     val reviewSummary: ProductReviewSummary
 )
 
+@Immutable
 data class ProductDetailAttribute(
     val label: String,
     val value: String
 )
 
+@Immutable
 data class ProductDetail(
     val id: ProductId,
     val name: String,
@@ -68,6 +75,7 @@ data class ProductDetail(
     val categoryAttributes: List<ProductDetailAttribute>
 )
 
+@Immutable
 data class OrderFilter(
     val orderIdQuery: String = "",
     val orderStatus: OrderStatus? = null,
@@ -75,11 +83,13 @@ data class OrderFilter(
     val merchantId: MerchantId? = null
 )
 
+@Immutable
 data class OrderMerchantOption(
     val id: MerchantId,
     val name: String
 )
 
+@Immutable
 data class OrderListItem(
     val orderId: OrderId,
     val characterName: String,

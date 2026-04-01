@@ -1,5 +1,6 @@
 package org.example.project.admin
 
+import androidx.compose.runtime.Immutable
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
 import org.example.project.domain.admin.ProductDetail
@@ -8,6 +9,7 @@ import org.example.project.domain.admin.ProductListItem
 import org.example.project.domain.admin.ProductMerchantOption
 import org.example.project.domain.shared.ProductId
 
+@Immutable
 data class ProductAdminUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
