@@ -6,10 +6,13 @@ import org.example.project.domain.catalog.Product
 import org.example.project.domain.catalog.ProductRepository
 import org.example.project.domain.character.CharacterRepository
 import org.example.project.domain.character.TransactionType
+import org.example.project.domain.currency.CurrencyRepository
 import org.example.project.domain.shipping.ShippingRepository
+import org.example.project.domain.shipping.ShippingMethod
 import org.example.project.db.suspendTransaction
 import org.example.project.domain.shared.*
 import org.jetbrains.exposed.v1.jdbc.Database
+import kotlin.math.roundToLong
 
 class OrderService(
     private val database: Database,
@@ -17,7 +20,8 @@ class OrderService(
     private val cartRepository: CartRepository = CartRepository(),
     private val productRepository: ProductRepository = ProductRepository(),
     private val characterRepository: CharacterRepository = CharacterRepository(),
-    private val shippingRepository: ShippingRepository = ShippingRepository()
+    private val shippingRepository: ShippingRepository = ShippingRepository(),
+    private val currencyRepository: CurrencyRepository = CurrencyRepository()
 ) {
     /**
      * Checkout converts the character's cart into an order.
@@ -26,6 +30,7 @@ class OrderService(
      * All operations happen within a single transaction:
      * - Validates stock for every cart item
      * - Groups items by merchant, creates Order -> SubOrders -> OrderItems
+     * - Normalizes all prices into a deterministic settlement currency
      * - Deducts wallet balance (PURCHASE transactions)
      * - Decrements product stock
      * - Clears cart
@@ -50,32 +55,51 @@ class OrderService(
 
         // Group by merchant
         val byMerchant = products.groupBy { (_, product) -> product.merchantId }
-
-        // All items must share the same currency for total calculation
-        val currencyId = products.first().second.currencyId
-
-        // Calculate total across all merchants including shipping
-        var grandTotal = 0L
-        val merchantTotals = byMerchant.map { (merchantId, items) ->
+        val merchantShippingMethods = byMerchant.keys.associateWith { merchantId ->
             val shippingMethodId = shippingSelections[merchantId]
                 ?: throw IllegalArgumentException("No shipping method selected for merchant: $merchantId")
-            val shippingMethod = shippingRepository.getShippingMethodsForMerchant(merchantId)
+            shippingRepository.getShippingMethodsForMerchant(merchantId)
                 .firstOrNull { it.id == shippingMethodId }
                 ?: throw IllegalArgumentException(
                     "Shipping method $shippingMethodId is not available for merchant: $merchantId"
                 )
+        }
+        merchantShippingMethods.values.forEach { shippingMethod ->
             require(shippingMethod.isActive) {
                 "Shipping method is not active: ${shippingMethod.name}"
             }
-            val productTotal = items.sumOf { (cartItem, product) -> product.price * cartItem.quantity }
-            val merchantTotal = productTotal + shippingMethod.baseCost
+        }
+
+        val walletBalances = characterRepository.getWalletBalance(characterId)
+        val currencyId = resolveSettlementCurrencyId(
+            products = products,
+            shippingMethods = merchantShippingMethods.values,
+            walletBalances = walletBalances
+        )
+
+        // Calculate total across all merchants including shipping
+        var grandTotal = 0L
+        val merchantTotals = byMerchant.map { (merchantId, items) ->
+            val shippingMethod = merchantShippingMethods.getValue(merchantId)
+            val productTotal = items.sumOf { (cartItem, product) ->
+                convertAmount(
+                    amount = product.price * cartItem.quantity.toLong(),
+                    fromCurrencyId = product.currencyId,
+                    toCurrencyId = currencyId
+                )
+            }
+            val shippingCost = convertAmount(
+                amount = shippingMethod.baseCost,
+                fromCurrencyId = shippingMethod.currencyId,
+                toCurrencyId = currencyId
+            )
+            val merchantTotal = productTotal + shippingCost
             grandTotal += merchantTotal
-            MerchantCheckout(merchantId, shippingMethod.id, shippingMethod.baseCost, merchantTotal, items)
+            MerchantCheckout(merchantId, shippingMethod.id, shippingCost, merchantTotal, items)
         }
 
         // Validate wallet balance
-        val balance = characterRepository.getWalletBalance(characterId)
-        val currentBalance = balance[currencyId] ?: 0L
+        val currentBalance = walletBalances[currencyId] ?: 0L
         require(currentBalance >= grandTotal) {
             "Insufficient wallet balance: required $grandTotal, available $currentBalance"
         }
@@ -186,4 +210,81 @@ class OrderService(
         val merchantTotal: Long,
         val items: List<Pair<CartItem, Product>>
     )
+
+    context(_: org.jetbrains.exposed.v1.core.Transaction)
+    private fun resolveSettlementCurrencyId(
+        products: List<Pair<CartItem, Product>>,
+        shippingMethods: Collection<ShippingMethod>,
+        walletBalances: Map<CurrencyId, Long>
+    ): CurrencyId {
+        val sourceCurrencies = buildSet {
+            products.forEach { add(it.second.currencyId) }
+            shippingMethods.forEach { add(it.currencyId) }
+        }.toList()
+
+        val goldCurrencyId = currencyRepository.getAllCurrencies()
+            .firstOrNull { it.code == "GOLD" }
+            ?.id
+
+        if (goldCurrencyId != null &&
+            (walletBalances[goldCurrencyId] ?: 0L) > 0 &&
+            sourceCurrencies.all { canConvertBetween(it, goldCurrencyId) }
+        ) {
+            return goldCurrencyId
+        }
+
+        val convertibleWalletCurrencies = walletBalances.entries
+            .asSequence()
+            .filter { it.value > 0 }
+            .filter { entry -> sourceCurrencies.all { canConvertBetween(it, entry.key) } }
+            .sortedWith(
+                compareByDescending<Map.Entry<CurrencyId, Long>> { it.value }
+                    .thenBy { it.key.value.toString() }
+            )
+            .map { it.key }
+            .toList()
+
+        if (convertibleWalletCurrencies.isNotEmpty()) {
+            return convertibleWalletCurrencies.first()
+        }
+
+        if (goldCurrencyId != null && (walletBalances[goldCurrencyId] ?: 0L) > 0) {
+            return goldCurrencyId
+        }
+
+        return walletBalances.entries
+            .filter { it.value > 0 }
+            .maxWithOrNull(
+                compareBy<Map.Entry<CurrencyId, Long>> { it.value }
+                    .thenBy { it.key.value.toString() }
+            )
+            ?.key
+            ?: sourceCurrencies.sortedBy { it.value.toString() }.first()
+    }
+
+    context(_: org.jetbrains.exposed.v1.core.Transaction)
+    private fun canConvertBetween(fromCurrencyId: CurrencyId, toCurrencyId: CurrencyId): Boolean =
+        fromCurrencyId == toCurrencyId ||
+            currencyRepository.getConversionRateOrNull(fromCurrencyId, toCurrencyId) != null ||
+            currencyRepository.getConversionRateOrNull(toCurrencyId, fromCurrencyId) != null
+
+    context(_: org.jetbrains.exposed.v1.core.Transaction)
+    private fun convertAmount(
+        amount: Long,
+        fromCurrencyId: CurrencyId,
+        toCurrencyId: CurrencyId
+    ): Long {
+        if (fromCurrencyId == toCurrencyId) return amount
+
+        val directRate = currencyRepository.getConversionRateOrNull(fromCurrencyId, toCurrencyId)
+        if (directRate != null) {
+            return (amount.toDouble() * directRate).roundToLong()
+        }
+
+        val inverseRate = currencyRepository.getConversionRateOrNull(toCurrencyId, fromCurrencyId)
+            ?: throw IllegalArgumentException(
+                "No conversion rate available between $fromCurrencyId and $toCurrencyId"
+            )
+        return (amount.toDouble() / inverseRate).roundToLong()
+    }
 }
