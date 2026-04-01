@@ -46,14 +46,16 @@ class MerchantAdminViewModelTest {
             val fixture = seedMerchants(database)
             val viewModel = MerchantAdminViewModel(MerchantAdminService(database))
 
-            viewModel.load()
+            viewModel.refresh()
             awaitCondition {
                 viewModel.uiState.value.merchants.isNotEmpty() &&
-                    viewModel.uiState.value.selectedMerchant != null
+                        viewModel.uiState.value.selectedMerchant != null
             }
 
             val state = viewModel.uiState.value
-            assertEquals(listOf(fixture.blackforgeMerchantId, fixture.moonwellMerchantId), state.merchants.map { it.id })
+            assertEquals(
+                listOf(fixture.blackforgeMerchantId, fixture.moonwellMerchantId),
+                state.merchants.map { it.id })
             assertEquals(fixture.blackforgeMerchantId, state.selectedMerchantId)
             assertEquals("Blackforge Armory", state.selectedMerchant?.merchant?.name)
             assertEquals(setOf(fixture.ravenShippingId), state.selectedShippingMethodIds.toSet())
@@ -119,7 +121,7 @@ class MerchantAdminViewModelTest {
             val service = MerchantAdminService(database)
             val viewModel = MerchantAdminViewModel(service)
 
-            viewModel.load()
+            viewModel.refresh()
             awaitCondition {
                 viewModel.uiState.value.selectedMerchantId == fixture.blackforgeMerchantId
             }
@@ -159,7 +161,7 @@ class MerchantAdminViewModelTest {
             val fixture = seedMerchants(database)
             val viewModel = MerchantAdminViewModel(MerchantAdminService(database))
 
-            viewModel.load()
+            viewModel.refresh()
             awaitCondition {
                 viewModel.uiState.value.selectedMerchantId == fixture.blackforgeMerchantId
             }

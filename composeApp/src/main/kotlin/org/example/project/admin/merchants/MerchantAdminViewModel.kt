@@ -30,41 +30,33 @@ class MerchantAdminViewModel(
 
     val uiState: StateFlow<MerchantAdminUiState> = _uiState.asStateFlow()
 
-    fun load() {
-        launchAction { reload() }
+    fun refresh() = viewModelScope.launch {
+        reload()
     }
 
-    fun refresh() {
-        launchAction { reload() }
+    fun selectMerchant(merchantId: MerchantId) = viewModelScope.launch {
+        selectMerchantInternal(merchantId)
     }
 
-    fun selectMerchant(merchantId: MerchantId) {
-        launchAction {
-            selectMerchantInternal(merchantId)
+    fun setSelectedMerchantActive(isActive: Boolean) = viewModelScope.launch {
+        val merchantId1 =
+            _uiState.value.selectedMerchantId ?: return@launch
+        this@MerchantAdminViewModel.performMutation(
+            failureMessage = "Unable to update merchant ${merchantId1.value}.",
+            merchantId = merchantId1
+        ) {
+            merchantAdminService.setMerchantActive(merchantId1, isActive)
         }
     }
 
-    fun setSelectedMerchantActive(isActive: Boolean) {
-        launchAction {
-            val merchantId = _uiState.value.selectedMerchantId ?: return@launchAction
-            performMutation(
-                failureMessage = "Unable to update merchant ${merchantId.value}.",
-                merchantId = merchantId
-            ) {
-                merchantAdminService.setMerchantActive(merchantId, isActive)
-            }
-        }
-    }
-
-    fun setShippingMethodActive(shippingMethodId: ShippingMethodId, isActive: Boolean) {
-        launchAction {
-            val merchantId = _uiState.value.selectedMerchantId ?: return@launchAction
-            performMutation(
-                failureMessage = "Unable to update shipping method ${shippingMethodId.value}.",
-                merchantId = merchantId
-            ) {
-                merchantAdminService.setShippingMethodActive(shippingMethodId, isActive)
-            }
+    fun setShippingMethodActive(shippingMethodId: ShippingMethodId, isActive: Boolean) = viewModelScope.launch {
+        val merchantId1 =
+            _uiState.value.selectedMerchantId ?: return@launch
+        this@MerchantAdminViewModel.performMutation(
+            failureMessage = "Unable to update shipping method ${shippingMethodId.value}.",
+            merchantId = merchantId1
+        ) {
+            merchantAdminService.setShippingMethodActive(shippingMethodId, isActive)
         }
     }
 
@@ -81,19 +73,17 @@ class MerchantAdminViewModel(
         _uiState.value = current.copy(selectedShippingMethodIds = nextSelection)
     }
 
-    fun saveShippingAssignments() {
-        launchAction {
-            val current = _uiState.value
-            val merchantId = current.selectedMerchantId ?: return@launchAction
-            performMutation(
-                failureMessage = "Unable to save shipping assignments for merchant ${merchantId.value}.",
-                merchantId = merchantId
-            ) {
-                merchantAdminService.replaceMerchantShippingMethods(
-                    merchantId = merchantId,
-                    shippingMethodIds = current.selectedShippingMethodIds
-                )
-            }
+    fun saveShippingAssignments() = viewModelScope.launch {
+        val current1 = _uiState.value
+        val merchantId1 = current1.selectedMerchantId ?: return@launch
+        this@MerchantAdminViewModel.performMutation(
+            failureMessage = "Unable to save shipping assignments for merchant ${merchantId1.value}.",
+            merchantId = merchantId1
+        ) {
+            merchantAdminService.replaceMerchantShippingMethods(
+                merchantId = merchantId1,
+                shippingMethodIds = current1.selectedShippingMethodIds
+            )
         }
     }
 
@@ -206,12 +196,6 @@ class MerchantAdminViewModel(
                 selection.add(shippingMethod.id)
             }
             ?: persistentSetOf()
-
-    private fun launchAction(action: suspend () -> Unit) {
-        viewModelScope.launch {
-            action()
-        }
-    }
 
     companion object {
         fun factory(merchantAdminService: MerchantAdminService): ViewModelProvider.Factory =
