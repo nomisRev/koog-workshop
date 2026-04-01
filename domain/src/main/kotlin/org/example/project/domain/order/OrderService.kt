@@ -59,12 +59,18 @@ class OrderService(
         val merchantTotals = byMerchant.map { (merchantId, items) ->
             val shippingMethodId = shippingSelections[merchantId]
                 ?: throw IllegalArgumentException("No shipping method selected for merchant: $merchantId")
-            val shippingMethod = shippingRepository.getShippingMethodByIdOrNull(shippingMethodId)
-                ?: throw IllegalArgumentException("Shipping method not found: $shippingMethodId")
+            val shippingMethod = shippingRepository.getShippingMethodsForMerchant(merchantId)
+                .firstOrNull { it.id == shippingMethodId }
+                ?: throw IllegalArgumentException(
+                    "Shipping method $shippingMethodId is not available for merchant: $merchantId"
+                )
+            require(shippingMethod.isActive) {
+                "Shipping method is not active: ${shippingMethod.name}"
+            }
             val productTotal = items.sumOf { (cartItem, product) -> product.price * cartItem.quantity }
             val merchantTotal = productTotal + shippingMethod.baseCost
             grandTotal += merchantTotal
-            MerchantCheckout(merchantId, shippingMethodId, shippingMethod.baseCost, merchantTotal, items)
+            MerchantCheckout(merchantId, shippingMethod.id, shippingMethod.baseCost, merchantTotal, items)
         }
 
         // Validate wallet balance

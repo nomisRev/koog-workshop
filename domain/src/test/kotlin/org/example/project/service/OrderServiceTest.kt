@@ -133,6 +133,37 @@ class OrderServiceTest {
     }
 
     @Test
+    fun testCheckoutRejectsUnlinkedShippingMethod() = runBlocking {
+        val otherMerchantId = catalogService.createMerchant("Other Merchant")
+        val otherShippingMethodId = shippingService.createShippingMethod(
+            name = "Other Courier",
+            baseCost = 75,
+            currencyId = goldId,
+            estimatedDays = 5
+        )
+        shippingService.addShippingMethodToMerchant(otherMerchantId, otherShippingMethodId)
+
+        cartService.addToCart(characterId, swordId, 1)
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            orderService.checkout(characterId, mapOf(merchantId to otherShippingMethodId))
+        }
+        assertTrue(exception.message!!.contains("is not available for merchant"))
+    }
+
+    @Test
+    fun testCheckoutRejectsInactiveShippingMethod() = runBlocking {
+        shippingService.updateShippingMethod(shippingMethodId, isActive = false)
+
+        cartService.addToCart(characterId, swordId, 1)
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            orderService.checkout(characterId, mapOf(merchantId to shippingMethodId))
+        }
+        assertTrue(exception.message!!.contains("Shipping method is not active"))
+    }
+
+    @Test
     fun testCancelOrder() = runBlocking {
         cartService.addToCart(characterId, swordId, 1)
         val orderId = orderService.checkout(characterId, mapOf(merchantId to shippingMethodId))
