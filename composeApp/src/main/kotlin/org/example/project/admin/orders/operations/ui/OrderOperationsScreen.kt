@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
 import org.example.project.admin.orders.operations.OrderAdminUiState
+import org.example.project.admin.shared.ui.AdminAccessibility
 import org.example.project.admin.shared.ui.AdminChromeSectionPadding
 import org.example.project.admin.shared.ui.AdminMetric
 import org.example.project.admin.shared.ui.AdminMetricsRow
@@ -72,7 +73,9 @@ internal fun OrderFilterContent(
         ToolbarTextFilter(
             value = uiState.filter.orderIdQuery,
             onValueChange = onUpdateOrderIdQuery,
-            placeholder = "Filter by order ID"
+            label = "Order ID",
+            placeholder = "Filter by order ID",
+            accessibilityDescription = AdminAccessibility.OrderIdFilter
         )
         Text(
             text = "Filter by order status",
@@ -87,6 +90,9 @@ internal fun OrderFilterContent(
                 listOf(null to "All") + OrderStatus.entries.map { it to it.labelize() }
             orderStatusOptions.forEach { (status, label) ->
                 FilterChip(
+                    modifier = Modifier.semantics {
+                        contentDescription = AdminAccessibility.orderStatusFilter(status)
+                    },
                     selected = status == uiState.filter.orderStatus,
                     onClick = { onUpdateOrderStatusFilter(status) },
                     label = { Text(label) }
@@ -103,6 +109,7 @@ internal fun OrderFilterContent(
                     .addAll(OrderStatus.entries.map { it.labelize() to it }),
                 selected = uiState.filter.subOrderStatus,
                 onSelect = onUpdateSubOrderStatusFilter,
+                optionContentDescription = { _, value -> AdminAccessibility.subOrderStatusFilter(value) },
                 modifier = Modifier.weight(1f)
             )
             FilterGroup(
@@ -111,6 +118,7 @@ internal fun OrderFilterContent(
                     .addAll(uiState.merchants.map { it.name to it.id }),
                 selected = uiState.filter.merchantId,
                 onSelect = onUpdateMerchant,
+                optionContentDescription = { label, _ -> AdminAccessibility.orderMerchantFilter(label) },
                 modifier = Modifier.weight(1f)
             )
         }
@@ -167,7 +175,9 @@ private fun OrderListPanel(
     onSelectOrder: (OrderId) -> Unit
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.semantics {
+            contentDescription = AdminAccessibility.OrderListPanel
+        },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
         )
@@ -293,7 +303,9 @@ private fun OrderDetailPanel(
     onUpdateSubOrderStatus: (SubOrderId, OrderStatus) -> Unit
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.semantics {
+            contentDescription = AdminAccessibility.OrderDetailPanel
+        },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
         )

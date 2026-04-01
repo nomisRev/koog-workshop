@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
 import org.example.project.admin.products.ProductAdminUiState
+import org.example.project.admin.shared.ui.AdminAccessibility
 import org.example.project.admin.shared.ui.AdminChromeSectionPadding
 import org.example.project.admin.shared.ui.AdminMetric
 import org.example.project.admin.shared.ui.AdminMetricsRow
@@ -72,7 +73,9 @@ internal fun ProductFilterContent(
         ToolbarTextFilter(
             value = uiState.filter.nameQuery,
             onValueChange = onUpdateNameQuery,
-            placeholder = "Search products"
+            label = "Product name",
+            placeholder = "Search products",
+            accessibilityDescription = AdminAccessibility.ProductNameFilter
         )
         Row(
             modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -80,6 +83,9 @@ internal fun ProductFilterContent(
         ) {
             ProductActiveFilter.entries.forEach { filter ->
                 FilterChip(
+                    modifier = Modifier.semantics {
+                        contentDescription = AdminAccessibility.productActiveFilter(filter)
+                    },
                     selected = filter == uiState.filter.activeFilter,
                     onClick = { onUpdateActiveFilter(filter) },
                     label = { Text(filter.labelize()) }
@@ -96,6 +102,7 @@ internal fun ProductFilterContent(
                     .addAll(ProductCategory.entries.map { it.labelize() to it }),
                 selected = uiState.filter.category,
                 onSelect = onUpdateCategory,
+                optionContentDescription = { _, value -> AdminAccessibility.productCategoryFilter(value) },
                 modifier = Modifier.weight(1f)
             )
             FilterGroup(
@@ -104,6 +111,7 @@ internal fun ProductFilterContent(
                     .addAll(uiState.merchants.map { it.name to it.id }),
                 selected = uiState.filter.merchantId,
                 onSelect = onUpdateMerchant,
+                optionContentDescription = { label, _ -> AdminAccessibility.productMerchantFilter(label) },
                 modifier = Modifier.weight(1f)
             )
         }
@@ -160,7 +168,9 @@ private fun ProductListPanel(
     onSelectProduct: (ProductId) -> Unit
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.semantics {
+            contentDescription = AdminAccessibility.ProductListPanel
+        },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
         )
@@ -286,7 +296,9 @@ private fun ProductDetailPanel(
     onSetActive: (Boolean) -> Unit
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.semantics {
+            contentDescription = AdminAccessibility.ProductDetailPanel
+        },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
         )

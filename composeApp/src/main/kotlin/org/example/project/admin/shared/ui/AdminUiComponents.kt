@@ -18,6 +18,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -34,6 +37,7 @@ internal fun PanelHeader(
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
             text = title,
+            modifier = Modifier.semantics { heading() },
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold
         )
@@ -111,14 +115,19 @@ internal fun DetailBlock(
 internal fun ToolbarTextFilter(
     value: String,
     onValueChange: (String) -> Unit,
+    label: String,
     placeholder: String,
+    accessibilityDescription: String,
     modifier: Modifier = Modifier.fillMaxWidth()
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier,
+        modifier = modifier.semantics {
+            contentDescription = accessibilityDescription
+        },
         singleLine = true,
+        label = { Text(label) },
         placeholder = { Text(placeholder) }
     )
 }
@@ -155,6 +164,7 @@ internal fun <T> FilterGroup(
     options: Iterable<Pair<String, T>>,
     selected: T,
     onSelect: (T) -> Unit,
+    optionContentDescription: ((label: String, value: T) -> String)? = null,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -163,6 +173,7 @@ internal fun <T> FilterGroup(
     ) {
         Text(
             text = title,
+            modifier = Modifier.semantics { heading() },
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -174,6 +185,11 @@ internal fun <T> FilterGroup(
         ) {
             options.forEach { (label, value) ->
                 FilterChip(
+                    modifier = optionContentDescription?.let { descriptionProvider ->
+                        Modifier.semantics {
+                            contentDescription = descriptionProvider(label, value)
+                        }
+                    } ?: Modifier,
                     selected = value == selected,
                     onClick = { onSelect(value) },
                     label = { Text(label) }
