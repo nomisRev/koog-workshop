@@ -85,6 +85,12 @@ class MerchantRepository {
         } > 0
 
     context(_: Transaction)
+    fun setMerchantActive(id: MerchantId, isActive: Boolean): Boolean =
+        Merchants.storeUpdate({ Merchants.id eq id.value }) {
+            it[Merchants.isActive] = isActive
+        } > 0
+
+    context(_: Transaction)
     fun deleteMerchant(id: MerchantId): Boolean =
         Merchants.deleteWhere { Merchants.id eq id.value } > 0
 

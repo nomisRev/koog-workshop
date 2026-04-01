@@ -78,6 +78,12 @@ class ShippingRepository {
     }
 
     context(_: Transaction)
+    fun setShippingMethodActive(id: ShippingMethodId, isActive: Boolean): Boolean =
+        ShippingMethods.storeUpdate({ ShippingMethods.id eq id.value }) {
+            it[ShippingMethods.isActive] = isActive
+        } > 0
+
+    context(_: Transaction)
     fun deleteShippingMethod(id: ShippingMethodId): Boolean {
         MerchantShippingMethods.deleteWhere { shippingMethod eq id.value }
         return ShippingMethods.deleteWhere { ShippingMethods.id eq id.value } > 0
@@ -98,6 +104,20 @@ class ShippingRepository {
             (MerchantShippingMethods.merchant eq merchantId.value) and
             (MerchantShippingMethods.shippingMethod eq shippingMethodId.value)
         } > 0
+
+    context(_: Transaction)
+    fun replaceMerchantShippingMethods(
+        merchantId: MerchantId,
+        shippingMethodIds: Set<ShippingMethodId>
+    ) {
+        MerchantShippingMethods.deleteWhere { merchant eq merchantId.value }
+        shippingMethodIds.distinctBy { it.value }.forEach { shippingMethodId ->
+            MerchantShippingMethods.insert {
+                it[merchant] = merchantId.value
+                it[shippingMethod] = shippingMethodId.value
+            }
+        }
+    }
 
     private fun mapToShippingMethod(row: ResultRow) = ShippingMethod(
         id = ShippingMethodId(row[ShippingMethods.id].value),

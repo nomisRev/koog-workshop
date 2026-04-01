@@ -40,34 +40,43 @@ import org.example.project.admin.orders.operations.OrderAdminViewModel
 import org.example.project.admin.orders.operations.ui.OrderFilterContent
 import org.example.project.admin.orders.operations.ui.OrderOperationsScreen
 import org.example.project.admin.orders.operations.ui.orderActiveFilterCount
+import org.example.project.admin.merchants.MerchantAdminViewModel
+import org.example.project.admin.merchants.ui.MerchantOperationsScreen
 import org.example.project.admin.products.ProductAdminViewModel
 import org.example.project.admin.products.ui.ProductFilterContent
 import org.example.project.admin.products.ui.ProductOperationsScreen
 import org.example.project.admin.products.ui.productActiveFilterCount
 import org.example.project.admin.shared.ui.AdminCompactChromeButtonPadding
 import org.example.project.admin.shared.ui.AdminScreenPadding
+import org.example.project.domain.admin.MerchantAdminService
 import org.example.project.domain.admin.OrderAdminService
 import org.example.project.domain.admin.ProductAdminService
 
 private enum class AdminWorkspaceTab(val title: String) {
     Products("Products"),
+    Merchants("Merchants"),
     Orders("Orders")
 }
 
 @Composable
 fun AdminRoute(
     productAdminService: ProductAdminService,
+    merchantAdminService: MerchantAdminService,
     orderAdminService: OrderAdminService
 ) {
     val productViewModel: ProductAdminViewModel =
         viewModel(factory = ProductAdminViewModel.factory(productAdminService))
+    val merchantViewModel: MerchantAdminViewModel =
+        viewModel(factory = MerchantAdminViewModel.factory(merchantAdminService))
     val orderViewModel: OrderAdminViewModel =
         viewModel(factory = OrderAdminViewModel.factory(orderAdminService))
     val productState by productViewModel.uiState.collectAsState()
+    val merchantState by merchantViewModel.uiState.collectAsState()
     val orderState by orderViewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
         productViewModel.refresh()
+        merchantViewModel.refresh()
         orderViewModel.refresh()
     }
 
@@ -78,30 +87,24 @@ fun AdminRoute(
         color = MaterialTheme.colorScheme.background
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            AdminAppBar(
-                selectedTab = selectedTab,
-                onTabSelected = { tab -> selectedTab = tab },
-                onRefresh = {
-                    when (selectedTab) {
-                        AdminWorkspaceTab.Products -> productViewModel.refresh()
-                        AdminWorkspaceTab.Orders -> orderViewModel.refresh()
-                    }
-                },
-                activeFilterCount = when (selectedTab) {
-                    AdminWorkspaceTab.Products -> productActiveFilterCount(productState)
-                    AdminWorkspaceTab.Orders -> orderActiveFilterCount(orderState)
-                },
-                filterContent = {
-                    when (selectedTab) {
-                        AdminWorkspaceTab.Products -> ProductFilterContent(
+            val filterContent: (@Composable () -> Unit)? = when (selectedTab) {
+                AdminWorkspaceTab.Products -> {
+                    {
+                        ProductFilterContent(
                             uiState = productState,
                             onUpdateNameQuery = productViewModel::updateNameQuery,
                             onUpdateActiveFilter = productViewModel::updateActiveFilter,
                             onUpdateCategory = productViewModel::updateCategory,
                             onUpdateMerchant = productViewModel::updateMerchant
                         )
+                    }
+                }
 
-                        AdminWorkspaceTab.Orders -> OrderFilterContent(
+                AdminWorkspaceTab.Merchants -> null
+
+                AdminWorkspaceTab.Orders -> {
+                    {
+                        OrderFilterContent(
                             uiState = orderState,
                             onUpdateOrderIdQuery = orderViewModel::updateOrderIdQuery,
                             onUpdateOrderStatusFilter = orderViewModel::updateOrderStatusFilter,
@@ -110,6 +113,24 @@ fun AdminRoute(
                         )
                     }
                 }
+            }
+
+            AdminAppBar(
+                selectedTab = selectedTab,
+                onTabSelected = { tab -> selectedTab = tab },
+                onRefresh = {
+                    when (selectedTab) {
+                        AdminWorkspaceTab.Products -> productViewModel.refresh()
+                        AdminWorkspaceTab.Merchants -> merchantViewModel.refresh()
+                        AdminWorkspaceTab.Orders -> orderViewModel.refresh()
+                    }
+                },
+                activeFilterCount = when (selectedTab) {
+                    AdminWorkspaceTab.Products -> productActiveFilterCount(productState)
+                    AdminWorkspaceTab.Merchants -> 0
+                    AdminWorkspaceTab.Orders -> orderActiveFilterCount(orderState)
+                },
+                filterContent = filterContent
             )
 
             when (selectedTab) {
@@ -118,6 +139,16 @@ fun AdminRoute(
                     onSelectProduct = productViewModel::selectProduct,
                     onAdjustStock = productViewModel::adjustSelectedStock,
                     onSetActive = productViewModel::setSelectedProductActive
+                )
+
+                AdminWorkspaceTab.Merchants -> MerchantOperationsScreen(
+                    uiState = merchantState,
+                    onSelectMerchant = merchantViewModel::selectMerchant,
+                    onSetMerchantActive = merchantViewModel::setSelectedMerchantActive,
+                    onSetShippingMethodActive = merchantViewModel::setShippingMethodActive,
+                    onUpdateShippingAssignmentSelection =
+                        merchantViewModel::updateShippingAssignmentSelection,
+                    onSaveShippingAssignments = merchantViewModel::saveShippingAssignments
                 )
 
                 AdminWorkspaceTab.Orders -> OrderOperationsScreen(
@@ -137,7 +168,7 @@ private fun AdminAppBar(
     onTabSelected: (AdminWorkspaceTab) -> Unit,
     onRefresh: () -> Unit,
     activeFilterCount: Int,
-    filterContent: @Composable () -> Unit
+    filterContent: (@Composable () -> Unit)?
 ) {
     var filtersOpen by rememberSaveable(selectedTab) { mutableStateOf(false) }
 
@@ -182,20 +213,22 @@ private fun AdminAppBar(
                     Text("Refresh")
                 }
 
-                val filtersLabel =
-                    if (activeFilterCount > 0 && !filtersOpen) "Filters ($activeFilterCount)" else "Filters"
-                FilterChip(
-                    modifier = Modifier.semantics {
-                        stateDescription = if (filtersOpen) "Expanded" else "Collapsed"
-                    },
-                    selected = filtersOpen || activeFilterCount > 0,
-                    onClick = { filtersOpen = !filtersOpen },
-                    label = { Text(filtersLabel) }
-                )
+                if (filterContent != null) {
+                    val filtersLabel =
+                        if (activeFilterCount > 0 && !filtersOpen) "Filters ($activeFilterCount)" else "Filters"
+                    FilterChip(
+                        modifier = Modifier.semantics {
+                            stateDescription = if (filtersOpen) "Expanded" else "Collapsed"
+                        },
+                        selected = filtersOpen || activeFilterCount > 0,
+                        onClick = { filtersOpen = !filtersOpen },
+                        label = { Text(filtersLabel) }
+                    )
+                }
             }
 
             AnimatedVisibility(
-                visible = filtersOpen,
+                visible = filterContent != null && filtersOpen,
                 enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
                 exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
             ) {
@@ -206,7 +239,7 @@ private fun AdminAppBar(
                             .fillMaxWidth()
                             .padding(horizontal = AdminScreenPadding, vertical = 10.dp)
                     ) {
-                        filterContent()
+                        filterContent?.invoke()
                     }
                 }
             }

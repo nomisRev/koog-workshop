@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import org.example.project.admin.app.AdminRoute
 import org.example.project.admin.data.createAdminDatabase
+import org.example.project.domain.admin.MerchantAdminService
 import org.example.project.domain.admin.OrderAdminService
 import org.example.project.domain.admin.ProductAdminService
 import org.jetbrains.exposed.v1.jdbc.Database
@@ -41,11 +42,13 @@ private val AdminColorScheme: ColorScheme = lightColorScheme(
 @Composable
 fun App(database: Database) {
     val productAdminService = remember(database) { ProductAdminService(database) }
+    val merchantAdminService = remember(database) { MerchantAdminService(database) }
     val orderAdminService = remember(database) { OrderAdminService(database) }
 
     MaterialTheme(colorScheme = AdminColorScheme) {
         AdminRoute(
             productAdminService = productAdminService,
+            merchantAdminService = merchantAdminService,
             orderAdminService = orderAdminService
         )
     }

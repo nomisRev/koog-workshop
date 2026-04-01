@@ -9,6 +9,9 @@ internal object AdminAccessibility {
     const val ProductListPanel = "Product catalog"
     const val ProductDetailPanel = "Product details"
 
+    const val MerchantListPanel = "Merchants list"
+    const val MerchantDetailPanel = "Merchant details"
+
     const val OrderIdFilter = "Search orders by ID"
     const val OrderListPanel = "Orders list"
     const val OrderDetailPanel = "Order details"
