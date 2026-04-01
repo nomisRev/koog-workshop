@@ -1,6 +1,10 @@
 package org.example.project.admin
 
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
 import org.example.project.db.createTables
 import org.example.project.domain.admin.ProductActiveFilter
 import org.example.project.domain.admin.ProductAdminService
@@ -20,37 +24,61 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.time.Instant
 
-@OptIn(kotlin.uuid.ExperimentalUuidApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, kotlin.uuid.ExperimentalUuidApi::class)
 class ProductAdminViewModelTest {
 
     @Test
-    fun `load selects the first product detail`() = runBlocking {
-        val database = createDatabase()
-        val fixture = seedProducts(database)
-        val viewModel = ProductAdminViewModel(ProductAdminService(database))
+    fun `load selects the first product detail`() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+        try {
+            val database = createDatabase()
+            val fixture = seedProducts(database)
+            val viewModel = ProductAdminViewModel(ProductAdminService(database))
 
-        viewModel.load()
+            viewModel.load()
+            awaitCondition {
+                viewModel.uiState.value.products.isNotEmpty() &&
+                    viewModel.uiState.value.selectedProduct != null
+            }
 
-        val state = viewModel.uiState.value
-        assertEquals(listOf(fixture.bronzeBladeId, fixture.moonwellDraughtId), state.products.map { it.id })
-        assertEquals(fixture.bronzeBladeId, state.selectedProductId)
-        assertNotNull(state.selectedProduct)
-        assertEquals("Blackforge Armory", state.selectedProduct.merchantName)
+            val state = viewModel.uiState.value
+            val selectedProduct = state.selectedProduct
+            assertEquals(listOf(fixture.bronzeBladeId, fixture.moonwellDraughtId), state.products.map { it.id })
+            assertEquals(fixture.bronzeBladeId, state.selectedProductId)
+            assertNotNull(selectedProduct)
+            assertEquals("Blackforge Armory", selectedProduct.merchantName)
+        } finally {
+            Dispatchers.resetMain()
+        }
     }
 
     @Test
-    fun `active filter refreshes products and selection`() = runBlocking {
-        val database = createDatabase()
-        val fixture = seedProducts(database)
-        val viewModel = ProductAdminViewModel(ProductAdminService(database))
+    fun `active filter refreshes products and selection`() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+        try {
+            val database = createDatabase()
+            val fixture = seedProducts(database)
+            val viewModel = ProductAdminViewModel(ProductAdminService(database))
 
-        viewModel.load()
-        viewModel.updateActiveFilter(ProductActiveFilter.INACTIVE)
+            viewModel.load()
+            awaitCondition {
+                viewModel.uiState.value.products.isNotEmpty() &&
+                    viewModel.uiState.value.selectedProduct != null
+            }
 
-        val state = viewModel.uiState.value
-        assertEquals(listOf(fixture.moonwellDraughtId), state.products.map { it.id })
-        assertEquals(fixture.moonwellDraughtId, state.selectedProductId)
-        assertEquals("Moonwell Draught", state.selectedProduct?.name)
+            viewModel.updateActiveFilter(ProductActiveFilter.INACTIVE)
+            awaitCondition {
+                viewModel.uiState.value.products.map { it.id } == listOf(fixture.moonwellDraughtId) &&
+                    viewModel.uiState.value.selectedProductId == fixture.moonwellDraughtId
+            }
+
+            val state = viewModel.uiState.value
+            assertEquals(listOf(fixture.moonwellDraughtId), state.products.map { it.id })
+            assertEquals(fixture.moonwellDraughtId, state.selectedProductId)
+            assertEquals("Moonwell Draught", state.selectedProduct?.name)
+        } finally {
+            Dispatchers.resetMain()
+        }
     }
 
     private fun createDatabase(): Database {
@@ -115,6 +143,16 @@ class ProductAdminViewModelTest {
                 moonwellDraughtId = org.example.project.domain.shared.ProductId(moonwellDraughtId.value)
             )
         }
+
+    private fun awaitCondition(timeoutMillis: Long = 5_000, condition: () -> Boolean) {
+        val deadline = System.currentTimeMillis() + timeoutMillis
+        while (!condition()) {
+            check(System.currentTimeMillis() < deadline) {
+                "Condition not met within ${timeoutMillis}ms"
+            }
+            Thread.sleep(10)
+        }
+    }
 
     private data class ProductFixture(
         val bronzeBladeId: org.example.project.domain.shared.ProductId,

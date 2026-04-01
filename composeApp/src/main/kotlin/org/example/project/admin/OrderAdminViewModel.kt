@@ -4,12 +4,14 @@ package org.example.project.admin
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import org.example.project.domain.admin.OrderAdminService
 import org.example.project.domain.order.OrderStatus
 import org.example.project.domain.shared.MerchantId
@@ -27,43 +29,47 @@ class OrderAdminViewModel(
 
     val uiState: StateFlow<OrderAdminUiState> = _uiState.asStateFlow()
 
-    suspend fun load() {
+    fun refresh() = viewModelScope.launch {
         reload()
     }
 
-    suspend fun refresh() {
-        reload()
-    }
-
-    suspend fun updateOrderIdQuery(query: String) {
+    fun updateOrderIdQuery(query: String) = viewModelScope.launch {
         _uiState.value = _uiState.value.copy(
             filter = _uiState.value.filter.copy(orderIdQuery = query)
         )
         reload()
     }
 
-    suspend fun updateOrderStatus(status: OrderStatus?) {
+    fun updateOrderStatus(status: OrderStatus?) = viewModelScope.launch {
         _uiState.value = _uiState.value.copy(
             filter = _uiState.value.filter.copy(orderStatus = status)
         )
         reload()
     }
 
-    suspend fun updateSubOrderStatusFilter(status: OrderStatus?) {
+    fun updateSubOrderStatusFilter(status: OrderStatus?) = viewModelScope.launch {
         _uiState.value = _uiState.value.copy(
             filter = _uiState.value.filter.copy(subOrderStatus = status)
         )
         reload()
     }
 
-    suspend fun updateMerchant(merchantId: MerchantId?) {
+    fun updateMerchant(merchantId: MerchantId?) = viewModelScope.launch {
         _uiState.value = _uiState.value.copy(
             filter = _uiState.value.filter.copy(merchantId = merchantId)
         )
         reload()
     }
 
-    suspend fun selectOrder(orderId: OrderId) {
+    fun selectOrder(orderId: OrderId) = viewModelScope.launch {
+        selectOrderInternal(orderId)
+    }
+
+    fun updateSubOrderStatus(subOrderId: SubOrderId, status: OrderStatus) = viewModelScope.launch {
+        updateSubOrderStatusInternal(subOrderId, status)
+    }
+
+    private suspend fun selectOrderInternal(orderId: OrderId) {
         val version = loadVersion.incrementAndGet()
         val current = _uiState.value
         _uiState.value = current.copy(
@@ -103,7 +109,7 @@ class OrderAdminViewModel(
         }
     }
 
-    suspend fun updateSubOrderStatus(subOrderId: SubOrderId, status: OrderStatus) {
+    private suspend fun updateSubOrderStatusInternal(subOrderId: SubOrderId, status: OrderStatus) {
         val current = _uiState.value
         _uiState.value = current.copy(isLoading = true, errorMessage = null)
 

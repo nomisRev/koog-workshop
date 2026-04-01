@@ -59,6 +59,7 @@ dependencies {
     implementation(libs.sqlite.jdbc)
     implementation(libs.kotlinx.coroutinesSwing)
     testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
 
 compose.desktop {

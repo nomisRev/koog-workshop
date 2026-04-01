@@ -4,12 +4,14 @@ package org.example.project.admin
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import org.example.project.domain.admin.ProductActiveFilter
 import org.example.project.domain.admin.ProductAdminService
 import org.example.project.domain.catalog.ProductCategory
@@ -27,63 +29,99 @@ class ProductAdminViewModel(
 
     val uiState: StateFlow<ProductAdminUiState> = _uiState.asStateFlow()
 
-    suspend fun load() {
-        reload()
+    fun load() {
+        launchAction { reload() }
     }
 
-    suspend fun refresh() {
-        reload()
+    fun refresh() {
+        launchAction { reload() }
     }
 
-    suspend fun updateNameQuery(query: String) {
-        _uiState.value = _uiState.value.copy(
-            filter = _uiState.value.filter.copy(nameQuery = query)
-        )
-        reload()
+    fun updateNameQuery(query: String) {
+        launchAction {
+            _uiState.value = _uiState.value.copy(
+                filter = _uiState.value.filter.copy(nameQuery = query)
+            )
+            reload()
+        }
     }
 
-    suspend fun updateCategory(category: ProductCategory?) {
-        _uiState.value = _uiState.value.copy(
-            filter = _uiState.value.filter.copy(category = category)
-        )
-        reload()
+    fun updateCategory(category: ProductCategory?) {
+        launchAction {
+            _uiState.value = _uiState.value.copy(
+                filter = _uiState.value.filter.copy(category = category)
+            )
+            reload()
+        }
     }
 
-    suspend fun updateMerchant(merchantId: MerchantId?) {
-        _uiState.value = _uiState.value.copy(
-            filter = _uiState.value.filter.copy(merchantId = merchantId)
-        )
-        reload()
+    fun updateMerchant(merchantId: MerchantId?) {
+        launchAction {
+            _uiState.value = _uiState.value.copy(
+                filter = _uiState.value.filter.copy(merchantId = merchantId)
+            )
+            reload()
+        }
     }
 
-    suspend fun updateActiveFilter(activeFilter: ProductActiveFilter) {
-        _uiState.value = _uiState.value.copy(
-            filter = _uiState.value.filter.copy(activeFilter = activeFilter)
-        )
-        reload()
+    fun updateActiveFilter(activeFilter: ProductActiveFilter) {
+        launchAction {
+            _uiState.value = _uiState.value.copy(
+                filter = _uiState.value.filter.copy(activeFilter = activeFilter)
+            )
+            reload()
+        }
     }
 
-    suspend fun selectProduct(productId: ProductId) {
+    fun selectProduct(productId: ProductId) {
+        launchAction {
+            selectProductInternal(productId)
+        }
+    }
+
+    fun adjustSelectedStock(quantityChange: Int) {
+        launchAction {
+            val productId = _uiState.value.selectedProductId ?: return@launchAction
+            performMutation(
+                failureMessage = "Unable to update stock for product ${productId.value}.",
+                productId = productId
+            ) {
+                productAdminService.adjustStock(productId, quantityChange)
+            }
+        }
+    }
+
+    fun setSelectedProductActive(isActive: Boolean) {
+        launchAction {
+            val productId = _uiState.value.selectedProductId ?: return@launchAction
+            performMutation(
+                failureMessage = "Unable to update the product state for ${productId.value}.",
+                productId = productId
+            ) {
+                productAdminService.setProductActive(productId, isActive)
+            }
+        }
+    }
+
+    private suspend fun selectProductInternal(productId: ProductId) {
         val version = loadVersion.incrementAndGet()
         val current = _uiState.value
         _uiState.value = current.copy(
-            isLoading = true,
             errorMessage = null,
-            selectedProductId = productId
+            selectedProductId = productId,
+            selectedProduct = current.selectedProduct?.takeIf { product -> product.id == productId }
         )
 
         val nextState = try {
             val detail = productAdminService.loadProductDetailOrNull(productId)
             if (detail == null) {
                 current.copy(
-                    isLoading = false,
                     errorMessage = "Product ${productId.value} was not found.",
                     selectedProductId = null,
                     selectedProduct = null
                 )
             } else {
                 current.copy(
-                    isLoading = false,
                     errorMessage = null,
                     selectedProductId = productId,
                     selectedProduct = detail
@@ -93,8 +131,9 @@ class ProductAdminViewModel(
             throw cancellation
         } catch (throwable: Throwable) {
             current.copy(
-                isLoading = false,
-                errorMessage = throwable.message ?: "Unable to load product details."
+                errorMessage = throwable.message ?: "Unable to load product details.",
+                selectedProductId = productId,
+                selectedProduct = null
             )
         }
 
@@ -103,30 +142,10 @@ class ProductAdminViewModel(
         }
     }
 
-    suspend fun adjustSelectedStock(quantityChange: Int) {
-        val productId = _uiState.value.selectedProductId ?: return
-        performMutation(
-            failureMessage = "Unable to update stock for product ${productId.value}.",
-            productId = productId
-        ) {
-            productAdminService.adjustStock(productId, quantityChange)
-        }
-    }
-
-    suspend fun setSelectedProductActive(isActive: Boolean) {
-        val productId = _uiState.value.selectedProductId ?: return
-        performMutation(
-            failureMessage = "Unable to update the product state for ${productId.value}.",
-            productId = productId
-        ) {
-            productAdminService.setProductActive(productId, isActive)
-        }
-    }
-
     private suspend fun reload() {
         val version = loadVersion.incrementAndGet()
         val current = _uiState.value
-        _uiState.value = current.copy(isLoading = true, errorMessage = null)
+        _uiState.value = current.copy(errorMessage = null)
 
         val nextState = try {
             val merchants = productAdminService.loadMerchantOptions().toPersistentList()
@@ -137,7 +156,6 @@ class ProductAdminViewModel(
             val selectedProduct = selectedProductId?.let { productAdminService.loadProductDetailOrNull(it) }
 
             current.copy(
-                isLoading = false,
                 errorMessage = null,
                 merchants = merchants,
                 products = products,
@@ -148,7 +166,6 @@ class ProductAdminViewModel(
             throw cancellation
         } catch (throwable: Throwable) {
             current.copy(
-                isLoading = false,
                 errorMessage = throwable.message ?: "Unable to load product operations."
             )
         }
@@ -164,7 +181,7 @@ class ProductAdminViewModel(
         action: suspend () -> Boolean
     ) {
         val current = _uiState.value
-        _uiState.value = current.copy(isLoading = true, errorMessage = null)
+        _uiState.value = current.copy(errorMessage = null)
 
         val success = try {
             action()
@@ -172,7 +189,6 @@ class ProductAdminViewModel(
             throw cancellation
         } catch (throwable: Throwable) {
             _uiState.value = current.copy(
-                isLoading = false,
                 errorMessage = throwable.message ?: failureMessage
             )
             return
@@ -180,7 +196,6 @@ class ProductAdminViewModel(
 
         if (!success) {
             _uiState.value = current.copy(
-                isLoading = false,
                 errorMessage = failureMessage
             )
             return
@@ -192,7 +207,6 @@ class ProductAdminViewModel(
             val updatedDetail = productAdminService.loadProductDetailOrNull(productId)
             if (updatedDetail == null) {
                 current.copy(
-                    isLoading = false,
                     errorMessage = "Product ${productId.value} was not found after update."
                 )
             } else {
@@ -209,7 +223,6 @@ class ProductAdminViewModel(
                 }.toPersistentList()
 
                 current.copy(
-                    isLoading = false,
                     errorMessage = null,
                     products = updatedProducts,
                     selectedProduct = updatedDetail
@@ -219,13 +232,18 @@ class ProductAdminViewModel(
             throw cancellation
         } catch (throwable: Throwable) {
             current.copy(
-                isLoading = false,
                 errorMessage = throwable.message ?: failureMessage
             )
         }
 
         if (loadVersion.get() == version) {
             _uiState.value = nextState
+        }
+    }
+
+    private fun launchAction(action: suspend () -> Unit) {
+        viewModelScope.launch {
+            action()
         }
     }
 

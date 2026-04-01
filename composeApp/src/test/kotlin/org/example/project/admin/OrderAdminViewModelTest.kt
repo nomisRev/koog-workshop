@@ -1,6 +1,10 @@
 package org.example.project.admin
 
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
 import org.example.project.db.createTables
 import org.example.project.domain.admin.OrderAdminService
 import org.example.project.domain.catalog.Merchants
@@ -22,39 +26,65 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.time.Instant
 
-@OptIn(kotlin.uuid.ExperimentalUuidApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, kotlin.uuid.ExperimentalUuidApi::class)
 class OrderAdminViewModelTest {
 
     @Test
-    fun `load selects the newest order detail`() = runBlocking {
-        val database = createDatabase()
-        val fixture = seedOrders(database)
-        val viewModel = OrderAdminViewModel(OrderAdminService(database))
+    fun `load selects the newest order detail`() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+        try {
+            val database = createDatabase()
+            val fixture = seedOrders(database)
+            val viewModel = OrderAdminViewModel(OrderAdminService(database))
 
-        viewModel.load()
+            viewModel.refresh()
+            awaitCondition {
+                viewModel.uiState.value.selectedOrderId == fixture.pendingOrderId &&
+                        viewModel.uiState.value.selectedOrder != null
+            }
 
-        val state = viewModel.uiState.value
-        assertEquals(fixture.pendingOrderId, state.selectedOrderId)
-        assertNotNull(state.selectedOrder)
-        assertEquals(2, state.selectedOrder.subOrders.size)
+            val state = viewModel.uiState.value
+            assertEquals(fixture.pendingOrderId, state.selectedOrderId)
+            assertNotNull(state.selectedOrder)
+            assertEquals(2, state.selectedOrder.subOrders.size)
+        } finally {
+            Dispatchers.resetMain()
+        }
     }
 
     @Test
-    fun `status updates reload selected order`() = runBlocking {
-        val database = createDatabase()
-        val fixture = seedOrders(database)
-        val viewModel = OrderAdminViewModel(OrderAdminService(database))
+    fun `status updates reload selected order`() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+        try {
+            val database = createDatabase()
+            val fixture = seedOrders(database)
+            val viewModel = OrderAdminViewModel(OrderAdminService(database))
 
-        viewModel.load()
-        viewModel.updateSubOrderStatus(fixture.shippedSubOrderId, OrderStatus.DELIVERED)
+            viewModel.refresh()
+            awaitCondition {
+                viewModel.uiState.value.selectedOrderId == fixture.pendingOrderId &&
+                        viewModel.uiState.value.selectedOrder != null
+            }
 
-        val state = viewModel.uiState.value
-        val updatedSubOrder = state.selectedOrder
-            ?.subOrders
-            ?.single { detail -> detail.subOrder.id == fixture.shippedSubOrderId }
+            viewModel.updateSubOrderStatus(fixture.shippedSubOrderId, OrderStatus.DELIVERED)
+            awaitCondition {
+                viewModel.uiState.value.selectedOrder
+                    ?.subOrders
+                    ?.singleOrNull { detail -> detail.subOrder.id == fixture.shippedSubOrderId }
+                    ?.subOrder
+                    ?.status == OrderStatus.DELIVERED
+            }
 
-        assertNotNull(updatedSubOrder)
-        assertEquals(OrderStatus.DELIVERED, updatedSubOrder.subOrder.status)
+            val state = viewModel.uiState.value
+            val updatedSubOrder = state.selectedOrder
+                ?.subOrders
+                ?.single { detail -> detail.subOrder.id == fixture.shippedSubOrderId }
+
+            assertNotNull(updatedSubOrder)
+            assertEquals(OrderStatus.DELIVERED, updatedSubOrder.subOrder.status)
+        } finally {
+            Dispatchers.resetMain()
+        }
     }
 
     private fun createDatabase(): Database {
@@ -164,6 +194,16 @@ class OrderAdminViewModelTest {
                 shippedSubOrderId = org.example.project.domain.shared.SubOrderId(shippedSubOrderId.value)
             )
         }
+
+    private fun awaitCondition(timeoutMillis: Long = 5_000, condition: () -> Boolean) {
+        val deadline = System.currentTimeMillis() + timeoutMillis
+        while (!condition()) {
+            check(System.currentTimeMillis() < deadline) {
+                "Condition not met within ${timeoutMillis}ms"
+            }
+            Thread.sleep(10)
+        }
+    }
 
     private data class OrderFixture(
         val pendingOrderId: org.example.project.domain.shared.OrderId,

@@ -42,7 +42,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -52,7 +51,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.coroutines.launch
 import org.example.project.domain.admin.AdminOrderDetail
 import org.example.project.domain.admin.AdminOrderHistoryEvent
 import org.example.project.domain.admin.AdminOrderItemDetail
@@ -64,7 +62,6 @@ import org.example.project.domain.admin.ProductAdminService
 import org.example.project.domain.admin.ProductDetail
 import org.example.project.domain.admin.ProductListItem
 import org.example.project.domain.admin.ProductReviewSummary
-import org.example.project.domain.catalog.Merchant
 import org.example.project.domain.catalog.ProductCategory
 import org.example.project.domain.order.OrderStatus
 import org.example.project.domain.shared.MerchantId
@@ -112,12 +109,11 @@ fun AdminRoute(
     val orderState by orderViewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
-        launch { productViewModel.load() }
-        launch { orderViewModel.load() }
+        productViewModel.load()
+        orderViewModel.refresh()
     }
 
     var selectedTab by rememberSaveable { mutableStateOf(AdminWorkspaceTab.Products) }
-    val coroutineScope = rememberCoroutineScope()
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -129,8 +125,8 @@ fun AdminRoute(
                 onTabSelected = { tab -> selectedTab = tab },
                 onRefresh = {
                     when (selectedTab) {
-                        AdminWorkspaceTab.Products -> coroutineScope.launch { productViewModel.refresh() }
-                        AdminWorkspaceTab.Orders -> coroutineScope.launch { orderViewModel.refresh() }
+                        AdminWorkspaceTab.Products -> productViewModel.refresh()
+                        AdminWorkspaceTab.Orders -> orderViewModel.refresh()
                     }
                 },
                 activeFilterCount = when (selectedTab) {
@@ -150,13 +146,7 @@ fun AdminRoute(
                             Column(verticalArrangement = Arrangement.spacedBy(sectionSpacing)) {
                                 ToolbarTextFilter(
                                     value = productState.filter.nameQuery,
-                                    onValueChange = { query ->
-                                        coroutineScope.launch {
-                                            productViewModel.updateNameQuery(
-                                                query
-                                            )
-                                        }
-                                    },
+                                    onValueChange = productViewModel::updateNameQuery,
                                     placeholder = "Search products"
                                 )
                                 Row(
@@ -166,13 +156,7 @@ fun AdminRoute(
                                     ProductActiveFilter.entries.forEach { filter ->
                                         FilterChip(
                                             selected = filter == productState.filter.activeFilter,
-                                            onClick = {
-                                                coroutineScope.launch {
-                                                    productViewModel.updateActiveFilter(
-                                                        filter
-                                                    )
-                                                }
-                                            },
+                                            onClick = { productViewModel.updateActiveFilter(filter) },
                                             label = { Text(filter.labelize()) }
                                         )
                                     }
@@ -186,11 +170,7 @@ fun AdminRoute(
                                         options = persistentListOf<Pair<String, ProductCategory?>>("All" to null)
                                             .addAll(ProductCategory.entries.map { it.labelize() to it }),
                                         selected = productState.filter.category,
-                                        onSelect = { category ->
-                                            coroutineScope.launch {
-                                                productViewModel.updateCategory(category)
-                                            }
-                                        },
+                                        onSelect = productViewModel::updateCategory,
                                         modifier = Modifier.weight(1f)
                                     )
                                     FilterGroup(
@@ -198,7 +178,7 @@ fun AdminRoute(
                                         options = persistentListOf<Pair<String, MerchantId?>>("All" to null).addAll(
                                             productState.merchants.map { it.name to it.id }),
                                         selected = productState.filter.merchantId,
-                                        onSelect = { id -> coroutineScope.launch { productViewModel.updateMerchant(id) } },
+                                        onSelect = productViewModel::updateMerchant,
                                         modifier = Modifier.weight(1f)
                                     )
                                 }
@@ -209,11 +189,7 @@ fun AdminRoute(
                             Column(verticalArrangement = Arrangement.spacedBy(sectionSpacing)) {
                                 ToolbarTextFilter(
                                     value = orderState.filter.orderIdQuery,
-                                    onValueChange = { query ->
-                                        coroutineScope.launch {
-                                            orderViewModel.updateOrderIdQuery(query)
-                                        }
-                                    },
+                                    onValueChange = orderViewModel::updateOrderIdQuery,
                                     placeholder = "Filter by order ID"
                                 )
                                 Row(
@@ -225,7 +201,7 @@ fun AdminRoute(
                                     orderStatusOptions.forEach { (status, label) ->
                                         FilterChip(
                                             selected = status == orderState.filter.orderStatus,
-                                            onClick = { coroutineScope.launch { orderViewModel.updateOrderStatus(status) } },
+                                            onClick = { orderViewModel.updateOrderStatus(status) },
                                             label = { Text(label) }
                                         )
                                     }
@@ -239,13 +215,7 @@ fun AdminRoute(
                                         options = persistentListOf<Pair<String, OrderStatus?>>("All" to null)
                                             .addAll(OrderStatus.entries.map { it.labelize() to it }),
                                         selected = orderState.filter.subOrderStatus,
-                                        onSelect = { status ->
-                                            coroutineScope.launch {
-                                                orderViewModel.updateSubOrderStatusFilter(
-                                                    status
-                                                )
-                                            }
-                                        },
+                                        onSelect = orderViewModel::updateSubOrderStatusFilter,
                                         modifier = Modifier.weight(1f)
                                     )
                                     FilterGroup(
@@ -253,7 +223,7 @@ fun AdminRoute(
                                         options = persistentListOf<Pair<String, MerchantId?>>("All" to null)
                                             .addAll(orderState.merchants.map { it.name to it.id }),
                                         selected = orderState.filter.merchantId,
-                                        onSelect = { id -> coroutineScope.launch { orderViewModel.updateMerchant(id) } },
+                                        onSelect = orderViewModel::updateMerchant,
                                         modifier = Modifier.weight(1f)
                                     )
                                 }
@@ -266,25 +236,15 @@ fun AdminRoute(
             when (selectedTab) {
                 AdminWorkspaceTab.Products -> ProductOperationsScreen(
                     uiState = productState,
-                    onSelectProduct = { productId ->
-                        coroutineScope.launch { productViewModel.selectProduct(productId) }
-                    },
-                    onAdjustStock = { quantityChange ->
-                        coroutineScope.launch { productViewModel.adjustSelectedStock(quantityChange) }
-                    },
-                    onSetActive = { isActive ->
-                        coroutineScope.launch { productViewModel.setSelectedProductActive(isActive) }
-                    }
+                    onSelectProduct = productViewModel::selectProduct,
+                    onAdjustStock = productViewModel::adjustSelectedStock,
+                    onSetActive = productViewModel::setSelectedProductActive
                 )
 
                 AdminWorkspaceTab.Orders -> OrderOperationsScreen(
                     uiState = orderState,
-                    onSelectOrder = { orderId ->
-                        coroutineScope.launch { orderViewModel.selectOrder(orderId) }
-                    },
-                    onUpdateSubOrderStatus = { subOrderId, status ->
-                        coroutineScope.launch { orderViewModel.updateSubOrderStatus(subOrderId, status) }
-                    }
+                    onSelectOrder = orderViewModel::selectOrder,
+                    onUpdateSubOrderStatus = orderViewModel::updateSubOrderStatus
                 )
             }
         }
@@ -393,7 +353,6 @@ private fun ProductOperationsScreen(
                 modifier = Modifier
                     .weight(0.9f)
                     .fillMaxHeight(),
-                isLoading = uiState.isLoading,
                 products = uiState.products,
                 selectedProductId = uiState.selectedProductId,
                 onSelectProduct = onSelectProduct
@@ -403,7 +362,6 @@ private fun ProductOperationsScreen(
                 modifier = Modifier
                     .weight(1.1f)
                     .fillMaxHeight(),
-                isLoading = uiState.isLoading,
                 product = uiState.selectedProduct,
                 onAdjustStock = onAdjustStock,
                 onSetActive = onSetActive
@@ -415,7 +373,6 @@ private fun ProductOperationsScreen(
 @Composable
 private fun ProductListPanel(
     modifier: Modifier,
-    isLoading: Boolean,
     products: PersistentList<ProductListItem>,
     selectedProductId: ProductId?,
     onSelectProduct: (ProductId) -> Unit
@@ -437,13 +394,7 @@ private fun ProductListPanel(
                 subtitle = "${products.size} matching products"
             )
 
-            if (isLoading) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-            }
-
-            if (products.isEmpty() && isLoading) {
-                PanelLoadingState()
-            } else if (products.isEmpty()) {
+            if (products.isEmpty()) {
                 PanelEmptyState(message = "No products match the current filters.")
             } else {
                 LazyColumn(
@@ -546,7 +497,6 @@ private fun ProductRow(
 @Composable
 private fun ProductDetailPanel(
     modifier: Modifier,
-    isLoading: Boolean,
     product: ProductDetail?,
     onAdjustStock: (Int) -> Unit,
     onSetActive: (Boolean) -> Unit
@@ -557,9 +507,8 @@ private fun ProductDetailPanel(
             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
         )
     ) {
-        when {
-            product == null && isLoading -> PanelLoadingState(modifier = Modifier.fillMaxSize())
-            product == null -> PanelEmptyState(
+        when (product) {
+            null -> PanelEmptyState(
                 modifier = Modifier.fillMaxSize(),
                 message = "Select a product to inspect its details and operations."
             )
@@ -578,10 +527,6 @@ private fun ProductDetailPanel(
                         title = product.name,
                         subtitle = product.category.labelize()
                     )
-
-                    if (isLoading) {
-                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                    }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),

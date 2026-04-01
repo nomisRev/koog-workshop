@@ -11,7 +11,6 @@ import org.example.project.domain.shared.ProductId
 
 @Immutable
 data class ProductAdminUiState(
-    val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val filter: ProductFilter = ProductFilter(),
     val merchants: PersistentList<ProductMerchantOption> = persistentListOf(),
