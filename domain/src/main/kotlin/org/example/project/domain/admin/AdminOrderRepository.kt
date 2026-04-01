@@ -95,7 +95,7 @@ class AdminOrderRepository {
         val order = Orders.selectAll()
             .where { Orders.id eq orderId.value }
             .singleOrNull()
-            ?.toOrder
+            ?.toOrder()
             ?: return null
 
         val subOrderRows = SubOrders.selectAll()
