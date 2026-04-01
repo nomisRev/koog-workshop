@@ -1,6 +1,7 @@
 package org.example.project.domain.review
 
 import org.example.project.domain.order.OrderRepository
+import org.example.project.domain.order.OrderStatus
 import org.example.project.domain.review.ReviewRepository
 import org.example.project.db.suspendTransaction
 import org.example.project.domain.shared.CharacterId
@@ -25,6 +26,24 @@ class ReviewService(
     ): ReviewId {
         require(rating in 1..5) { "Rating must be between 1 and 5" }
         return database.suspendTransaction {
+            val orderItem = orderRepository.getOrderItemOrNull(orderItemId)
+                ?: throw IllegalArgumentException("Order item not found: $orderItemId")
+            require(orderItem.productId == productId) {
+                "Order item $orderItemId does not match product $productId"
+            }
+
+            val subOrder = orderRepository.getSubOrderOrNull(orderItem.subOrderId)
+                ?: throw IllegalArgumentException("Sub-order not found for order item: $orderItemId")
+            val order = orderRepository.getOrderOrNull(subOrder.orderId)
+                ?: throw IllegalArgumentException("Order not found for order item: $orderItemId")
+
+            require(order.characterId == characterId) {
+                "Order item $orderItemId does not belong to character $characterId"
+            }
+            require(subOrder.status == OrderStatus.DELIVERED) {
+                "Order item $orderItemId is not eligible for review: sub-order status ${subOrder.status}"
+            }
+
             reviewRepository.createReview(characterId, productId, orderItemId, rating, text)
         }
     }

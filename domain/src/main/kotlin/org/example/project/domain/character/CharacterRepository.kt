@@ -16,7 +16,7 @@ import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.jetbrains.exposed.v1.jdbc.update
+import org.example.project.db.update as storeUpdate
 import kotlin.uuid.Uuid
 import kotlin.uuid.ExperimentalUuidApi
 
@@ -49,7 +49,7 @@ class CharacterRepository {
 
     context(_: Transaction)
     fun updateCharacter(id: CharacterId, name: String): Boolean =
-        Characters.update({ Characters.id eq id.value }) {
+        Characters.storeUpdate({ Characters.id eq id.value }) {
             it[Characters.name] = name
         } > 0
 

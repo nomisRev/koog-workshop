@@ -6,17 +6,23 @@ import org.example.project.db.suspendTransaction
 import org.example.project.domain.character.*
 import org.example.project.domain.catalog.*
 import org.example.project.domain.currency.*
+import org.example.project.domain.order.*
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.example.project.domain.shared.CurrencyId
+import org.example.project.domain.shared.MerchantId
+import org.example.project.domain.shared.OrderId
+import org.example.project.domain.shared.ProductId
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import kotlin.time.Instant
 import kotlin.test.*
 import org.example.project.domain.character.CharacterRepository
 import org.example.project.domain.catalog.MerchantRepository
 import org.example.project.domain.catalog.ProductRepository
 import org.example.project.domain.currency.CurrencyRepository
 
+@OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 class RepositoryIntegrationTest {
 
     private lateinit var database: Database
@@ -24,6 +30,7 @@ class RepositoryIntegrationTest {
     private lateinit var productRepo: ProductRepository
     private lateinit var merchantRepo: MerchantRepository
     private lateinit var currencyRepo: CurrencyRepository
+    private lateinit var orderRepo: OrderRepository
 
     @BeforeTest
     fun setup() {
@@ -33,6 +40,7 @@ class RepositoryIntegrationTest {
         productRepo = ProductRepository()
         merchantRepo = MerchantRepository()
         currencyRepo = CurrencyRepository()
+        orderRepo = OrderRepository()
     }
 
     @Test
@@ -75,6 +83,7 @@ class RepositoryIntegrationTest {
             val mId = Merchants.insertAndGetId {
                 it[name] = "Repo Merchant"
             }
+            val originalTimestamp = Instant.fromEpochMilliseconds(1_000)
             val productId = Products.insertAndGetId {
                 it[name] = "Repo Sword"
                 it[category] = ProductCategory.WEAPONS.name
@@ -83,6 +92,8 @@ class RepositoryIntegrationTest {
                 it[currency] = goldId
                 it[merchant] = mId
                 it[stock] = 10
+                it[Products.createdAt] = originalTimestamp
+                it[Products.updatedAt] = originalTimestamp
             }
             Weapons.insert {
                 it[id] = productId
@@ -99,10 +110,89 @@ class RepositoryIntegrationTest {
             assertEquals("Repo Sword", sword.name)
             assertEquals(5, sword.damage)
 
+            val originalUpdatedAt = sword.updatedAt
             val success = productRepo.updateStock(sword.id, -2)
             assertTrue(success)
             val updatedSword = productRepo.getProductOrNull(sword.id)
-            assertEquals(8, updatedSword?.stock)
+            assertNotNull(updatedSword)
+            assertEquals(8, updatedSword.stock)
+            assertTrue(updatedSword.updatedAt > originalUpdatedAt)
+        }
+    }
+
+    @Test
+    fun testOrderStatusRefreshesUpdatedAt() = runBlocking {
+        database.suspendTransaction {
+            val characterId = Characters.insertAndGetId {
+                it[name] = "Repo Hero"
+            }
+            val currencyId = Currencies.insertAndGetId {
+                it[code] = "GOLD"
+                it[name] = "Gold"
+                it[symbol] = "G"
+            }
+            val originalTimestamp = Instant.fromEpochMilliseconds(1_000)
+            val orderId = OrderId(
+                Orders.insertAndGetId {
+                    it[character] = characterId
+                    it[status] = OrderStatus.PENDING.name
+                    it[totalPrice] = 250
+                    it[totalCurrency] = currencyId
+                    it[Orders.createdAt] = originalTimestamp
+                    it[Orders.updatedAt] = originalTimestamp
+                }.value
+            )
+
+            assertTrue(orderRepo.updateOrderStatus(orderId, OrderStatus.CANCELLED))
+
+            val updatedOrder = orderRepo.getOrderOrNull(orderId)
+            assertNotNull(updatedOrder)
+            assertEquals(OrderStatus.CANCELLED, updatedOrder.status)
+            assertTrue(updatedOrder.updatedAt > originalTimestamp)
+        }
+    }
+
+    @Test
+    fun testPotionDurationNullRoundTrip() = runBlocking {
+        database.suspendTransaction {
+            val goldId = Currencies.insertAndGetId {
+                it[code] = "GOLD"
+                it[name] = "Gold"
+                it[symbol] = "G"
+            }
+            val merchantId = Merchants.insertAndGetId {
+                it[name] = "Repo Alchemist"
+            }
+
+            val potion = org.example.project.domain.catalog.Product.Potion(
+                id = ProductId(kotlin.uuid.Uuid.random()),
+                name = "Null Duration Potion",
+                description = null,
+                rarity = Rarity.COMMON,
+                price = 75,
+                currencyId = CurrencyId(goldId.value),
+                merchantId = MerchantId(merchantId.value),
+                stock = 4,
+                imageUrl = null,
+                isActive = true,
+                createdAt = kotlin.time.Instant.DISTANT_PAST,
+                updatedAt = kotlin.time.Instant.DISTANT_PAST,
+                effect = "Leaves duration unspecified",
+                duration = null
+            )
+
+            val createdId = productRepo.createProduct(potion)
+            val created = productRepo.getProductOrNull(createdId)
+            assertNotNull(created)
+            val createdPotion = created as Product.Potion
+            assertNull(createdPotion.duration)
+
+            val updated = createdPotion.copy(effect = "Still unspecified")
+            assertTrue(productRepo.updateProduct(updated))
+            val reloaded = productRepo.getProductOrNull(createdId)
+            assertNotNull(reloaded)
+            val reloadedPotion = reloaded as Product.Potion
+            assertNull(reloadedPotion.duration)
         }
     }
 }

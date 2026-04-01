@@ -13,7 +13,7 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.jetbrains.exposed.v1.jdbc.update
+import org.example.project.db.update as storeUpdate
 
 @OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 class CurrencyRepository {
@@ -54,7 +54,7 @@ class CurrencyRepository {
         symbol: String? = null,
         iconPath: String? = null
     ): Boolean =
-        Currencies.update({ Currencies.id eq id.value }) {
+        Currencies.storeUpdate({ Currencies.id eq id.value }) {
             if (code != null) it[Currencies.code] = code
             if (name != null) it[Currencies.name] = name
             if (symbol != null) it[Currencies.symbol] = symbol
@@ -77,7 +77,7 @@ class CurrencyRepository {
 
     context(_: Transaction)
     fun updateConversionRate(id: CurrencyConversionId, rate: Double): Boolean =
-        CurrencyConversions.update({ CurrencyConversions.id eq id.value }) {
+        CurrencyConversions.storeUpdate({ CurrencyConversions.id eq id.value }) {
             it[CurrencyConversions.rate] = rate
         } > 0
 

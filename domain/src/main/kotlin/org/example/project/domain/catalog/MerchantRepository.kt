@@ -12,7 +12,7 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.jetbrains.exposed.v1.jdbc.update
+import org.example.project.db.update as storeUpdate
 
 @OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 class MerchantRepository {
@@ -75,7 +75,7 @@ class MerchantRepository {
         iconPath: String? = null,
         isActive: Boolean? = null
     ): Boolean =
-        Merchants.update({ Merchants.id eq id.value }) {
+        Merchants.storeUpdate({ Merchants.id eq id.value }) {
             if (name != null) it[Merchants.name] = name
             if (description != null) it[Merchants.description] = description
             if (location != null) it[Merchants.location] = location

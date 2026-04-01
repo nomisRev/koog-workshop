@@ -24,7 +24,7 @@ object Potions : Table("potions") {
     override val primaryKey = PrimaryKey(id)
 
     val effect = text("effect")
-    val duration = integer("duration")
+    val duration = integer("duration").nullable()
 }
 
 object Scrolls : Table("scrolls") {

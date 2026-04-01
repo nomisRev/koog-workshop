@@ -46,7 +46,9 @@ class OrderService(
         val products = cartItems.map { cartItem ->
             val product = productRepository.getProductOrNull(cartItem.productId)
                 ?: throw IllegalStateException("Product not found: ${cartItem.productId}")
+            require(cartItem.quantity > 0) { "Cart item quantity must be positive: ${cartItem.productId}" }
             require(product.isActive) { "Product is not active: ${product.name}" }
+            require(product.price >= 0) { "Product price must be non-negative: ${product.name}" }
             require(product.stock >= cartItem.quantity) {
                 "Insufficient stock for ${product.name}: requested ${cartItem.quantity}, available ${product.stock}"
             }
@@ -67,6 +69,9 @@ class OrderService(
         merchantShippingMethods.values.forEach { shippingMethod ->
             require(shippingMethod.isActive) {
                 "Shipping method is not active: ${shippingMethod.name}"
+            }
+            require(shippingMethod.baseCost >= 0) {
+                "Shipping base cost must be non-negative: ${shippingMethod.name}"
             }
         }
 

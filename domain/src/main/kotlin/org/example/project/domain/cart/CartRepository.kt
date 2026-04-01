@@ -11,14 +11,15 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.jetbrains.exposed.v1.jdbc.update
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.example.project.db.update as storeUpdate
 
 @OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 class CartRepository {
 
     context(_: Transaction)
     fun addToCart(characterId: CharacterId, productId: ProductId, quantity: Int = 1): CartItemId {
+        require(quantity > 0) { "Quantity must be positive" }
         val existing = CartItems.selectAll().where { 
             (CartItems.character eq characterId.value) and (CartItems.product eq productId.value) 
         }.singleOrNull()
@@ -26,7 +27,7 @@ class CartRepository {
         return if (existing != null) {
             val currentQuantity = existing[CartItems.quantity]
             val id = existing[CartItems.id].value
-            CartItems.update({ CartItems.id eq id }) {
+            CartItems.storeUpdate({ CartItems.id eq id }) {
                 it[CartItems.quantity] = currentQuantity + quantity
             }
             CartItemId(id)
@@ -47,10 +48,12 @@ class CartRepository {
             .map(::mapToCartItem)
 
     context(_: Transaction)
-    fun updateQuantity(cartItemId: CartItemId, quantity: Int): Boolean =
-        CartItems.update({ CartItems.id eq cartItemId.value }) {
+    fun updateQuantity(cartItemId: CartItemId, quantity: Int): Boolean {
+        require(quantity > 0) { "Quantity must be positive" }
+        return CartItems.storeUpdate({ CartItems.id eq cartItemId.value }) {
             it[CartItems.quantity] = quantity
         } > 0
+    }
 
     context(_: Transaction)
     fun removeFromCart(cartItemId: CartItemId): Boolean =

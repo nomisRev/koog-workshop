@@ -196,6 +196,39 @@ class MerchantAndProductTest {
     }
 
     @Test
+    fun testProductMonetaryAndStockConstraints() {
+        transaction {
+            SchemaUtils.create(Currencies, Merchants, Products)
+            val goldId = Currencies.insertAndGetId { it[code] = "GOLD"; it[name] = "Gold"; it[symbol] = "G" }
+            val merchantId = Merchants.insertAndGetId { it[name] = "General Store" }
+
+            assertFails {
+                Products.insert {
+                    it[name] = "Negative Price"
+                    it[category] = ProductCategory.MISCELLANEOUS.name
+                    it[rarity] = Rarity.COMMON.name
+                    it[price] = -1
+                    it[currency] = goldId
+                    it[merchant] = merchantId
+                    it[stock] = 1
+                }
+            }
+
+            assertFails {
+                Products.insert {
+                    it[name] = "Negative Stock"
+                    it[category] = ProductCategory.MISCELLANEOUS.name
+                    it[rarity] = Rarity.COMMON.name
+                    it[price] = 1
+                    it[currency] = goldId
+                    it[merchant] = merchantId
+                    it[stock] = -1
+                }
+            }
+        }
+    }
+
+    @Test
     fun testProductFK() {
         transaction {
             SchemaUtils.create(Currencies, Merchants, Products)

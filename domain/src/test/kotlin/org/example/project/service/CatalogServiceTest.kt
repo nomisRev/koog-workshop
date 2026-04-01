@@ -27,15 +27,19 @@ class CatalogServiceTest {
         }
     }
 
-    private fun createWeapon(name: String = "Test Sword") = Product.Weapon(
+    private fun createWeapon(
+        name: String = "Test Sword",
+        price: Long = 100,
+        stock: Int = 10
+    ) = Product.Weapon(
         id = ProductId(kotlin.uuid.Uuid.random()),
         name = name,
         description = null,
         rarity = Rarity.COMMON,
-        price = 100,
+        price = price,
         currencyId = goldId,
         merchantId = merchantId,
-        stock = 10,
+        stock = stock,
         imageUrl = null,
         isActive = true,
         createdAt = kotlin.time.Instant.DISTANT_PAST,
@@ -89,12 +93,43 @@ class CatalogServiceTest {
         val id = catalogService.createProduct(weapon)
         val created = catalogService.getProduct(id)
         assertNotNull(created)
-        assertIs<Product.Weapon>(created)
-        val updated = catalogService.updateProduct(created.copy(name = "Epic Sword"))
+        val createdWeapon = created as Product.Weapon
+        val updated = catalogService.updateProduct(createdWeapon.copy(name = "Epic Sword"))
         assertTrue(updated)
         val fetched = catalogService.getProduct(id)
         assertNotNull(fetched)
         assertEquals("Epic Sword", fetched.name)
+    }
+
+    @Test
+    fun testCreateProductRejectsNegativeValues() = runBlocking {
+        val negativePriceException = assertFailsWith<IllegalArgumentException> {
+            catalogService.createProduct(createWeapon(price = -1))
+        }
+        assertTrue(negativePriceException.message!!.contains("non-negative"))
+
+        val negativeStockException = assertFailsWith<IllegalArgumentException> {
+            catalogService.createProduct(createWeapon(stock = -1))
+        }
+        assertTrue(negativeStockException.message!!.contains("non-negative"))
+    }
+
+    @Test
+    fun testUpdateProductRejectsNegativeValues() = runBlocking {
+        val id = catalogService.createProduct(createWeapon())
+        val created = catalogService.getProduct(id)
+        assertNotNull(created)
+        val createdWeapon = created as Product.Weapon
+
+        val negativePriceException = assertFailsWith<IllegalArgumentException> {
+            catalogService.updateProduct(createdWeapon.copy(price = -1))
+        }
+        assertTrue(negativePriceException.message!!.contains("non-negative"))
+
+        val negativeStockException = assertFailsWith<IllegalArgumentException> {
+            catalogService.updateProduct(createdWeapon.copy(stock = -1))
+        }
+        assertTrue(negativeStockException.message!!.contains("non-negative"))
     }
 
     @Test

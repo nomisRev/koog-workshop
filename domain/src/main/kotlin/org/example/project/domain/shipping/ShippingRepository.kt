@@ -14,7 +14,7 @@ import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.jetbrains.exposed.v1.jdbc.update
+import org.example.project.db.update as storeUpdate
 
 @OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 class ShippingRepository {
@@ -43,8 +43,9 @@ class ShippingRepository {
         baseCost: Long,
         currencyId: CurrencyId,
         estimatedDays: Int
-    ): ShippingMethodId =
-        ShippingMethodId(
+    ): ShippingMethodId {
+        require(baseCost >= 0) { "Shipping base cost must be non-negative" }
+        return ShippingMethodId(
             ShippingMethods.insertAndGetId {
                 it[ShippingMethods.name] = name
                 it[ShippingMethods.description] = description
@@ -53,6 +54,7 @@ class ShippingRepository {
                 it[ShippingMethods.estimatedDays] = estimatedDays
             }.value
         )
+    }
 
     context(_: Transaction)
     fun updateShippingMethod(
@@ -63,8 +65,9 @@ class ShippingRepository {
         currencyId: CurrencyId? = null,
         estimatedDays: Int? = null,
         isActive: Boolean? = null
-    ): Boolean =
-        ShippingMethods.update({ ShippingMethods.id eq id.value }) {
+    ): Boolean {
+        require(baseCost == null || baseCost >= 0) { "Shipping base cost must be non-negative" }
+        return ShippingMethods.storeUpdate({ ShippingMethods.id eq id.value }) {
             if (name != null) it[ShippingMethods.name] = name
             if (description != null) it[ShippingMethods.description] = description
             if (baseCost != null) it[ShippingMethods.baseCost] = baseCost
@@ -72,6 +75,7 @@ class ShippingRepository {
             if (estimatedDays != null) it[ShippingMethods.estimatedDays] = estimatedDays
             if (isActive != null) it[ShippingMethods.isActive] = isActive
         } > 0
+    }
 
     context(_: Transaction)
     fun deleteShippingMethod(id: ShippingMethodId): Boolean {

@@ -9,11 +9,15 @@ import org.example.project.domain.currency.CurrencyService
 import org.example.project.domain.shipping.ShippingService
 import org.example.project.domain.shared.*
 import org.jetbrains.exposed.v1.jdbc.Database
+import java.nio.ByteBuffer
+import java.sql.DriverManager
 import kotlin.test.*
+import kotlin.uuid.toJavaUuid
 
 @OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 class OrderServiceTest {
     private lateinit var database: Database
+    private lateinit var databaseFile: java.io.File
     private lateinit var orderService: OrderService
     private lateinit var cartService: CartService
     private lateinit var catalogService: CatalogService
@@ -29,8 +33,8 @@ class OrderServiceTest {
 
     @BeforeTest
     fun setup() {
-        val testDbFile = java.io.File.createTempFile("test_order_", ".db").apply { deleteOnExit() }
-        database = Database.connect("jdbc:sqlite:${testDbFile.absolutePath}").createTables()
+        databaseFile = java.io.File.createTempFile("test_order_", ".db").apply { deleteOnExit() }
+        database = Database.connect("jdbc:sqlite:${databaseFile.absolutePath}").createTables()
 
         orderService = OrderService(database)
         cartService = CartService(database)
@@ -76,6 +80,74 @@ class OrderServiceTest {
         }
     }
 
+    private fun uuidBytes(id: kotlin.uuid.Uuid): ByteArray {
+        val javaUuid = id.toJavaUuid()
+        return ByteBuffer.allocate(16)
+            .putLong(javaUuid.mostSignificantBits)
+            .putLong(javaUuid.leastSignificantBits)
+            .array()
+    }
+
+    private fun insertRawProduct(
+        productId: ProductId,
+        name: String,
+        price: Long,
+        stock: Int,
+    ) {
+        DriverManager.getConnection("jdbc:sqlite:${databaseFile.absolutePath}").use { connection ->
+            connection.createStatement().use { statement ->
+                statement.execute("PRAGMA foreign_keys = ON")
+                statement.execute("PRAGMA ignore_check_constraints = ON")
+            }
+            connection.prepareStatement(
+                """
+                INSERT INTO products (id, name, category, rarity, price, currency_id, merchant_id, stock, is_active)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """.trimIndent()
+            ).use { statement ->
+                statement.setBytes(1, uuidBytes(productId.value))
+                statement.setString(2, name)
+                statement.setString(3, ProductCategory.MISCELLANEOUS.name)
+                statement.setString(4, Rarity.COMMON.name)
+                statement.setLong(5, price)
+                statement.setBytes(6, uuidBytes(goldId.value))
+                statement.setBytes(7, uuidBytes(merchantId.value))
+                statement.setInt(8, stock)
+                statement.setBoolean(9, true)
+                statement.executeUpdate()
+            }
+        }
+    }
+
+    private fun insertRawShippingMethod(
+        shippingMethodId: ShippingMethodId,
+        name: String,
+        baseCost: Long,
+        estimatedDays: Int = 3
+    ) {
+        DriverManager.getConnection("jdbc:sqlite:${databaseFile.absolutePath}").use { connection ->
+            connection.createStatement().use { statement ->
+                statement.execute("PRAGMA foreign_keys = ON")
+                statement.execute("PRAGMA ignore_check_constraints = ON")
+            }
+            connection.prepareStatement(
+                """
+                INSERT INTO shipping_methods (id, name, description, base_cost, currency_id, estimated_days, is_active)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """.trimIndent()
+            ).use { statement ->
+                statement.setBytes(1, uuidBytes(shippingMethodId.value))
+                statement.setString(2, name)
+                statement.setNull(3, java.sql.Types.VARCHAR)
+                statement.setLong(4, baseCost)
+                statement.setBytes(5, uuidBytes(goldId.value))
+                statement.setInt(6, estimatedDays)
+                statement.setBoolean(7, true)
+                statement.executeUpdate()
+            }
+        }
+    }
+
     @Test
     fun testCheckoutHappyPath() = runBlocking {
         cartService.addToCart(characterId, swordId, 2)
@@ -109,6 +181,48 @@ class OrderServiceTest {
         // Verify: cart is empty
         val cart = cartService.getCart(characterId)
         assertTrue(cart.isEmpty())
+    }
+
+    @Test
+    fun testCheckoutRejectsNegativePersistedProductPrice() = runBlocking {
+        val corruptedProductId = ProductId(kotlin.uuid.Uuid.random())
+        insertRawProduct(
+            productId = corruptedProductId,
+            name = "Corrupted Relic",
+            price = -100,
+            stock = 1
+        )
+        cartService.addToCart(characterId, corruptedProductId, 1)
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            orderService.checkout(characterId, mapOf(merchantId to shippingMethodId))
+        }
+        assertTrue(exception.message!!.contains("Product price must be non-negative"))
+    }
+
+    @Test
+    fun testCheckoutRejectsNegativePersistedShippingCost() = runBlocking {
+        val safeProductId = ProductId(kotlin.uuid.Uuid.random())
+        insertRawProduct(
+            productId = safeProductId,
+            name = "Legit Trinket",
+            price = 100,
+            stock = 1
+        )
+        cartService.addToCart(characterId, safeProductId, 1)
+
+        val corruptedShippingMethodId = ShippingMethodId(kotlin.uuid.Uuid.random())
+        insertRawShippingMethod(
+            shippingMethodId = corruptedShippingMethodId,
+            name = "Corrupted Courier",
+            baseCost = -50
+        )
+        shippingService.addShippingMethodToMerchant(merchantId, corruptedShippingMethodId)
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            orderService.checkout(characterId, mapOf(merchantId to corruptedShippingMethodId))
+        }
+        assertTrue(exception.message!!.contains("Shipping base cost must be non-negative"))
     }
 
     @Test

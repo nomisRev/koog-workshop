@@ -84,6 +84,34 @@ class ShippingServiceTest {
     }
 
     @Test
+    fun testCreateShippingMethodRejectsNegativeBaseCost() = runBlocking {
+        val exception = assertFailsWith<IllegalArgumentException> {
+            shippingService.createShippingMethod(
+                name = "Broken Courier",
+                baseCost = -1,
+                currencyId = goldId,
+                estimatedDays = 1
+            )
+        }
+        assertTrue(exception.message!!.contains("non-negative"))
+    }
+
+    @Test
+    fun testUpdateShippingMethodRejectsNegativeBaseCost() = runBlocking {
+        val id = shippingService.createShippingMethod(
+            name = "Dragon Express",
+            baseCost = 500,
+            currencyId = goldId,
+            estimatedDays = 1
+        )
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            shippingService.updateShippingMethod(id, baseCost = -1)
+        }
+        assertTrue(exception.message!!.contains("non-negative"))
+    }
+
+    @Test
     fun testDeleteShippingMethod() = runBlocking {
         val id = shippingService.createShippingMethod(
             name = "Dragon Express",

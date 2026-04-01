@@ -14,6 +14,7 @@ import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
+import org.example.project.db.update as storeUpdate
 
 @OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 class ProductRepository {
@@ -68,13 +69,15 @@ class ProductRepository {
         val newStock = currentStock + quantityChange
         if (newStock < 0) return false
 
-        return Products.update({ Products.id eq productId.value }) {
+        return Products.storeUpdate({ Products.id eq productId.value }) {
             it[stock] = newStock
         } > 0
     }
 
     context(_: Transaction)
     fun createProduct(product: Product): ProductId {
+        require(product.price >= 0) { "Product price must be non-negative" }
+        require(product.stock >= 0) { "Product stock must be non-negative" }
         val productId = ProductId(
             Products.insertAndGetId {
                 it[name] = product.name
@@ -104,7 +107,7 @@ class ProductRepository {
             is Product.Potion -> Potions.insert {
                 it[id] = productId.value
                 it[effect] = product.effect
-                it[duration] = product.duration ?: 0
+                it[duration] = product.duration
             }
             is Product.Scroll -> Scrolls.insert {
                 it[id] = productId.value
@@ -118,7 +121,9 @@ class ProductRepository {
 
     context(_: Transaction)
     fun updateProduct(product: Product): Boolean {
-        val updated = Products.update({ Products.id eq product.id.value }) {
+        require(product.price >= 0) { "Product price must be non-negative" }
+        require(product.stock >= 0) { "Product stock must be non-negative" }
+        val updated = Products.storeUpdate({ Products.id eq product.id.value }) {
             it[name] = product.name
             it[description] = product.description
             it[category] = product.category.name
@@ -143,7 +148,7 @@ class ProductRepository {
             }
             is Product.Potion -> Potions.update({ Potions.id eq product.id.value }) {
                 it[effect] = product.effect
-                it[duration] = product.duration ?: 0
+                it[duration] = product.duration
             }
             is Product.Scroll -> Scrolls.update({ Scrolls.id eq product.id.value }) {
                 it[spellName] = product.spellName

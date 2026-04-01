@@ -12,7 +12,7 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.jetbrains.exposed.v1.jdbc.update
+import org.example.project.db.update as storeUpdate
 
 class ReviewRepository {
 
@@ -68,7 +68,7 @@ class ReviewRepository {
 
     context(_: Transaction)
     fun updateReview(id: ReviewId, rating: Int? = null, text: String? = null): Boolean =
-        Reviews.update({ Reviews.id eq id.value }) {
+        Reviews.storeUpdate({ Reviews.id eq id.value }) {
             if (rating != null) it[Reviews.rating] = rating
             if (text != null) it[Reviews.text] = text
         } > 0

@@ -51,6 +51,23 @@ class ShippingAndCartTest {
     }
 
     @Test
+    fun testNegativeShippingBaseCostRejected() {
+        transaction {
+            SchemaUtils.create(Currencies, ShippingMethods)
+            val goldId = Currencies.insertAndGetId { it[code] = "GOLD"; it[name] = "Gold"; it[symbol] = "G" }
+
+            assertFails {
+                ShippingMethods.insert {
+                    it[ShippingMethods.name] = "Broken Courier"
+                    it[ShippingMethods.baseCost] = -1
+                    it[ShippingMethods.currency] = goldId
+                    it[ShippingMethods.estimatedDays] = 3
+                }
+            }
+        }
+    }
+
+    @Test
     fun testUniqueShippingName() {
         transaction {
             SchemaUtils.create(Currencies, ShippingMethods)
@@ -197,6 +214,32 @@ class ShippingAndCartTest {
             }
             CartItems.deleteWhere { CartItems.character eq charId }
             assertEquals(0L, CartItems.selectAll().where { CartItems.character eq charId }.count())
+        }
+    }
+
+    @Test
+    fun testCartQuantityMustBePositive() {
+        transaction {
+            SchemaUtils.create(Characters, Currencies, Merchants, Products, CartItems)
+            val charId = Characters.insertAndGetId { it[name] = "Hero" }
+            val goldId = Currencies.insertAndGetId { it[code] = "GOLD"; it[name] = "Gold"; it[symbol] = "G" }
+            val merchantId = Merchants.insertAndGetId { it[name] = "Shop" }
+            val prodId = Products.insertAndGetId {
+                it[Products.name] = "Sword"
+                it[Products.category] = "WEAPONS"
+                it[Products.rarity] = "COMMON"
+                it[Products.price] = 100
+                it[Products.currency] = goldId
+                it[Products.merchant] = merchantId
+            }
+
+            assertFails {
+                CartItems.insert {
+                    it[CartItems.character] = charId
+                    it[CartItems.product] = prodId
+                    it[CartItems.quantity] = 0
+                }
+            }
         }
     }
 

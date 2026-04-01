@@ -21,7 +21,7 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.jetbrains.exposed.v1.jdbc.update
+import org.example.project.db.update as storeUpdate
 
 class OrderRepository {
 
@@ -29,6 +29,18 @@ class OrderRepository {
     fun getOrderOrNull(id: OrderId): Order? =
         Orders.selectAll().where { Orders.id eq id.value }
             .map(::mapToOrder)
+            .singleOrNull()
+
+    context(_: Transaction)
+    fun getSubOrderOrNull(id: SubOrderId): SubOrder? =
+        SubOrders.selectAll().where { SubOrders.id eq id.value }
+            .map(::mapToSubOrder)
+            .singleOrNull()
+
+    context(_: Transaction)
+    fun getOrderItemOrNull(id: OrderItemId): OrderItem? =
+        OrderItems.selectAll().where { OrderItems.id eq id.value }
+            .map(::mapToOrderItem)
             .singleOrNull()
 
     context(_: Transaction)
@@ -80,13 +92,14 @@ class OrderRepository {
 
     context(_: Transaction)
     fun updateSubOrderStatus(subOrderId: SubOrderId, status: OrderStatus): Boolean =
-        SubOrders.update({ SubOrders.id eq subOrderId.value }) {
+        SubOrders.storeUpdate({ SubOrders.id eq subOrderId.value }) {
             it[SubOrders.status] = status.name
         } > 0
 
     context(_: Transaction)
-    fun createOrder(characterId: CharacterId, totalPrice: Long, totalCurrencyId: CurrencyId): OrderId =
-        OrderId(
+    fun createOrder(characterId: CharacterId, totalPrice: Long, totalCurrencyId: CurrencyId): OrderId {
+        require(totalPrice >= 0) { "Order total must be non-negative" }
+        return OrderId(
             Orders.insertAndGetId {
                 it[character] = characterId.value
                 it[status] = OrderStatus.PENDING.name
@@ -94,6 +107,7 @@ class OrderRepository {
                 it[totalCurrency] = totalCurrencyId.value
             }.value
         )
+    }
 
     context(_: Transaction)
     fun createSubOrder(
@@ -102,8 +116,10 @@ class OrderRepository {
         shippingMethodId: ShippingMethodId,
         shippingCost: Long,
         merchantTotalPrice: Long
-    ): SubOrderId =
-        SubOrderId(
+    ): SubOrderId {
+        require(shippingCost >= 0) { "Shipping cost must be non-negative" }
+        require(merchantTotalPrice >= 0) { "Merchant total must be non-negative" }
+        return SubOrderId(
             SubOrders.insertAndGetId {
                 it[order] = orderId.value
                 it[merchant] = merchantId.value
@@ -113,6 +129,7 @@ class OrderRepository {
                 it[SubOrders.merchantTotalPrice] = merchantTotalPrice
             }.value
         )
+    }
 
     context(_: Transaction)
     fun createOrderItem(
@@ -121,8 +138,10 @@ class OrderRepository {
         quantity: Int,
         snapshottedPrice: Long,
         snapshottedCurrencyId: CurrencyId
-    ): OrderItemId =
-        OrderItemId(
+    ): OrderItemId {
+        require(quantity > 0) { "Order item quantity must be positive" }
+        require(snapshottedPrice >= 0) { "Snapshotted price must be non-negative" }
+        return OrderItemId(
             OrderItems.insertAndGetId {
                 it[subOrder] = subOrderId.value
                 it[product] = productId.value
@@ -131,10 +150,11 @@ class OrderRepository {
                 it[snapshottedCurrency] = snapshottedCurrencyId.value
             }.value
         )
+    }
 
     context(_: Transaction)
     fun updateOrderStatus(orderId: OrderId, status: OrderStatus): Boolean =
-        Orders.update({ Orders.id eq orderId.value }) {
+        Orders.storeUpdate({ Orders.id eq orderId.value }) {
             it[Orders.status] = status.name
         } > 0
 
