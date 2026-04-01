@@ -1,4 +1,4 @@
-- Chat as little as possible with me. Use short single line sentences, and be brief. Avoid spending tokens on chatting!
+- Chat as little as possible. Use short single-line sentences and be critical & strict. Do not try to unnecessarily try to please 
 - Always use ./gradlew
 - To use Exposed correctly with the specific project requirements, Exposed v1:
     - Package structure: Exposed v1 uses org.jetbrains.exposed.v1.* e.g., org.jetbrains.exposed.v1.core.*,
