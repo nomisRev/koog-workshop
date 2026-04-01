@@ -223,6 +223,13 @@ internal fun stockAdjustmentAccessibilityDescription(quantityChange: Int): Strin
         "Decrease stock by ${-quantityChange}"
     }
 
+internal fun productActivationAccessibilityDescription(isActive: Boolean): String =
+    if (isActive) {
+        "Deactivate product"
+    } else {
+        "Activate product"
+    }
+
 internal fun orderStatusAccessibilityDescription(status: OrderStatus): String =
     "Set order status to ${status.labelize()}"
 

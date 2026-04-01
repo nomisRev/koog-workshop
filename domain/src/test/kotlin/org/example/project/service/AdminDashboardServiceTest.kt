@@ -79,7 +79,7 @@ class AdminDashboardServiceTest {
         val databaseFile = java.io.File.createTempFile("admin_dashboard_", ".db").apply {
             deleteOnExit()
         }
-        return connectSqlite(databaseFile).createTables()
+        return Database.connect("jdbc:sqlite:${databaseFile.absolutePath}").createTables()
     }
 
     private fun seedOrderHistory(database: Database) {

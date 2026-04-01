@@ -409,7 +409,13 @@ private fun ProductDetailPanel(
                             }
                         }
 
-                        OutlinedButton(onClick = { onSetActive(!product.isActive) }) {
+                        OutlinedButton(
+                            modifier = Modifier.semantics {
+                                contentDescription =
+                                    productActivationAccessibilityDescription(product.isActive)
+                            },
+                            onClick = { onSetActive(!product.isActive) }
+                        ) {
                             Text(if (product.isActive) "Deactivate product" else "Activate product")
                         }
                     }
@@ -440,4 +446,11 @@ private fun stockAdjustmentAccessibilityDescription(quantityChange: Int): String
         "Increase stock by $quantityChange"
     } else {
         "Decrease stock by ${-quantityChange}"
+    }
+
+private fun productActivationAccessibilityDescription(isActive: Boolean): String =
+    if (isActive) {
+        "Deactivate product"
+    } else {
+        "Activate product"
     }

@@ -34,8 +34,8 @@ class ComposeAppIntegrationTest {
                 .and(hasStateDescription(scenario.rowState(stock = scenario.initialStock + 5)))
         )
 
-        rule.onNodeWithText("Deactivate product").performClick()
-        rule.waitUntilExists(hasText("Activate product"))
+        rule.onNodeWithContentDescription(productActivationAccessibilityDescription(isActive = true)).performClick()
+        rule.waitUntilExists(hasContentDescription(productActivationAccessibilityDescription(isActive = false)))
 
         val product = scenario.loadProduct()
         assertEquals(scenario.initialStock + 5, product.stock)
