@@ -107,7 +107,7 @@ fun OrderHistoryScreen(
         )
 
         is DashboardUiState.Ready -> OrderHistoryCard(
-            orders = uiState.orders,
+            orders = uiState.recentOrders,
             onOrderClick = onOrderClick
         )
     }

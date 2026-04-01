@@ -47,19 +47,17 @@ fun AdminRoute(dashboardService: AdminDashboardService) {
         ) {
             when (val current = destination) {
                 AdminDestination.OrderList -> {
-                    val refreshOrderHistory: () -> Unit = {
-                        coroutineScope.launch {
-                            dashboardViewModel.loadOrderHistory()
-                        }
+                    fun refreshOrderHistory() = coroutineScope.launch {
+                        dashboardViewModel.loadOrderHistory()
                     }
 
                     AdminScreenScaffold(
                         title = "Order history",
-                        onRefresh = refreshOrderHistory
+                        onRefresh = ::refreshOrderHistory
                     ) {
                         OrderHistoryScreen(
                             uiState = dashboardState,
-                            onRefresh = refreshOrderHistory,
+                            onRefresh = ::refreshOrderHistory,
                             onOrderClick = { order ->
                                 orderDetailViewModel.startLoading()
                                 destination = AdminDestination.OrderDetail(order.orderId)
@@ -70,11 +68,9 @@ fun AdminRoute(dashboardService: AdminDashboardService) {
 
                 is AdminDestination.OrderDetail -> {
                     val orderDetailState by orderDetailViewModel.uiState.collectAsState()
-                    val refreshOrderDetail: () -> Unit = {
-                        coroutineScope.launch {
-                            dashboardViewModel.loadOrderHistory()
-                            orderDetailViewModel.loadOrderDetail(current.orderId)
-                        }
+                    fun refreshOrderDetail() = coroutineScope.launch {
+                        dashboardViewModel.loadOrderHistory()
+                        orderDetailViewModel.loadOrderDetail(current.orderId)
                     }
 
                     LaunchedEffect(current.orderId) {
@@ -86,11 +82,11 @@ fun AdminRoute(dashboardService: AdminDashboardService) {
                         onBack = {
                             destination = AdminDestination.OrderList
                         },
-                        onRefresh = refreshOrderDetail
+                        onRefresh = ::refreshOrderDetail
                     ) {
                         OrderDetailScreen(
                             uiState = orderDetailState,
-                            onRefresh = refreshOrderDetail,
+                            onRefresh = ::refreshOrderDetail,
                             onItemClick = { item ->
                                 orderDetailViewModel.selectItem(item.item.id)
                             }
@@ -108,25 +104,23 @@ private fun AdminScreenScaffold(
     onBack: (() -> Unit)? = null,
     onRefresh: (() -> Unit)? = null,
     content: @Composable () -> Unit
-) {
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = Color.Transparent,
-        topBar = {
-            AdminTopBar(
-                title = title,
-                onBack = onBack,
-                onRefresh = onRefresh
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            content()
-        }
+) = Scaffold(
+    modifier = Modifier.fillMaxSize(),
+    containerColor = Color.Transparent,
+    topBar = {
+        AdminTopBar(
+            title = title,
+            onBack = onBack,
+            onRefresh = onRefresh
+        )
+    }
+) { paddingValues ->
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+    ) {
+        content()
     }
 }
 

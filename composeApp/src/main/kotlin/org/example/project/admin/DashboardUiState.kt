@@ -7,10 +7,5 @@ sealed interface DashboardUiState {
     data object Uninitialized : DashboardUiState
     data object Loading : DashboardUiState
     data class Error(val message: String) : DashboardUiState
-    data class Ready(
-        val recentOrders: PersistentList<RecentOrderSummary>
-    ) : DashboardUiState {
-        val orders: PersistentList<RecentOrderSummary>
-            get() = recentOrders
-    }
+    data class Ready(val recentOrders: PersistentList<RecentOrderSummary>) : DashboardUiState
 }
