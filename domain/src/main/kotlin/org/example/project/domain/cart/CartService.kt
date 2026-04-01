@@ -27,7 +27,14 @@ class CartService(
             val product = productRepository.getProductOrNull(productId)
                 ?: throw IllegalArgumentException("Product not found: $productId")
             require(product.isActive) { "Product is not active: $productId" }
-            require(product.stock >= quantity) { "Insufficient stock for product: $productId" }
+            val existingQuantity = cartRepository.getCartItems(characterId)
+                .firstOrNull { it.productId == productId }
+                ?.quantity
+                ?: 0
+            val requestedQuantity = existingQuantity + quantity
+            require(product.stock >= requestedQuantity) {
+                "Insufficient stock for product: $productId"
+            }
             cartRepository.addToCart(characterId, productId, quantity)
         }
     }
@@ -35,6 +42,14 @@ class CartService(
     suspend fun updateQuantity(cartItemId: CartItemId, quantity: Int): Boolean {
         require(quantity > 0) { "Quantity must be positive" }
         return database.suspendTransaction {
+            val cartItem = cartRepository.getCartItemOrNull(cartItemId)
+                ?: return@suspendTransaction false
+            val product = productRepository.getProductOrNull(cartItem.productId)
+                ?: throw IllegalStateException("Product not found: ${cartItem.productId}")
+            require(product.isActive) { "Product is not active: ${cartItem.productId}" }
+            require(product.stock >= quantity) {
+                "Insufficient stock for product: ${cartItem.productId}"
+            }
             cartRepository.updateQuantity(cartItemId, quantity)
         }
     }

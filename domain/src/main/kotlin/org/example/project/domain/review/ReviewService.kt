@@ -43,6 +43,11 @@ class ReviewService(
             require(subOrder.status == OrderStatus.DELIVERED) {
                 "Order item $orderItemId is not eligible for review: sub-order status ${subOrder.status}"
             }
+            require(
+                reviewRepository.getReviewForCharacterAndOrderItemOrNull(characterId, orderItemId) == null
+            ) {
+                "Review already exists for order item: $orderItemId"
+            }
 
             reviewRepository.createReview(characterId, productId, orderItemId, rating, text)
         }

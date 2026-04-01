@@ -182,4 +182,17 @@ class ReviewServiceTest {
         }
         assertTrue(exception.message!!.contains("not eligible for review"))
     }
+
+    @Test
+    fun testReviewRejectsDuplicateReviewForSameOrderItem() = runBlocking {
+        reviewService.createReview(characterId, productId, orderItemId, 5, "First review")
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            reviewService.createReview(characterId, productId, orderItemId, 4, "Second review")
+        }
+        assertTrue(exception.message!!.contains("Review already exists"))
+
+        val reviews = reviewService.getProductReviews(productId)
+        assertEquals(1, reviews.items.size)
+    }
 }

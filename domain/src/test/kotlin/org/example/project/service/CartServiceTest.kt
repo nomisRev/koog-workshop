@@ -115,4 +115,30 @@ class CartServiceTest {
         val cart = cartService.getCart(characterId)
         assertTrue(cart.isEmpty())
     }
+
+    @Test
+    fun testAddToCartRejectsCombinedQuantityAboveStock() = runBlocking {
+        cartService.addToCart(characterId, productId, 8)
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            cartService.addToCart(characterId, productId, 3)
+        }
+        assertTrue(exception.message!!.contains("Insufficient stock"))
+
+        val cart = cartService.getCart(characterId)
+        assertEquals(8, cart.single().quantity)
+    }
+
+    @Test
+    fun testUpdateQuantityRejectsQuantityAboveStock() = runBlocking {
+        val cartItemId = cartService.addToCart(characterId, productId, 1)
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            cartService.updateQuantity(cartItemId, 11)
+        }
+        assertTrue(exception.message!!.contains("Insufficient stock"))
+
+        val cart = cartService.getCart(characterId)
+        assertEquals(1, cart.single().quantity)
+    }
 }

@@ -75,6 +75,12 @@ class ProductRepository {
     }
 
     context(_: Transaction)
+    fun setProductActive(productId: ProductId, isActive: Boolean): Boolean =
+        Products.storeUpdate({ Products.id eq productId.value }) {
+            it[Products.isActive] = isActive
+        } > 0
+
+    context(_: Transaction)
     fun createProduct(product: Product): ProductId {
         require(product.price >= 0) { "Product price must be non-negative" }
         require(product.stock >= 0) { "Product stock must be non-negative" }

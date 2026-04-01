@@ -48,6 +48,12 @@ class CartRepository {
             .map(::mapToCartItem)
 
     context(_: Transaction)
+    fun getCartItemOrNull(cartItemId: CartItemId): CartItem? =
+        CartItems.selectAll().where { CartItems.id eq cartItemId.value }
+            .map(::mapToCartItem)
+            .singleOrNull()
+
+    context(_: Transaction)
     fun updateQuantity(cartItemId: CartItemId, quantity: Int): Boolean {
         require(quantity > 0) { "Quantity must be positive" }
         return CartItems.storeUpdate({ CartItems.id eq cartItemId.value }) {

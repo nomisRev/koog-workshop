@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.Transaction
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
@@ -63,6 +64,17 @@ class ReviewRepository {
     context(_: Transaction)
     fun getReviewOrNull(id: ReviewId): Review? =
         Reviews.selectAll().where { Reviews.id eq id.value }
+            .map(::mapToReview)
+            .singleOrNull()
+
+    context(_: Transaction)
+    fun getReviewForCharacterAndOrderItemOrNull(
+        characterId: CharacterId,
+        orderItemId: OrderItemId
+    ): Review? =
+        Reviews.selectAll().where {
+            (Reviews.character eq characterId.value) and (Reviews.orderItem eq orderItemId.value)
+        }
             .map(::mapToReview)
             .singleOrNull()
 

@@ -9,7 +9,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import org.example.project.admin.AdminRoute
 import org.example.project.admin.createAdminDatabase
-import org.example.project.domain.admin.AdminDashboardService
+import org.example.project.domain.admin.OrderAdminService
+import org.example.project.domain.admin.ProductAdminService
 
 private val AdminColorScheme: ColorScheme = lightColorScheme(
     primary = Color(0xFF0F766E),
@@ -40,11 +41,13 @@ private val AdminColorScheme: ColorScheme = lightColorScheme(
 @Preview
 fun App() {
     val database = remember { createAdminDatabase() }
-    val dashboardService = remember(database) { AdminDashboardService(database) }
+    val productAdminService = remember(database) { ProductAdminService(database) }
+    val orderAdminService = remember(database) { OrderAdminService(database) }
 
     MaterialTheme(colorScheme = AdminColorScheme) {
         AdminRoute(
-            dashboardService = dashboardService
+            productAdminService = productAdminService,
+            orderAdminService = orderAdminService
         )
     }
 }
