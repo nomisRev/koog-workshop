@@ -25,6 +25,10 @@ import kotlin.uuid.ExperimentalUuidApi
 class CharacterRepository {
 
     context(_: Transaction)
+    fun listCharacters(): List<Character> =
+        Characters.selectAll().map(::mapToCharacter)
+
+    context(_: Transaction)
     fun getCharacterOrNull(id: CharacterId): Character? =
         Characters.findByIdOrNull(id.value, ::mapToCharacter)
 

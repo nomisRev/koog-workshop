@@ -1,9 +1,16 @@
 package org.example.project
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -22,16 +29,24 @@ import org.example.project.admin.app.AdminRoute
 import org.example.project.chat.ChatScreen
 import org.example.project.chat.ChatTopBar
 import org.example.project.chat.ChatViewModel
+import org.example.project.domain.character.Character
 import kotlin.uuid.Uuid
 
 fun main() {
-    val session = Uuid.random().toString()
+    val session = Uuid.random()
     println("Session: $session")
 
     val dependencies = dependencies()
 
     application {
         var adminWindowOpen by remember { mutableStateOf(false) }
+        var loginDialogOpen by remember { mutableStateOf(false) }
+        var loggedInCharacter by remember { mutableStateOf<Character?>(null) }
+        var characters by remember { mutableStateOf<List<Character>>(emptyList()) }
+
+        LaunchedEffect(Unit) {
+            characters = dependencies.characterService.listCharacters()
+        }
 
         MaterialTheme(AppColorScheme) {
             Window(
@@ -42,14 +57,18 @@ fun main() {
                 )
             ) {
                 val chatViewModel: ChatViewModel =
-                    viewModel(factory = ChatViewModel.factory(session, dependencies.chat))
+                    viewModel(factory = ChatViewModel.factory(session, loggedInCharacter?.id, dependencies.chat))
                 val chatUiState by chatViewModel.uiState.collectAsState()
 
                 LaunchedEffect(Unit) { chatViewModel.loadHistory() }
 
                 Scaffold(
                     topBar = {
-                        ChatTopBar(onAdminClick = { adminWindowOpen = true })
+                        ChatTopBar(
+                            onAdminClick = { adminWindowOpen = true },
+                            onLoginClick = { loginDialogOpen = true },
+                            loggedInCharacterName = loggedInCharacter?.name
+                        )
                     }
                 ) { paddingValues ->
                     Box(modifier = Modifier.padding(paddingValues)) {
@@ -59,6 +78,40 @@ fun main() {
                             onSendMessage = chatViewModel::sendMessage
                         )
                     }
+                }
+
+                if (loginDialogOpen) {
+                    AlertDialog(
+                        onDismissRequest = { loginDialogOpen = false },
+                        title = { Text("Select Character") },
+                        text = {
+                            Column {
+                                if (characters.isEmpty()) {
+                                    Text("No characters found.")
+                                } else {
+                                    LazyColumn {
+                                        items(characters) { character ->
+                                            TextButton(
+                                                onClick = {
+                                                    loggedInCharacter = character
+                                                    loginDialogOpen = false
+                                                },
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Text(character.name)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {},
+                        dismissButton = {
+                            TextButton(onClick = { loginDialogOpen = false }) {
+                                Text("Cancel")
+                            }
+                        }
+                    )
                 }
 
                 if (adminWindowOpen) {

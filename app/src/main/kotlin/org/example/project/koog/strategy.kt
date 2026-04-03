@@ -10,6 +10,7 @@ import ai.koog.agents.core.dsl.extension.nodeLLMRequest
 import ai.koog.agents.core.dsl.extension.nodeLLMSendToolResult
 import ai.koog.agents.core.dsl.extension.onAssistantMessage
 import ai.koog.agents.core.dsl.extension.onToolCall
+import ai.koog.agents.core.tools.annotations.Tool
 import ai.koog.agents.core.tools.reflect.ToolFromCallable
 import ai.koog.agents.core.tools.reflect.ToolSet
 import ai.koog.agents.ext.agent.CriticResult
@@ -42,7 +43,9 @@ class ReadOrderTools(
     val characterId: CharacterId,
     val orderService: OrderService
 ) : ToolSet {
+    @Tool
     suspend fun getOrderHistory(offset: Long = 0, limit: Long = 5) = orderService.getOrderHistory(characterId)
+    @Tool
     suspend fun getOrder(orderId: OrderId) = orderService.getOrderDetailsOrNull(orderId)
 }
 
@@ -51,8 +54,10 @@ class UpdateOrderTools(
     val orderService: OrderService
 ) : ToolSet {
     // TODO: update cancelOrder such that it guarantees that its characterId is the owner of the order??
+    @Tool
     suspend fun cancelOrder(order: OrderId) = orderService.cancelOrder(order)
 
+    @Tool
     suspend fun updateSubOrderStatus(subOrderId: SubOrderId, status: OrderStatus) =
         orderService.updateSubOrderStatus(subOrderId, status)
 }

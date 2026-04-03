@@ -16,17 +16,25 @@ import kotlinx.collections.immutable.toPersistentList
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
+import org.example.project.domain.order.OrderService
+import org.example.project.domain.shared.CharacterId
 import org.example.project.koog.AskQuestionTool
+import org.example.project.koog.CustomerSupportTools
+import org.example.project.koog.ReadOrderTools
+import org.example.project.koog.UpdateOrderTools
+import org.example.project.koog.orderCustomerSupportStrategy
+import kotlin.uuid.Uuid
 
 @Serializable
 private data class ToolMessage(val message: String)
 
 class ChatAgent(
     private val executor: PromptExecutor,
-    val history: ChatHistoryProvider
+    private val orderService: OrderService,
+    val history: ChatHistoryProvider,
 ) {
-    suspend fun loadChat(conversationId: String): PersistentList<ChatUi.Message> {
-        val history = history.load(conversationId)
+    suspend fun loadChat(sessionId: Uuid): PersistentList<ChatUi.Message> {
+        val history = history.load(sessionId.toString())
         return history.mapNotNull { message ->
             when (message) {
                 is Message.User -> ChatUi.Message.User(message.content)
@@ -49,10 +57,11 @@ class ChatAgent(
     }
 
     suspend fun sendMessage(
-        sessionId: String,
+        characterId: CharacterId?,
+        sessionId: Uuid,
         userMessage: String,
         askQuestion: suspend (message: String) -> String
-    ): ChatUi.Message.CustomerSupport {
+    ): ChatUi.Message.CustomerSupport = if (characterId == null) {
         val agent = AIAgent(
             promptExecutor = executor,
             systemPrompt = """
@@ -62,6 +71,7 @@ class ChatAgent(
             llmModel = OpenAIModels.Chat.GPT5_4,
             toolRegistry = ToolRegistry {
                 tools(AskQuestionTool(askQuestion))
+
             }
         ) {
             install(ChatMemory) {
@@ -73,6 +83,36 @@ class ChatAgent(
             }
         }
 
-        return ChatUi.Message.CustomerSupport(agent.run(userMessage, sessionId))
+        ChatUi.Message.CustomerSupport(agent.run(userMessage, sessionId.toString()))
+    } else {
+        val tools = CustomerSupportTools(
+            askQuestionTool = AskQuestionTool(askQuestion),
+            readOrderTools = ReadOrderTools(characterId, orderService),
+            updateOrderTools = UpdateOrderTools(characterId, orderService)
+        )
+        val agent = AIAgent(
+            promptExecutor = executor,
+            strategy = orderCustomerSupportStrategy(tools),
+            systemPrompt = """
+                | You are a helpful Fantasy Store assistant. Help customers with products, orders, and general inquiries.
+                | Use the askQuestion in case you're unsure or there is any missing data for solve the issue.
+            """.trimMargin(),
+            llmModel = OpenAIModels.Chat.GPT5_4,
+            toolRegistry = ToolRegistry {
+                tools(tools.askQuestionTool)
+                tools(tools.readOrderTools)
+                tools(tools.updateOrderTools)
+            }
+        ) {
+            install(ChatMemory) {
+                chatHistoryProvider = history
+                windowSize(50)
+            }
+            install(Tracing) {
+                addMessageProcessor(TraceFeatureMessageLogWriter(KotlinLogging.logger { }))
+            }
+        }
+
+        ChatUi.Message.CustomerSupport(agent.run(userMessage, sessionId.toString()))
     }
 }

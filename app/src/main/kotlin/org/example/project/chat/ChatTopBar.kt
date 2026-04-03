@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,7 +19,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun ChatTopBar(onAdminClick: () -> Unit) {
+fun ChatTopBar(
+    onAdminClick: () -> Unit,
+    onLoginClick: () -> Unit,
+    loggedInCharacterName: String?
+) {
     Surface(
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
         tonalElevation = 1.dp,
@@ -39,6 +44,18 @@ fun ChatTopBar(onAdminClick: () -> Unit) {
             )
 
             Spacer(modifier = Modifier.weight(1f))
+
+            if (loggedInCharacterName != null) {
+                Text(
+                    text = loggedInCharacterName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            OutlinedButton(onClick = onLoginClick) {
+                Text(if (loggedInCharacterName != null) "SWITCH" else "LOGIN")
+            }
 
             Button(onClick = onAdminClick) {
                 Text("ADMIN")

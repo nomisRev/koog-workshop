@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.example.project.chat.ChatUi.Message.User
+import org.example.project.domain.shared.CharacterId
 import kotlin.reflect.KClass
 import kotlin.uuid.Uuid
 
@@ -47,7 +48,8 @@ data class ChatUi(
 }
 
 class ChatViewModel(
-    private val session: String,
+    private val session: Uuid,
+    private val characterId: CharacterId?,
     private val chat: ChatAgent
 ) : ViewModel() {
     val uiState: StateFlow<ChatUi>
@@ -92,7 +94,7 @@ class ChatViewModel(
                     )
                 }
 
-                val reply = chat.sendMessage(session, message) { question ->
+                val reply = chat.sendMessage(characterId, session, message) { question ->
                     val deferred = CompletableDeferred<String>()
                     updateState(ChatState.AwaitingUserAnswer(deferred)) {
                         copy(messages = messages.add(ChatUi.Message.CustomerSupport(question)))
@@ -110,11 +112,11 @@ class ChatViewModel(
     }
 
     companion object {
-        fun factory(session: String, chat: ChatAgent): ViewModelProvider.Factory =
+        fun factory(session: Uuid, characterId: CharacterId?, chat: ChatAgent): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: KClass<T>, extras: CreationExtras): T {
-                    return ChatViewModel(session, chat) as T
+                    return ChatViewModel(session, characterId, chat) as T
                 }
             }
     }

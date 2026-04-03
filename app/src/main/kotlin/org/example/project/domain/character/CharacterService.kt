@@ -15,6 +15,9 @@ class CharacterService(
     private val database: Database,
     private val characterRepository: CharacterRepository = CharacterRepository()
 ) {
+    suspend fun listCharacters(): List<Character> =
+        database.suspendTransaction { characterRepository.listCharacters() }
+
     suspend fun getCharacterOrNull(id: CharacterId): Character? =
         database.suspendTransaction { characterRepository.getCharacterOrNull(id) }
 

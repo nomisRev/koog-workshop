@@ -7,6 +7,8 @@ import org.example.project.db.createDatabase
 import org.example.project.admin.merchants.AdminMerchantService
 import org.example.project.admin.orders.operations.AdminOrderService
 import org.example.project.admin.products.AdminProductService
+import org.example.project.domain.character.CharacterService
+import org.example.project.domain.order.OrderService
 import org.example.project.koog.JdbcChatHistoryProvider
 import java.lang.System.getenv
 
@@ -17,13 +19,17 @@ fun dependencies(): Dependencies {
     val productService = AdminProductService(database)
     val merchantService = AdminMerchantService(database)
     val orderService = AdminOrderService(database)
+    val characterService = CharacterService(database)
     val executor = simpleOpenAIExecutor(requireNotNull(getenv("OPENAI_API_KEY")) { "OPENAI_API_KEY not set" })
-    val chat = ChatAgent(executor = executor, history = chatProvider)
-    return Dependencies(Dependencies.Services(productService, merchantService, orderService), chat)
+
+    val chat = ChatAgent(executor = executor, history = chatProvider, orderService = OrderService(database))
+
+    return Dependencies(Dependencies.Services(productService, merchantService, orderService), characterService, chat)
 }
 
 class Dependencies(
     val services: Services,
+    val characterService: CharacterService,
     val chat: ChatAgent
 ) {
     class Services(
