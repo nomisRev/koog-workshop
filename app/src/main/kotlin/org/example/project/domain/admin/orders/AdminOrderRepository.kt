@@ -1,4 +1,4 @@
-package org.example.project.domain.admin
+package org.example.project.domain.admin.orders
 
 import org.example.project.domain.catalog.Merchants
 import org.example.project.domain.catalog.Products
@@ -46,7 +46,42 @@ class AdminOrderRepository {
 
     context(_: Transaction)
     fun getOrders(filter: OrderFilter): List<OrderListItem> {
+        // Push merchantId / subOrderStatus filters to SQL to avoid a full SubOrders scan.
+        val qualifyingOrderIds: Set<OrderId>? =
+            if (filter.merchantId != null || filter.subOrderStatus != null) {
+                val subOrderConditions = buildList {
+                    if (filter.merchantId != null) add(SubOrders.merchant eq filter.merchantId.value)
+                    if (filter.subOrderStatus != null) add(SubOrders.status eq filter.subOrderStatus.name)
+                }
+                SubOrders.selectAll()
+                    .where { subOrderConditions.reduce { a, b -> a and b } }
+                    .map { row -> OrderId(row[SubOrders.order].value) }
+                    .toSet()
+            } else null
+
+        if (qualifyingOrderIds != null && qualifyingOrderIds.isEmpty()) return emptyList()
+
+        val orderConditions = buildList {
+            if (filter.orderStatus != null) add(Orders.status eq filter.orderStatus.name)
+            if (qualifyingOrderIds != null) add(Orders.id inList qualifyingOrderIds.map { it.value })
+        }
+
+        val normalizedQuery = filter.orderIdQuery.trim().lowercase()
+
+        val orderRows = (Orders innerJoin Characters innerJoin Currencies)
+            .selectAll()
+            .let { q -> if (orderConditions.isEmpty()) q else q.where { orderConditions.reduce { a, b -> a and b } } }
+            .orderBy(Orders.createdAt to SortOrder.DESC, Orders.id to SortOrder.DESC)
+            .let { q ->
+                if (normalizedQuery.isBlank()) q.toList()
+                else q.filter { row -> row[Orders.id].value.toString().lowercase().contains(normalizedQuery) }
+            }
+
+        if (orderRows.isEmpty()) return emptyList()
+
+        val matchedOrderIds = orderRows.map { row -> OrderId(row[Orders.id].value) }
         val subOrderInfoByOrderId = SubOrders.selectAll()
+            .where { SubOrders.order inList matchedOrderIds.map { it.value } }
             .map { row ->
                 SimpleSubOrderInfo(
                     orderId = OrderId(row[SubOrders.order].value),
@@ -56,38 +91,19 @@ class AdminOrderRepository {
             }
             .groupBy { info -> info.orderId }
 
-        return (Orders innerJoin Characters innerJoin Currencies)
-            .selectAll()
-            .orderBy(Orders.createdAt to SortOrder.DESC, Orders.id to SortOrder.DESC)
-            .mapNotNull { row ->
-                val orderId = OrderId(row[Orders.id].value)
-                val subOrders = subOrderInfoByOrderId[orderId].orEmpty()
-                val status = OrderStatus.valueOf(row[Orders.status])
-                val orderIdText = orderId.value.toString()
-                val normalizedQuery = filter.orderIdQuery.trim().lowercase()
-                if (normalizedQuery.isNotBlank() && !orderIdText.lowercase().contains(normalizedQuery)) {
-                    return@mapNotNull null
-                }
-                if (filter.orderStatus != null && status != filter.orderStatus) {
-                    return@mapNotNull null
-                }
-                if (filter.subOrderStatus != null && subOrders.none { info -> info.status == filter.subOrderStatus }) {
-                    return@mapNotNull null
-                }
-                if (filter.merchantId != null && subOrders.none { info -> info.merchantId == filter.merchantId }) {
-                    return@mapNotNull null
-                }
-
-                OrderListItem(
-                    orderId = orderId,
-                    characterName = row[Characters.name],
-                    status = status,
-                    merchantCount = subOrders.map { info -> info.merchantId }.distinct().size,
-                    totalPrice = row[Orders.totalPrice],
-                    currencyCode = row[Currencies.code],
-                    createdAt = row[Orders.createdAt]
-                )
-            }
+        return orderRows.map { row ->
+            val orderId = OrderId(row[Orders.id].value)
+            val subOrders = subOrderInfoByOrderId[orderId].orEmpty()
+            OrderListItem(
+                orderId = orderId,
+                characterName = row[Characters.name],
+                status = OrderStatus.valueOf(row[Orders.status]),
+                merchantCount = subOrders.map { info -> info.merchantId }.distinct().size,
+                totalPrice = row[Orders.totalPrice],
+                currencyCode = row[Currencies.code],
+                createdAt = row[Orders.createdAt]
+            )
+        }
     }
 
     context(_: Transaction)
@@ -142,6 +158,13 @@ class AdminOrderRepository {
             .where { ShippingMethods.id inList shippingMethodIds.map { it.value } }
             .associateBy { row -> ShippingMethodId(row[ShippingMethods.id].value) }
 
+        val shippingCurrencyIds = shippingById.values.map { CurrencyId(it[ShippingMethods.currency].value) }.toSet()
+        val missingCurrencyIds = shippingCurrencyIds - currencyIds
+        val allCurrenciesById = if (missingCurrencyIds.isEmpty()) currenciesById
+        else currenciesById + Currencies.selectAll()
+            .where { Currencies.id inList missingCurrencyIds.map { it.value } }
+            .associateBy { row -> CurrencyId(row[Currencies.id].value) }
+
         val productsById = if (productIds.isEmpty()) emptyMap()
         else Products.selectAll()
             .where { Products.id inList productIds.map { it.value } }
@@ -154,7 +177,7 @@ class AdminOrderRepository {
             val itemDetails = itemRowsBySubOrderId[subOrder.id].orEmpty()
                 .map { (item, _) ->
                     val productRow = productsById[item.productId]
-                    val itemCurrencyCode = currenciesById[item.snapshottedCurrencyId]?.get(Currencies.code) ?: currencyCode
+                    val itemCurrencyCode = allCurrenciesById[item.snapshottedCurrencyId]?.get(Currencies.code) ?: currencyCode
                     AdminOrderItemDetail(
                         item = item,
                         productName = productRow?.get(Products.name) ?: "Unknown product",
@@ -172,7 +195,7 @@ class AdminOrderRepository {
                 merchantName = merchantRow?.get(Merchants.name) ?: "Unknown merchant",
                 shippingMethodName = shippingRow?.get(ShippingMethods.name) ?: "Unknown shipping method",
                 shippingCostCurrencyCode = shippingRow?.let { row ->
-                    currenciesById[CurrencyId(row[ShippingMethods.currency].value)]?.get(Currencies.code)
+                    allCurrenciesById[CurrencyId(row[ShippingMethods.currency].value)]?.get(Currencies.code)
                 } ?: currencyCode,
                 items = itemDetails
             )

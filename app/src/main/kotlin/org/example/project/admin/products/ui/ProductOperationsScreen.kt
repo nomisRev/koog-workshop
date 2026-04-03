@@ -49,9 +49,9 @@ import org.example.project.admin.shared.ui.formatAdminInstant
 import org.example.project.admin.shared.ui.formatAmount
 import org.example.project.admin.shared.ui.labelize
 import org.example.project.admin.shared.ui.toDisplayText
-import org.example.project.domain.admin.ProductActiveFilter
-import org.example.project.domain.admin.ProductDetail
-import org.example.project.domain.admin.ProductListItem
+import org.example.project.domain.admin.products.ProductActiveFilter
+import org.example.project.domain.admin.products.ProductDetail
+import org.example.project.domain.admin.products.ProductListItem
 import org.example.project.domain.catalog.ProductCategory
 import org.example.project.domain.shared.MerchantId
 import org.example.project.domain.shared.ProductId
@@ -59,13 +59,13 @@ import org.example.project.domain.shared.ProductId
 internal fun productActiveFilterCount(uiState: ProductAdminUiState): Int =
     productSecondaryFilterSummaries(uiState).size +
         (if (uiState.filter.nameQuery.isNotBlank()) 1 else 0) +
-        (if (uiState.filter.activeFilter != _root_ide_package_.org.example.project.domain.admin.ProductActiveFilter.ALL) 1 else 0)
+        (if (uiState.filter.activeFilter != ProductActiveFilter.ALL) 1 else 0)
 
 @Composable
 internal fun ProductFilterContent(
     uiState: ProductAdminUiState,
     onUpdateNameQuery: (String) -> Unit,
-    onUpdateActiveFilter: (org.example.project.domain.admin.ProductActiveFilter) -> Unit,
+    onUpdateActiveFilter: (ProductActiveFilter) -> Unit,
     onUpdateCategory: (org.example.project.domain.catalog.ProductCategory?) -> Unit,
     onUpdateMerchant: (org.example.project.domain.shared.MerchantId?) -> Unit
 ) {
@@ -81,7 +81,7 @@ internal fun ProductFilterContent(
             modifier = Modifier.horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            _root_ide_package_.org.example.project.domain.admin.ProductActiveFilter.entries.forEach { filter ->
+            ProductActiveFilter.entries.forEach { filter ->
                 FilterChip(
                     modifier = Modifier.semantics {
                         contentDescription = AdminAccessibility.productActiveFilter(filter)
@@ -163,7 +163,7 @@ fun ProductOperationsScreen(
 @Composable
 private fun ProductListPanel(
     modifier: Modifier,
-    products: PersistentList<org.example.project.domain.admin.ProductListItem>,
+    products: PersistentList<ProductListItem>,
     selectedProductId: org.example.project.domain.shared.ProductId?,
     onSelectProduct: (org.example.project.domain.shared.ProductId) -> Unit
 ) {
@@ -211,7 +211,7 @@ private fun ProductListPanel(
 
 @Composable
 private fun ProductRow(
-    product: org.example.project.domain.admin.ProductListItem,
+    product: ProductListItem,
     selected: Boolean,
     onClick: () -> Unit
 ) {
@@ -291,7 +291,7 @@ private fun ProductRow(
 @Composable
 private fun ProductDetailPanel(
     modifier: Modifier,
-    product: org.example.project.domain.admin.ProductDetail?,
+    product: ProductDetail?,
     onAdjustStock: (Int) -> Unit,
     onSetActive: (Boolean) -> Unit
 ) {
@@ -453,10 +453,10 @@ private fun productSecondaryFilterSummaries(uiState: ProductAdminUiState): List<
         }
     )
 
-private fun org.example.project.domain.admin.ProductListItem.productRowAccessibilityDescription(): String =
+private fun ProductListItem.productRowAccessibilityDescription(): String =
     "Product $name from $merchantName"
 
-private fun org.example.project.domain.admin.ProductListItem.productRowAccessibilityState(): String =
+private fun ProductListItem.productRowAccessibilityState(): String =
     "${if (isActive) "Active" else "Inactive"}, stock $stock"
 
 private fun stockAdjustmentAccessibilityDescription(quantityChange: Int): String =

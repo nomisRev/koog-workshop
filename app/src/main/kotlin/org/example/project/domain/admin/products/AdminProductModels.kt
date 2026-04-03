@@ -1,12 +1,10 @@
-package org.example.project.domain.admin
+package org.example.project.domain.admin.products
 
 import androidx.compose.runtime.Immutable
 import kotlin.time.Instant
 import org.example.project.domain.catalog.ProductCategory
 import org.example.project.domain.catalog.Rarity
-import org.example.project.domain.order.OrderStatus
 import org.example.project.domain.shared.MerchantId
-import org.example.project.domain.shared.OrderId
 import org.example.project.domain.shared.ProductId
 
 enum class ProductActiveFilter {
@@ -73,29 +71,4 @@ data class ProductDetail(
     val updatedAt: Instant,
     val reviewSummary: ProductReviewSummary,
     val categoryAttributes: List<ProductDetailAttribute>
-)
-
-@Immutable
-data class OrderFilter(
-    val orderIdQuery: String = "",
-    val orderStatus: OrderStatus? = null,
-    val subOrderStatus: OrderStatus? = null,
-    val merchantId: MerchantId? = null
-)
-
-@Immutable
-data class OrderMerchantOption(
-    val id: MerchantId,
-    val name: String
-)
-
-@Immutable
-data class OrderListItem(
-    val orderId: OrderId,
-    val characterName: String,
-    val status: OrderStatus,
-    val merchantCount: Int,
-    val totalPrice: Long,
-    val currencyCode: String,
-    val createdAt: Instant
 )

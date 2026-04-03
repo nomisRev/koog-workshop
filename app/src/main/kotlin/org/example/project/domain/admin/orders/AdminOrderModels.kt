@@ -1,14 +1,41 @@
-package org.example.project.domain.admin
+package org.example.project.domain.admin.orders
 
 import androidx.compose.runtime.Immutable
 import org.example.project.domain.character.Transaction
 import org.example.project.domain.character.TransactionType
 import org.example.project.domain.order.Order
 import org.example.project.domain.order.OrderItem
+import org.example.project.domain.order.OrderStatus
 import org.example.project.domain.order.SubOrder
+import org.example.project.domain.shared.MerchantId
 import org.example.project.domain.shared.OrderId
 import kotlin.math.abs
 import kotlin.time.Instant
+
+@Immutable
+data class OrderFilter(
+    val orderIdQuery: String = "",
+    val orderStatus: OrderStatus? = null,
+    val subOrderStatus: OrderStatus? = null,
+    val merchantId: MerchantId? = null
+)
+
+@Immutable
+data class OrderMerchantOption(
+    val id: MerchantId,
+    val name: String
+)
+
+@Immutable
+data class OrderListItem(
+    val orderId: OrderId,
+    val characterName: String,
+    val status: OrderStatus,
+    val merchantCount: Int,
+    val totalPrice: Long,
+    val currencyCode: String,
+    val createdAt: Instant
+)
 
 @Immutable
 data class AdminOrderDetail(

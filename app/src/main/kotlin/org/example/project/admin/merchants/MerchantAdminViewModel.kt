@@ -14,11 +14,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.example.project.domain.admin.merchants.AdminMerchantService
+import org.example.project.domain.admin.merchants.MerchantDetail
+import org.example.project.domain.shared.MerchantId
+import org.example.project.domain.shared.ShippingMethodId
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.reflect.KClass
 
 class MerchantAdminViewModel(
-    private val merchantService: org.example.project.domain.admin.MerchantService
+    private val merchantService: AdminMerchantService
 ) : ViewModel() {
 
     private val loadVersion = AtomicLong(0L)
@@ -30,7 +34,7 @@ class MerchantAdminViewModel(
         reload()
     }
 
-    fun selectMerchant(merchantId: org.example.project.domain.shared.MerchantId) = viewModelScope.launch {
+    fun selectMerchant(merchantId: MerchantId) = viewModelScope.launch {
         selectMerchantInternal(merchantId)
     }
 
@@ -45,7 +49,7 @@ class MerchantAdminViewModel(
         }
     }
 
-    fun setShippingMethodActive(shippingMethodId: org.example.project.domain.shared.ShippingMethodId, isActive: Boolean) = viewModelScope.launch {
+    fun setShippingMethodActive(shippingMethodId: ShippingMethodId, isActive: Boolean) = viewModelScope.launch {
         val merchantId1 =
             _uiState.value.selectedMerchantId ?: return@launch
         this@MerchantAdminViewModel.performMutation(
@@ -57,7 +61,7 @@ class MerchantAdminViewModel(
     }
 
     fun updateShippingAssignmentSelection(
-        shippingMethodId: org.example.project.domain.shared.ShippingMethodId,
+        shippingMethodId: ShippingMethodId,
         isSelected: Boolean
     ) {
         val current = _uiState.value
@@ -83,7 +87,7 @@ class MerchantAdminViewModel(
         }
     }
 
-    private suspend fun selectMerchantInternal(merchantId: org.example.project.domain.shared.MerchantId) {
+    private suspend fun selectMerchantInternal(merchantId: MerchantId) {
         val version = loadVersion.incrementAndGet()
         val current = _uiState.value
         _uiState.value = current.copy(
@@ -125,7 +129,7 @@ class MerchantAdminViewModel(
         }
     }
 
-    private suspend fun reload(preferredMerchantId: org.example.project.domain.shared.MerchantId? = _uiState.value.selectedMerchantId) {
+    private suspend fun reload(preferredMerchantId: MerchantId? = _uiState.value.selectedMerchantId) {
         val version = loadVersion.incrementAndGet()
         val current = _uiState.value
         _uiState.value = current.copy(errorMessage = null)
@@ -159,7 +163,7 @@ class MerchantAdminViewModel(
 
     private suspend fun performMutation(
         failureMessage: String,
-        merchantId: org.example.project.domain.shared.MerchantId,
+        merchantId: MerchantId,
         action: suspend () -> Boolean
     ) {
         val current = _uiState.value
@@ -186,7 +190,7 @@ class MerchantAdminViewModel(
         reload(preferredMerchantId = merchantId)
     }
 
-    private fun org.example.project.domain.admin.MerchantDetail?.toPersistentShippingSelection(): PersistentSet<org.example.project.domain.shared.ShippingMethodId> =
+    private fun MerchantDetail?.toPersistentShippingSelection(): PersistentSet<ShippingMethodId> =
         this?.assignedShippingMethods
             ?.fold(persistentSetOf()) { selection, shippingMethod ->
                 selection.add(shippingMethod.id)
@@ -194,7 +198,7 @@ class MerchantAdminViewModel(
             ?: persistentSetOf()
 
     companion object {
-        fun factory(merchantService: org.example.project.domain.admin.MerchantService): ViewModelProvider.Factory =
+        fun factory(merchantService: AdminMerchantService): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: KClass<T>, extras: CreationExtras): T {

@@ -1,4 +1,4 @@
-package org.example.project.domain.admin
+package org.example.project.domain.admin.orders
 
 import kotlinx.coroutines.runBlocking
 import org.example.project.db.connectSqlite
@@ -30,8 +30,7 @@ class OrderServiceTest {
     fun `loadOrders applies merchant and status filters`() = runBlocking {
         val database = createDatabase()
         val fixture = seedOrders(database)
-        val service = OrderService(database)
-
+        val service = AdminOrderService(database)
         val filteredOrders = service.loadOrders(
             OrderFilter(
                 orderStatus = OrderStatus.PENDING,
@@ -48,7 +47,7 @@ class OrderServiceTest {
     fun `loadOrderDetailOrNull returns hierarchy and respects status updates`() = runBlocking {
         val database = createDatabase()
         val fixture = seedOrders(database)
-        val service = OrderService(database)
+        val service = AdminOrderService(database)
 
         val beforeUpdate = service.loadOrderDetailOrNull(fixture.pendingOrderId)
 
@@ -75,7 +74,7 @@ class OrderServiceTest {
     fun `updateOrderStatus updates the top-level order`() = runBlocking {
         val database = createDatabase()
         val fixture = seedOrders(database)
-        val service = OrderService(database)
+        val service = AdminOrderService(database)
 
         assertTrue(service.updateOrderStatus(fixture.pendingOrderId, OrderStatus.CANCELLED))
 

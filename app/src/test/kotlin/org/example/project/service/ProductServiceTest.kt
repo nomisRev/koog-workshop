@@ -1,4 +1,4 @@
-package org.example.project.domain.admin
+package org.example.project.domain.admin.products
 
 import kotlinx.coroutines.runBlocking
 import org.example.project.db.connectSqlite
@@ -34,7 +34,7 @@ class ProductServiceTest {
     fun `loadProducts applies filters and exposes review summary`() = runBlocking {
         val database = createDatabase()
         val fixture = seedProducts(database)
-        val service = ProductService(database)
+        val service = AdminProductService(database)
 
         val merchantProducts = service.loadProducts(
             ProductFilter(
@@ -61,7 +61,7 @@ class ProductServiceTest {
     fun `product mutations are reflected in detail`() = runBlocking {
         val database = createDatabase()
         val fixture = seedProducts(database)
-        val service = ProductService(database)
+        val service = AdminProductService(database)
 
         assertTrue(service.adjustStock(fixture.bronzeBladeId, -2))
         assertTrue(service.setProductActive(fixture.bronzeBladeId, false))

@@ -45,9 +45,9 @@ import org.example.project.admin.shared.ui.PanelEmptyState
 import org.example.project.admin.shared.ui.PanelHeader
 import org.example.project.admin.shared.ui.formatAdminInstant
 import org.example.project.admin.shared.ui.formatAmount
-import org.example.project.domain.admin.MerchantDetail
-import org.example.project.domain.admin.MerchantListItem
-import org.example.project.domain.admin.ShippingMethodAssignmentItem
+import org.example.project.domain.admin.merchants.MerchantDetail
+import org.example.project.domain.admin.merchants.MerchantListItem
+import org.example.project.domain.admin.merchants.ShippingMethodAssignmentItem
 import org.example.project.domain.shared.MerchantId
 import org.example.project.domain.shared.ShippingMethodId
 
@@ -102,7 +102,7 @@ fun MerchantOperationsScreen(
 @Composable
 private fun MerchantListPanel(
     modifier: Modifier,
-    merchants: PersistentList<org.example.project.domain.admin.MerchantListItem>,
+    merchants: PersistentList<MerchantListItem>,
     selectedMerchantId: org.example.project.domain.shared.MerchantId?,
     onSelectMerchant: (org.example.project.domain.shared.MerchantId) -> Unit
 ) {
@@ -150,7 +150,7 @@ private fun MerchantListPanel(
 
 @Composable
 private fun MerchantRow(
-    merchant: org.example.project.domain.admin.MerchantListItem,
+    merchant: MerchantListItem,
     selected: Boolean,
     onClick: () -> Unit
 ) {
@@ -214,7 +214,7 @@ private fun MerchantRow(
 @Composable
 private fun MerchantDetailPanel(
     modifier: Modifier,
-    merchantDetail: org.example.project.domain.admin.MerchantDetail?,
+    merchantDetail: MerchantDetail?,
     selectedShippingMethodIds: PersistentSet<org.example.project.domain.shared.ShippingMethodId>,
     hasPendingShippingAssignments: Boolean,
     onSetMerchantActive: (Boolean) -> Unit,
@@ -340,7 +340,7 @@ private fun MerchantDetailPanel(
 
 @Composable
 private fun AssignedShippingMethodsSection(
-    assignedShippingMethods: List<org.example.project.domain.admin.ShippingMethodAssignmentItem>
+    assignedShippingMethods: List<ShippingMethodAssignmentItem>
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
@@ -378,7 +378,7 @@ private fun AssignedShippingMethodsSection(
 @Composable
 private fun ShippingAssignmentsEditor(
     merchantName: String,
-    availableShippingMethods: List<org.example.project.domain.admin.ShippingMethodAssignmentItem>,
+    availableShippingMethods: List<ShippingMethodAssignmentItem>,
     selectedShippingMethodIds: PersistentSet<org.example.project.domain.shared.ShippingMethodId>,
     hasPendingShippingAssignments: Boolean,
     onSetShippingMethodActive: (org.example.project.domain.shared.ShippingMethodId, Boolean) -> Unit,
@@ -427,7 +427,7 @@ private fun ShippingAssignmentsEditor(
 
 @Composable
 private fun ShippingMethodEditorRow(
-    shippingMethod: org.example.project.domain.admin.ShippingMethodAssignmentItem,
+    shippingMethod: ShippingMethodAssignmentItem,
     isAssigned: Boolean,
     onSetActive: (Boolean) -> Unit,
     onSetAssigned: (Boolean) -> Unit
@@ -517,17 +517,17 @@ private fun ShippingMethodEditorRow(
     }
 }
 
-private fun org.example.project.domain.admin.MerchantListItem.merchantRowAccessibilityDescription(): String =
+private fun MerchantListItem.merchantRowAccessibilityDescription(): String =
     "Merchant $name"
 
-private fun org.example.project.domain.admin.MerchantListItem.merchantRowAccessibilityState(): String =
+private fun MerchantListItem.merchantRowAccessibilityState(): String =
     "${if (isActive) "Active" else "Inactive"}, " +
         "${productCount.productLabel()}, ${recentOrderCount.recentOrderLabel()}"
 
-private fun org.example.project.domain.admin.ShippingMethodAssignmentItem.shippingMethodAccessibilityDescription(): String =
+private fun ShippingMethodAssignmentItem.shippingMethodAccessibilityDescription(): String =
     "Shipping method $name"
 
-private fun org.example.project.domain.admin.ShippingMethodAssignmentItem.shippingMethodAccessibilityState(isAssigned: Boolean): String =
+private fun ShippingMethodAssignmentItem.shippingMethodAccessibilityState(isAssigned: Boolean): String =
     "${if (isAssigned) "Assigned" else "Available"}, ${if (isActive) "Active" else "Inactive"}"
 
 private fun Int.productLabel(): String =

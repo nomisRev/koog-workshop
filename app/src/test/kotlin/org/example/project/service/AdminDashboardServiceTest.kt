@@ -1,8 +1,9 @@
-package org.example.project.domain.admin
+package org.example.project.domain.admin.dashboard
 
 import kotlinx.coroutines.runBlocking
 import org.example.project.db.connectSqlite
 import org.example.project.db.createTables
+import org.example.project.domain.admin.orders.AdminOrderService
 import org.example.project.domain.character.Characters
 import org.example.project.domain.currency.Currencies
 import org.example.project.domain.catalog.Merchants
@@ -47,9 +48,9 @@ class AdminDashboardServiceTest {
     fun `loadOrderDetailsOrNull returns the order graph and history timeline`() = runBlocking {
         val database = createDatabase()
         val orderId = seedOrderDetails(database)
-        val service = AdminDashboardService(database)
+        val service = AdminOrderService(database)
 
-        val detail = service.loadOrderDetailsOrNull(orderId)
+        val detail = service.loadOrderDetailOrNull(orderId)
 
         assertNotNull(detail)
         assertEquals(orderId, detail.order.id)

@@ -12,11 +12,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.example.project.domain.admin.products.AdminProductService
+import org.example.project.domain.admin.products.ProductActiveFilter
+import org.example.project.domain.catalog.ProductCategory
+import org.example.project.domain.shared.MerchantId
+import org.example.project.domain.shared.ProductId
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.reflect.KClass
 
 class ProductAdminViewModel(
-    private val productService: org.example.project.domain.admin.ProductService
+    private val productService: AdminProductService
 ) : ViewModel() {
 
     private val loadVersion = AtomicLong(0L)
@@ -35,28 +40,28 @@ class ProductAdminViewModel(
         reload()
     }
 
-    fun updateCategory(category: org.example.project.domain.catalog.ProductCategory?) = viewModelScope.launch {
+    fun updateCategory(category: ProductCategory?) = viewModelScope.launch {
         _uiState.value = _uiState.value.copy(
             filter = _uiState.value.filter.copy(category = category)
         )
         reload()
     }
 
-    fun updateMerchant(merchantId: org.example.project.domain.shared.MerchantId?) = viewModelScope.launch {
+    fun updateMerchant(merchantId: MerchantId?) = viewModelScope.launch {
         _uiState.value = _uiState.value.copy(
             filter = _uiState.value.filter.copy(merchantId = merchantId)
         )
         reload()
     }
 
-    fun updateActiveFilter(activeFilter: org.example.project.domain.admin.ProductActiveFilter) = viewModelScope.launch {
+    fun updateActiveFilter(activeFilter: ProductActiveFilter) = viewModelScope.launch {
         _uiState.value = _uiState.value.copy(
             filter = _uiState.value.filter.copy(activeFilter = activeFilter)
         )
         reload()
     }
 
-    fun selectProduct(productId: org.example.project.domain.shared.ProductId) = viewModelScope.launch {
+    fun selectProduct(productId: ProductId) = viewModelScope.launch {
         selectProductInternal(productId)
     }
 
@@ -81,7 +86,7 @@ class ProductAdminViewModel(
         }
     }
 
-    private suspend fun selectProductInternal(productId: org.example.project.domain.shared.ProductId) {
+    private suspend fun selectProductInternal(productId: ProductId) {
         val version = loadVersion.incrementAndGet()
         val current = _uiState.value
         _uiState.value = current.copy(
@@ -155,7 +160,7 @@ class ProductAdminViewModel(
 
     private suspend fun performMutation(
         failureMessage: String,
-        productId: org.example.project.domain.shared.ProductId,
+        productId: ProductId,
         action: suspend () -> Boolean
     ) {
         val current = _uiState.value
@@ -220,7 +225,7 @@ class ProductAdminViewModel(
     }
 
     companion object {
-        fun factory(productService: org.example.project.domain.admin.ProductService): ViewModelProvider.Factory =
+        fun factory(productService: AdminProductService): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: KClass<T>, extras: CreationExtras): T {

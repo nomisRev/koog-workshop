@@ -46,11 +46,11 @@ import org.example.project.admin.shared.ui.ToolbarTextFilter
 import org.example.project.admin.shared.ui.formatAdminInstant
 import org.example.project.admin.shared.ui.formatAmount
 import org.example.project.admin.shared.ui.labelize
-import org.example.project.domain.admin.AdminOrderDetail
-import org.example.project.domain.admin.AdminOrderHistoryEvent
-import org.example.project.domain.admin.AdminOrderItemDetail
-import org.example.project.domain.admin.AdminSubOrderDetail
-import org.example.project.domain.admin.OrderListItem
+import org.example.project.domain.admin.orders.AdminOrderDetail
+import org.example.project.domain.admin.orders.AdminOrderHistoryEvent
+import org.example.project.domain.admin.orders.AdminOrderItemDetail
+import org.example.project.domain.admin.orders.AdminSubOrderDetail
+import org.example.project.domain.admin.orders.OrderListItem
 import org.example.project.domain.order.OrderStatus
 import org.example.project.domain.shared.MerchantId
 import org.example.project.domain.shared.OrderId
@@ -170,7 +170,7 @@ fun OrderOperationsScreen(
 @Composable
 private fun OrderListPanel(
     modifier: Modifier,
-    orders: PersistentList<org.example.project.domain.admin.OrderListItem>,
+    orders: PersistentList<OrderListItem>,
     selectedOrderId: org.example.project.domain.shared.OrderId?,
     onSelectOrder: (org.example.project.domain.shared.OrderId) -> Unit
 ) {
@@ -218,7 +218,7 @@ private fun OrderListPanel(
 
 @Composable
 private fun OrderRow(
-    order: org.example.project.domain.admin.OrderListItem,
+    order: OrderListItem,
     selected: Boolean,
     onClick: () -> Unit
 ) {
@@ -298,7 +298,7 @@ private fun OrderRow(
 @Composable
 private fun OrderDetailPanel(
     modifier: Modifier,
-    order: org.example.project.domain.admin.AdminOrderDetail?,
+    order: AdminOrderDetail?,
     onUpdateOrderStatus: (org.example.project.domain.shared.OrderId, OrderStatus) -> Unit,
     onUpdateSubOrderStatus: (org.example.project.domain.shared.SubOrderId, OrderStatus) -> Unit
 ) {
@@ -408,7 +408,7 @@ private fun OrderDetailPanel(
 
 @Composable
 private fun SubOrderCard(
-    detail: org.example.project.domain.admin.AdminSubOrderDetail,
+    detail: AdminSubOrderDetail,
     onUpdateStatus: (org.example.project.domain.shared.SubOrderId, OrderStatus) -> Unit
 ) {
     Card(
@@ -508,7 +508,7 @@ private fun SubOrderCard(
 }
 
 @Composable
-private fun OrderItemRow(item: org.example.project.domain.admin.AdminOrderItemDetail) {
+private fun OrderItemRow(item: AdminOrderItemDetail) {
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
@@ -566,7 +566,7 @@ private fun OrderItemRow(item: org.example.project.domain.admin.AdminOrderItemDe
 }
 
 @Composable
-private fun HistoryEventCard(event: org.example.project.domain.admin.AdminOrderHistoryEvent) {
+private fun HistoryEventCard(event: AdminOrderHistoryEvent) {
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
@@ -607,13 +607,13 @@ private fun orderSecondaryFilterSummaries(uiState: OrderAdminUiState): List<Stri
         }
     )
 
-private fun org.example.project.domain.admin.OrderListItem.orderRowAccessibilityDescription(): String =
+private fun OrderListItem.orderRowAccessibilityDescription(): String =
     "Order ${orderId.value} for $characterName"
 
-private fun org.example.project.domain.admin.OrderListItem.orderRowAccessibilityState(): String =
+private fun OrderListItem.orderRowAccessibilityState(): String =
     "${status.labelize()}, $merchantCount merchants, ${totalPrice.formatAmount(currencyCode)}"
 
-private fun org.example.project.domain.admin.AdminSubOrderDetail.subOrderAccessibilityDescription(): String =
+private fun AdminSubOrderDetail.subOrderAccessibilityDescription(): String =
     "Sub-order ${subOrder.id.value} for $merchantName"
 
 private fun orderStatusAccessibilityDescription(status: OrderStatus): String =

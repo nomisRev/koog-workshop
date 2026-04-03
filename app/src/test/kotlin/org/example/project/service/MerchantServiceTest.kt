@@ -1,4 +1,4 @@
-package org.example.project.domain.admin
+package org.example.project.domain.admin.merchants
 
 import kotlinx.coroutines.runBlocking
 import org.example.project.db.connectSqlite
@@ -35,7 +35,7 @@ class MerchantServiceTest {
     fun `loadMerchants and detail expose counts and assignments`() = runBlocking {
         val database = createDatabase()
         val fixture = seedMerchants(database)
-        val service = MerchantService(database)
+        val service = AdminMerchantService(database)
 
         val merchants = service.loadMerchants()
         val detail = service.loadMerchantDetailOrNull(fixture.blackforgeMerchantId)
@@ -53,7 +53,7 @@ class MerchantServiceTest {
     fun `merchant mutations update active state and assignments`() = runBlocking {
         val database = createDatabase()
         val fixture = seedMerchants(database)
-        val service = MerchantService(database)
+        val service = AdminMerchantService(database)
 
         assertTrue(service.setMerchantActive(fixture.blackforgeMerchantId, false))
         assertTrue(service.setShippingMethodActive(fixture.portalShippingId, false))

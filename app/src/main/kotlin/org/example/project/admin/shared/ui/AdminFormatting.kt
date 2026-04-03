@@ -1,7 +1,7 @@
 package org.example.project.admin.shared.ui
 
-import org.example.project.domain.admin.ProductActiveFilter
-import org.example.project.domain.admin.ProductReviewSummary
+import org.example.project.domain.admin.products.ProductActiveFilter
+import org.example.project.domain.admin.products.ProductReviewSummary
 import java.time.Instant as JavaInstant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -16,11 +16,11 @@ internal fun Long.formatAmount(currencyCode: String): String = "$this $currencyC
 
 internal fun Enum<*>.labelize(): String = name.labelize()
 
-internal fun org.example.project.domain.admin.ProductActiveFilter.labelize(): String =
+internal fun ProductActiveFilter.labelize(): String =
     when (this) {
-        _root_ide_package_.org.example.project.domain.admin.ProductActiveFilter.ALL -> "All"
-        _root_ide_package_.org.example.project.domain.admin.ProductActiveFilter.ACTIVE -> "Active"
-        _root_ide_package_.org.example.project.domain.admin.ProductActiveFilter.INACTIVE -> "Inactive"
+        ProductActiveFilter.ALL -> "All"
+        ProductActiveFilter.ACTIVE -> "Active"
+        ProductActiveFilter.INACTIVE -> "Inactive"
     }
 
 internal fun String.labelize(): String =
@@ -37,7 +37,7 @@ internal fun String.labelize(): String =
             }
         }
 
-internal fun org.example.project.domain.admin.ProductReviewSummary.toDisplayText(): String =
+internal fun ProductReviewSummary.toDisplayText(): String =
     if (reviewCount == 0 || averageRating == null) {
         "No reviews yet"
     } else {

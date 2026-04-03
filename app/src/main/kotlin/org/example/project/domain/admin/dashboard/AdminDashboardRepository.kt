@@ -1,11 +1,10 @@
-package org.example.project.domain.admin
+package org.example.project.domain.admin.dashboard
 
 import org.example.project.domain.character.Characters
 import org.example.project.domain.currency.Currencies
 import org.example.project.domain.order.Orders
 import org.example.project.domain.order.OrderStatus
 import org.example.project.domain.shared.OrderId
-import org.example.project.domain.admin.RecentOrderSummary
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.Transaction

@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.example.project.domain.admin.OrderService
+import org.example.project.domain.admin.orders.AdminOrderService
 import org.example.project.domain.order.OrderStatus
 import org.example.project.domain.shared.MerchantId
 import org.example.project.domain.shared.OrderId
@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicLong
 import kotlin.reflect.KClass
 
 class OrderAdminViewModel(
-    private val orderService: OrderService
+    private val orderService: AdminOrderService
 ) : ViewModel() {
 
     private val loadVersion = AtomicLong(0L)
@@ -194,7 +194,7 @@ class OrderAdminViewModel(
     }
 
     companion object {
-        fun factory(orderService: OrderService): ViewModelProvider.Factory =
+        fun factory(orderService: AdminOrderService): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: KClass<T>, extras: CreationExtras): T {

@@ -1,4 +1,4 @@
-# Agent Fantasy Store
+# Agent Fantasy Store — CLAUDE.md
 
 ## Communication
 - Chat as little as possible. Use short single-line sentences and be critical & strict.

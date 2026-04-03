@@ -7,8 +7,8 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.example.project.db.connectSqlite
 import org.example.project.db.createTables
-import org.example.project.domain.admin.ProductActiveFilter
-import org.example.project.domain.admin.ProductService
+import org.example.project.domain.admin.products.ProductActiveFilter
+import org.example.project.domain.admin.products.AdminProductService
 import org.example.project.domain.catalog.Merchants
 import org.example.project.domain.catalog.Potions
 import org.example.project.domain.catalog.ProductCategory
@@ -35,7 +35,7 @@ class ProductAdminViewModelTest {
         try {
             val database = createDatabase()
             val fixture = seedProducts(database)
-            val viewModel = ProductAdminViewModel(ProductService(database))
+            val viewModel = ProductAdminViewModel(AdminProductService(database))
 
             viewModel.refresh()
             awaitCondition {
@@ -60,7 +60,7 @@ class ProductAdminViewModelTest {
         try {
             val database = createDatabase()
             val fixture = seedProducts(database)
-            val viewModel = ProductAdminViewModel(ProductService(database))
+            val viewModel = ProductAdminViewModel(AdminProductService(database))
 
             viewModel.refresh()
             awaitCondition {
@@ -89,7 +89,7 @@ class ProductAdminViewModelTest {
         try {
             val database = createDatabase()
             val fixture = seedProducts(database)
-            val service = ProductService(database)
+            val service = AdminProductService(database)
             val viewModel = ProductAdminViewModel(service)
 
             viewModel.refresh()

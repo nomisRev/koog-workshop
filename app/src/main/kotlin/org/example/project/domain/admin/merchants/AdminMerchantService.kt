@@ -1,4 +1,4 @@
-package org.example.project.domain.admin
+package org.example.project.domain.admin.merchants
 
 import org.example.project.db.suspendTransaction
 import org.example.project.domain.catalog.MerchantRepository
@@ -7,7 +7,7 @@ import org.example.project.domain.shared.MerchantId
 import org.example.project.domain.shared.ShippingMethodId
 import org.jetbrains.exposed.v1.jdbc.Database
 
-class MerchantService(
+class AdminMerchantService(
     private val database: Database,
     private val adminMerchantRepository: AdminMerchantRepository = AdminMerchantRepository(),
     private val merchantRepository: MerchantRepository = MerchantRepository(),

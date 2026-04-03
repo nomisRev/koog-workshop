@@ -1,4 +1,4 @@
-package org.example.project.domain.admin
+package org.example.project.domain.admin.orders
 
 import org.example.project.db.suspendTransaction
 import org.example.project.domain.order.OrderRepository
@@ -7,7 +7,7 @@ import org.example.project.domain.shared.OrderId
 import org.example.project.domain.shared.SubOrderId
 import org.jetbrains.exposed.v1.jdbc.Database
 
-class OrderService(
+class AdminOrderService(
     private val database: Database,
     private val adminOrderRepository: AdminOrderRepository = AdminOrderRepository(),
     private val orderRepository: OrderRepository = OrderRepository()

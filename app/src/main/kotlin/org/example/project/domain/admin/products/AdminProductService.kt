@@ -1,11 +1,11 @@
-package org.example.project.domain.admin
+package org.example.project.domain.admin.products
 
 import org.example.project.db.suspendTransaction
 import org.example.project.domain.catalog.ProductRepository
 import org.example.project.domain.shared.ProductId
 import org.jetbrains.exposed.v1.jdbc.Database
 
-class ProductService(
+class AdminProductService(
     private val database: Database,
     private val adminProductRepository: AdminProductRepository = AdminProductRepository(),
     private val productRepository: ProductRepository = ProductRepository()
