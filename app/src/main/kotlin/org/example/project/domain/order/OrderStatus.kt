@@ -1,5 +1,8 @@
 package org.example.project.domain.order
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class OrderStatus {
     PENDING,
     CONFIRMED,

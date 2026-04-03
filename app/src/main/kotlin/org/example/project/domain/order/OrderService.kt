@@ -11,6 +11,7 @@ import org.example.project.domain.shipping.ShippingRepository
 import org.example.project.domain.shipping.ShippingMethod
 import org.example.project.db.suspendTransaction
 import org.example.project.domain.shared.*
+import org.jetbrains.exposed.v1.core.Transaction
 import org.jetbrains.exposed.v1.jdbc.Database
 import kotlin.math.roundToLong
 
@@ -216,7 +217,7 @@ class OrderService(
         val items: List<Pair<CartItem, Product>>
     )
 
-    context(_: org.jetbrains.exposed.v1.core.Transaction)
+    context(_: Transaction)
     private fun resolveSettlementCurrencyId(
         products: List<Pair<CartItem, Product>>,
         shippingMethods: Collection<ShippingMethod>,
@@ -267,13 +268,13 @@ class OrderService(
             ?: sourceCurrencies.sortedBy { it.value.toString() }.first()
     }
 
-    context(_: org.jetbrains.exposed.v1.core.Transaction)
+    context(_: Transaction)
     private fun canConvertBetween(fromCurrencyId: CurrencyId, toCurrencyId: CurrencyId): Boolean =
         fromCurrencyId == toCurrencyId ||
             currencyRepository.getConversionRateOrNull(fromCurrencyId, toCurrencyId) != null ||
             currencyRepository.getConversionRateOrNull(toCurrencyId, fromCurrencyId) != null
 
-    context(_: org.jetbrains.exposed.v1.core.Transaction)
+    context(_: Transaction)
     private fun convertAmount(
         amount: Long,
         fromCurrencyId: CurrencyId,
