@@ -5,11 +5,6 @@ import ai.koog.agents.core.dsl.builder.AIAgentNodeDelegate
 import ai.koog.agents.core.dsl.builder.node
 import ai.koog.agents.core.dsl.builder.strategy
 import ai.koog.agents.core.dsl.extension.ModeratedMessage
-import ai.koog.agents.core.dsl.extension.nodeExecuteTool
-import ai.koog.agents.core.dsl.extension.nodeLLMRequest
-import ai.koog.agents.core.dsl.extension.nodeLLMSendToolResult
-import ai.koog.agents.core.dsl.extension.onAssistantMessage
-import ai.koog.agents.core.dsl.extension.onToolCall
 import ai.koog.agents.core.tools.annotations.Tool
 import ai.koog.agents.core.tools.reflect.ToolFromCallable
 import ai.koog.agents.core.tools.reflect.ToolSet
@@ -22,14 +17,17 @@ import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
 import ai.koog.prompt.message.RequestMetaInfo
 import kotlinx.serialization.Serializable
-import org.example.project.domain.order.Order
 import org.example.project.domain.order.OrderService
 import org.example.project.domain.order.OrderStatus
 import kotlin.uuid.Uuid
 import org.example.project.domain.shared.CharacterId
 import org.example.project.domain.shared.OrderId
-import org.example.project.domain.shared.Page
 import org.example.project.domain.shared.SubOrderId
+import org.example.project.koog.tools.AskQuestionTool
+import org.example.project.koog.tools.CustomerSupportTools
+import org.example.project.koog.tools.ReadOrderTools
+import org.example.project.koog.tools.UpdateOrderTools
+import org.example.project.koog.tools.plus
 import kotlin.time.Instant
 
 @Serializable
@@ -43,59 +41,7 @@ data class OrderDetails(
 @Serializable
 data class IssueSolution(val actionsTaken: String)
 
-class ReadOrderTools(
-    val characterId: CharacterId,
-    val orderService: OrderService
-) : ToolSet {
-    @Tool
-    suspend fun getOrderHistory(offset: Long = 0, limit: Long = 5): List<OrderDetails> =
-        orderService.getOrderHistory(characterId)
-            .items.map {
-                OrderDetails(
-                    it.id.value.toString(),
-                    it.status,
-                    it.createdAt,
-                    it.updatedAt
-                )
-            }
-
-    @Tool
-    suspend fun getOrderOrNull(orderId: String): OrderDetails? =
-        orderService.getOrderDetailsOrNull(OrderId(Uuid.parse(orderId)))
-            ?.let {
-                OrderDetails(
-                    it.order.id.value.toString(),
-                    it.order.status,
-                    it.order.createdAt,
-                    it.order.updatedAt
-                )
-            }
-}
-
-class UpdateOrderTools(
-    val characterId: CharacterId,
-    val orderService: OrderService
-) : ToolSet {
-    // TODO: update cancelOrder such that it guarantees that its characterId is the owner of the order??
-    @Tool
-    suspend fun cancelOrder(orderId: String) = orderService.cancelOrder(OrderId(Uuid.parse(orderId)))
-
-    @Tool
-    suspend fun updateSubOrderStatus(subOrderId: String, status: OrderStatus) =
-        orderService.updateSubOrderStatus(SubOrderId(Uuid.parse(subOrderId)), status)
-}
-
-class CustomerSupportTools(
-    val askQuestionTool: AskQuestionTool,
-    val readOrderTools: ReadOrderTools,
-    val updateOrderTools: UpdateOrderTools
-)
-
-operator fun ToolSet.plus(other: ToolSet): List<ToolFromCallable<*>> = asTools() + other.asTools()
-
-fun orderCustomerSupportStrategy(
-    tools: CustomerSupportTools
-) = strategy<String, String>("order-customer-support") {
+fun orderCustomerSupportStrategy(tools: CustomerSupportTools) = strategy<String, String>("order-customer-support") {
     val moderate by nodeLLMModerateString(
         moderatingModel = OpenAIModels.Moderation.Omni
     )
@@ -147,6 +93,7 @@ fun orderCustomerSupportStrategy(
     describe then nodeFinish
 }
 
+// Avoids String -> Message.User wrapping
 fun nodeLLMModerateString(
     name: String? = null,
     moderatingModel: LLModel? = null,

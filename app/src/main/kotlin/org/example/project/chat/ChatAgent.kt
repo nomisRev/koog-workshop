@@ -18,11 +18,11 @@ import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import org.example.project.domain.order.OrderService
 import org.example.project.domain.shared.CharacterId
-import org.example.project.koog.AskQuestionTool
-import org.example.project.koog.CustomerSupportTools
-import org.example.project.koog.ReadOrderTools
-import org.example.project.koog.UpdateOrderTools
+import org.example.project.koog.tools.AskQuestionTool
 import org.example.project.koog.orderCustomerSupportStrategy
+import org.example.project.koog.tools.CustomerSupportTools
+import org.example.project.koog.tools.ReadOrderTools
+import org.example.project.koog.tools.UpdateOrderTools
 import kotlin.uuid.Uuid
 
 @Serializable
