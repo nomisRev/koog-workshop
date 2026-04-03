@@ -1,6 +1,7 @@
 package org.example.project.domain.shared
 
 import androidx.compose.runtime.Immutable
+import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
 import kotlin.uuid.Uuid
 
@@ -20,6 +21,7 @@ value class CurrencyConversionId(val value: Uuid)
 @JvmInline
 value class MerchantId(val value: Uuid)
 
+@Serializable
 @Immutable
 @JvmInline
 value class OrderId(val value: Uuid)

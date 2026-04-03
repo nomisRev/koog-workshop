@@ -1,16 +1,16 @@
 package org.example.project.domain.catalog
 
+import org.example.project.db.deleteById
+import org.example.project.db.findByIdOrNull
+import org.example.project.db.update
 import org.example.project.domain.catalog.Merchants
 import org.example.project.domain.shared.MerchantId
 import org.example.project.domain.catalog.Merchant
 import org.example.project.domain.shared.Page
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.Transaction
-import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.example.project.db.update as storeUpdate
 
 @OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 class MerchantRepository {
@@ -31,9 +31,7 @@ class MerchantRepository {
 
     context(_: Transaction)
     fun getMerchantOrNull(id: MerchantId): Merchant? =
-        Merchants.selectAll().where { Merchants.id eq id.value }
-            .map(::mapToMerchant)
-            .singleOrNull()
+        Merchants.findByIdOrNull(id.value, ::mapToMerchant)
 
     context(_: Transaction)
     fun createMerchant(
@@ -63,7 +61,7 @@ class MerchantRepository {
         iconPath: String? = null,
         isActive: Boolean? = null
     ): Boolean =
-        Merchants.storeUpdate({ Merchants.id eq id.value }) {
+        Merchants.update(id.value) {
             if (name != null) it[Merchants.name] = name
             if (description != null) it[Merchants.description] = description
             if (location != null) it[Merchants.location] = location
@@ -74,13 +72,13 @@ class MerchantRepository {
 
     context(_: Transaction)
     fun setMerchantActive(id: MerchantId, isActive: Boolean): Boolean =
-        Merchants.storeUpdate({ Merchants.id eq id.value }) {
+        Merchants.update(id.value) {
             it[Merchants.isActive] = isActive
         } > 0
 
     context(_: Transaction)
     fun deleteMerchant(id: MerchantId): Boolean =
-        Merchants.deleteWhere { Merchants.id eq id.value } > 0
+        Merchants.deleteById(id.value)
 
     private fun mapToMerchant(row: ResultRow) = Merchant(
         id = MerchantId(row[Merchants.id].value),

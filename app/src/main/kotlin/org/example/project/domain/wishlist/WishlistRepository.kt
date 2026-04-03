@@ -7,6 +7,7 @@ import org.example.project.domain.shared.WishlistItemId
 import org.example.project.domain.wishlist.WishlistItem
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.Transaction
+import org.example.project.db.deleteById
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
@@ -41,7 +42,7 @@ class WishlistRepository {
 
     context(_: Transaction)
     fun removeFromWishlist(wishlistItemId: WishlistItemId): Boolean =
-        WishlistItems.deleteWhere { id eq wishlistItemId.value } > 0
+        WishlistItems.deleteById(wishlistItemId.value)
 
     context(_: Transaction)
     fun clearWishlist(characterId: CharacterId): Int =

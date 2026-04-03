@@ -1,5 +1,8 @@
 package org.example.project.domain.character
 
+import org.example.project.db.deleteById
+import org.example.project.db.findByIdOrNull
+import org.example.project.db.update
 import org.example.project.domain.character.Characters
 import org.example.project.domain.character.Transactions
 import org.example.project.domain.character.TransactionType
@@ -12,11 +15,9 @@ import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.Transaction
 import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.example.project.db.update as storeUpdate
 import kotlin.uuid.Uuid
 import kotlin.uuid.ExperimentalUuidApi
 
@@ -25,10 +26,7 @@ class CharacterRepository {
 
     context(_: Transaction)
     fun getCharacterOrNull(id: CharacterId): Character? =
-        Characters.selectAll()
-            .where { Characters.id eq id.value }
-            .map(::mapToCharacter)
-            .singleOrNull()
+        Characters.findByIdOrNull(id.value, ::mapToCharacter)
 
     context(_: Transaction)
     fun createCharacter(name: String): CharacterId =
@@ -49,13 +47,13 @@ class CharacterRepository {
 
     context(_: Transaction)
     fun updateCharacter(id: CharacterId, name: String): Boolean =
-        Characters.storeUpdate({ Characters.id eq id.value }) {
+        Characters.update(id.value) {
             it[Characters.name] = name
         } > 0
 
     context(_: Transaction)
     fun deleteCharacter(id: CharacterId): Boolean =
-        Characters.deleteWhere { Characters.id eq id.value } > 0
+        Characters.deleteById(id.value)
 
     context(_: Transaction)
     fun addTransaction(

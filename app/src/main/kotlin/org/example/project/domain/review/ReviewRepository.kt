@@ -1,5 +1,8 @@
 package org.example.project.domain.review
 
+import org.example.project.db.deleteById
+import org.example.project.db.findByIdOrNull
+import org.example.project.db.update
 import org.example.project.domain.review.Reviews
 import org.example.project.domain.shared.*
 import org.example.project.domain.review.Review
@@ -8,10 +11,8 @@ import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.Transaction
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.example.project.db.update as storeUpdate
 
 class ReviewRepository {
 
@@ -50,9 +51,7 @@ class ReviewRepository {
 
     context(_: Transaction)
     fun getReviewOrNull(id: ReviewId): Review? =
-        Reviews.selectAll().where { Reviews.id eq id.value }
-            .map(::mapToReview)
-            .singleOrNull()
+        Reviews.findByIdOrNull(id.value, ::mapToReview)
 
     context(_: Transaction)
     fun getReviewForCharacterAndOrderItemOrNull(
@@ -67,14 +66,14 @@ class ReviewRepository {
 
     context(_: Transaction)
     fun updateReview(id: ReviewId, rating: Int? = null, text: String? = null): Boolean =
-        Reviews.storeUpdate({ Reviews.id eq id.value }) {
+        Reviews.update(id.value) {
             if (rating != null) it[Reviews.rating] = rating
             if (text != null) it[Reviews.text] = text
         } > 0
 
     context(_: Transaction)
     fun deleteReview(id: ReviewId): Boolean =
-        Reviews.deleteWhere { Reviews.id eq id.value } > 0
+        Reviews.deleteById(id.value)
 
     context(_: Transaction)
     fun averageRatingForProductOrNull(productId: ProductId): Double? {

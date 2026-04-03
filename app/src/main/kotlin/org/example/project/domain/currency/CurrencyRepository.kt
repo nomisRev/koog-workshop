@@ -1,5 +1,8 @@
 package org.example.project.domain.currency
 
+import org.example.project.db.deleteById
+import org.example.project.db.findByIdOrNull
+import org.example.project.db.update
 import org.example.project.domain.currency.Currencies
 import org.example.project.domain.currency.CurrencyConversions
 import org.example.project.domain.shared.CurrencyId
@@ -10,10 +13,8 @@ import org.example.project.domain.shared.CurrencyConversionId
 import org.example.project.domain.currency.CurrencyConversion
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.example.project.db.update as storeUpdate
 
 @OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 class CurrencyRepository {
@@ -24,9 +25,7 @@ class CurrencyRepository {
 
     context(_: Transaction)
     fun getCurrencyOrNull(id: CurrencyId): Currency? =
-        Currencies.selectAll().where { Currencies.id eq id.value }
-            .map(::mapToCurrency)
-            .singleOrNull()
+        Currencies.findByIdOrNull(id.value, ::mapToCurrency)
 
     context(_: Transaction)
     fun getConversionRateOrNull(fromId: CurrencyId, toId: CurrencyId): Double? =
@@ -54,7 +53,7 @@ class CurrencyRepository {
         symbol: String? = null,
         iconPath: String? = null
     ): Boolean =
-        Currencies.storeUpdate({ Currencies.id eq id.value }) {
+        Currencies.update(id.value) {
             if (code != null) it[Currencies.code] = code
             if (name != null) it[Currencies.name] = name
             if (symbol != null) it[Currencies.symbol] = symbol
@@ -63,7 +62,7 @@ class CurrencyRepository {
 
     context(_: Transaction)
     fun deleteCurrency(id: CurrencyId): Boolean =
-        Currencies.deleteWhere { Currencies.id eq id.value } > 0
+        Currencies.deleteById(id.value)
 
     context(_: Transaction)
     fun createConversionRate(fromId: CurrencyId, toId: CurrencyId, rate: Double): CurrencyConversionId =
@@ -77,13 +76,13 @@ class CurrencyRepository {
 
     context(_: Transaction)
     fun updateConversionRate(id: CurrencyConversionId, rate: Double): Boolean =
-        CurrencyConversions.storeUpdate({ CurrencyConversions.id eq id.value }) {
+        CurrencyConversions.update(id.value) {
             it[CurrencyConversions.rate] = rate
         } > 0
 
     context(_: Transaction)
     fun deleteConversionRate(id: CurrencyConversionId): Boolean =
-        CurrencyConversions.deleteWhere { CurrencyConversions.id eq id.value } > 0
+        CurrencyConversions.deleteById(id.value)
 
     context(_: Transaction)
     fun getAllConversionRates(): List<CurrencyConversion> =

@@ -1,5 +1,7 @@
 package org.example.project.domain.order
 
+import org.example.project.db.findByIdOrNull
+import org.example.project.db.update
 import org.example.project.domain.character.Characters
 import org.example.project.domain.character.Transaction as OrderTransaction
 import org.example.project.domain.character.TransactionType
@@ -19,27 +21,20 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.example.project.db.update as storeUpdate
 
 class OrderRepository {
 
     context(_: Transaction)
     fun getOrderOrNull(id: OrderId): Order? =
-        Orders.selectAll().where { Orders.id eq id.value }
-            .map(::mapToOrder)
-            .singleOrNull()
+        Orders.findByIdOrNull(id.value, ::mapToOrder)
 
     context(_: Transaction)
     fun getSubOrderOrNull(id: SubOrderId): SubOrder? =
-        SubOrders.selectAll().where { SubOrders.id eq id.value }
-            .map(::mapToSubOrder)
-            .singleOrNull()
+        SubOrders.findByIdOrNull(id.value, ::mapToSubOrder)
 
     context(_: Transaction)
     fun getOrderItemOrNull(id: OrderItemId): OrderItem? =
-        OrderItems.selectAll().where { OrderItems.id eq id.value }
-            .map(::mapToOrderItem)
-            .singleOrNull()
+        OrderItems.findByIdOrNull(id.value, ::mapToOrderItem)
 
     context(_: Transaction)
     fun getOrderHistory(characterId: CharacterId, offset: Long, limit: Long): Page<Order> {
@@ -79,7 +74,7 @@ class OrderRepository {
 
     context(_: Transaction)
     fun updateSubOrderStatus(subOrderId: SubOrderId, status: OrderStatus): Boolean =
-        SubOrders.storeUpdate({ SubOrders.id eq subOrderId.value }) {
+        SubOrders.update(subOrderId.value) {
             it[SubOrders.status] = status.name
         } > 0
 
@@ -141,7 +136,7 @@ class OrderRepository {
 
     context(_: Transaction)
     fun updateOrderStatus(orderId: OrderId, status: OrderStatus): Boolean =
-        Orders.storeUpdate({ Orders.id eq orderId.value }) {
+        Orders.update(orderId.value) {
             it[Orders.status] = status.name
         } > 0
 

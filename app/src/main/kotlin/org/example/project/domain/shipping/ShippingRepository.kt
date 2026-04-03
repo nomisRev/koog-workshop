@@ -1,5 +1,7 @@
 package org.example.project.domain.shipping
 
+import org.example.project.db.findByIdOrNull
+import org.example.project.db.update
 import org.example.project.domain.shipping.MerchantShippingMethods
 import org.example.project.domain.shipping.ShippingMethods
 import org.example.project.domain.shared.CurrencyId
@@ -14,7 +16,6 @@ import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.example.project.db.update as storeUpdate
 
 @OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 class ShippingRepository {
@@ -25,9 +26,7 @@ class ShippingRepository {
 
     context(_: Transaction)
     fun getShippingMethodByIdOrNull(id: ShippingMethodId): ShippingMethod? =
-        ShippingMethods.selectAll().where { ShippingMethods.id eq id.value }
-            .map(::mapToShippingMethod)
-            .singleOrNull()
+        ShippingMethods.findByIdOrNull(id.value, ::mapToShippingMethod)
 
     context(_: Transaction)
     fun getShippingMethodsForMerchant(merchantId: MerchantId): List<ShippingMethod> =
@@ -67,7 +66,7 @@ class ShippingRepository {
         isActive: Boolean? = null
     ): Boolean {
         require(baseCost == null || baseCost >= 0) { "Shipping base cost must be non-negative" }
-        return ShippingMethods.storeUpdate({ ShippingMethods.id eq id.value }) {
+        return ShippingMethods.update(id.value) {
             if (name != null) it[ShippingMethods.name] = name
             if (description != null) it[ShippingMethods.description] = description
             if (baseCost != null) it[ShippingMethods.baseCost] = baseCost
@@ -79,7 +78,7 @@ class ShippingRepository {
 
     context(_: Transaction)
     fun setShippingMethodActive(id: ShippingMethodId, isActive: Boolean): Boolean =
-        ShippingMethods.storeUpdate({ ShippingMethods.id eq id.value }) {
+        ShippingMethods.update(id.value) {
             it[ShippingMethods.isActive] = isActive
         } > 0
 

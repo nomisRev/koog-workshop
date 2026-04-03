@@ -1,7 +1,6 @@
 package org.example.project.domain.catalog
 
 import org.example.project.domain.shared.*
-import org.example.project.domain.catalog.Product
 import org.example.project.domain.shared.Page
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.JoinType
@@ -11,8 +10,8 @@ import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.example.project.db.update
 import org.jetbrains.exposed.v1.jdbc.update
-import org.example.project.db.update as storeUpdate
 
 @OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 class ProductRepository {
@@ -57,14 +56,14 @@ class ProductRepository {
         val newStock = currentStock + quantityChange
         if (newStock < 0) return false
 
-        return Products.storeUpdate({ Products.id eq productId.value }) {
+        return Products.update(productId.value) {
             it[stock] = newStock
         } > 0
     }
 
     context(_: Transaction)
     fun setProductActive(productId: ProductId, isActive: Boolean): Boolean =
-        Products.storeUpdate({ Products.id eq productId.value }) {
+        Products.update(productId.value) {
             it[Products.isActive] = isActive
         } > 0
 
@@ -117,7 +116,7 @@ class ProductRepository {
     fun updateProduct(product: Product): Boolean {
         require(product.price >= 0) { "Product price must be non-negative" }
         require(product.stock >= 0) { "Product stock must be non-negative" }
-        val updated = Products.storeUpdate({ Products.id eq product.id.value }) {
+        val updated = Products.update(product.id.value) {
             it[name] = product.name
             it[description] = product.description
             it[category] = product.category.name
