@@ -1,6 +1,6 @@
 package org.example.project.admin.shared.ui
 
-import org.example.project.domain.admin.products.ProductActiveFilter
+import org.example.project.admin.products.ProductActiveFilter
 import org.example.project.domain.catalog.ProductCategory
 import org.example.project.domain.order.OrderStatus
 

@@ -12,8 +12,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.example.project.domain.admin.products.AdminProductService
-import org.example.project.domain.admin.products.ProductActiveFilter
 import org.example.project.domain.catalog.ProductCategory
 import org.example.project.domain.shared.MerchantId
 import org.example.project.domain.shared.ProductId

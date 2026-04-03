@@ -14,8 +14,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.example.project.domain.admin.merchants.AdminMerchantService
-import org.example.project.domain.admin.merchants.MerchantDetail
 import org.example.project.domain.shared.MerchantId
 import org.example.project.domain.shared.ShippingMethodId
 import java.util.concurrent.atomic.AtomicLong

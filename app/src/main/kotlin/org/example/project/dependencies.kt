@@ -4,9 +4,9 @@ import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import org.example.project.chat.ChatAgent
 import org.example.project.db.createDataSource
 import org.example.project.db.createDatabase
-import org.example.project.domain.admin.merchants.AdminMerchantService
-import org.example.project.domain.admin.orders.AdminOrderService
-import org.example.project.domain.admin.products.AdminProductService
+import org.example.project.admin.merchants.AdminMerchantService
+import org.example.project.admin.orders.operations.AdminOrderService
+import org.example.project.admin.products.AdminProductService
 import org.example.project.koog.JdbcChatHistoryProvider
 import java.lang.System.getenv
 

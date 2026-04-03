@@ -1,4 +1,4 @@
-package org.example.project.domain.admin.products
+package org.example.project.admin.products
 
 import org.example.project.domain.catalog.MerchantRepository
 import org.example.project.domain.catalog.Product

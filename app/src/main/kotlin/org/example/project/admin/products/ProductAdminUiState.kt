@@ -3,10 +3,6 @@ package org.example.project.admin.products
 import androidx.compose.runtime.Immutable
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
-import org.example.project.domain.admin.products.ProductDetail
-import org.example.project.domain.admin.products.ProductFilter
-import org.example.project.domain.admin.products.ProductListItem
-import org.example.project.domain.admin.products.ProductMerchantOption
 import org.example.project.domain.shared.ProductId
 
 @Immutable

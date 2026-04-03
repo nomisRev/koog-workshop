@@ -1,7 +1,7 @@
 package org.example.project.admin.shared.ui
 
-import org.example.project.domain.admin.products.ProductActiveFilter
-import org.example.project.domain.admin.products.ProductReviewSummary
+import org.example.project.admin.products.ProductActiveFilter
+import org.example.project.admin.products.ProductReviewSummary
 import java.time.Instant as JavaInstant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter

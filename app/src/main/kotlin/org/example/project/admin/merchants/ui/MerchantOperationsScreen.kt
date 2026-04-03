@@ -45,9 +45,9 @@ import org.example.project.admin.shared.ui.PanelEmptyState
 import org.example.project.admin.shared.ui.PanelHeader
 import org.example.project.admin.shared.ui.formatAdminInstant
 import org.example.project.admin.shared.ui.formatAmount
-import org.example.project.domain.admin.merchants.MerchantDetail
-import org.example.project.domain.admin.merchants.MerchantListItem
-import org.example.project.domain.admin.merchants.ShippingMethodAssignmentItem
+import org.example.project.admin.merchants.MerchantDetail
+import org.example.project.admin.merchants.MerchantListItem
+import org.example.project.admin.merchants.ShippingMethodAssignmentItem
 import org.example.project.domain.shared.MerchantId
 import org.example.project.domain.shared.ShippingMethodId
 

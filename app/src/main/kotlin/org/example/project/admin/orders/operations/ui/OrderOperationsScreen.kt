@@ -46,11 +46,11 @@ import org.example.project.admin.shared.ui.ToolbarTextFilter
 import org.example.project.admin.shared.ui.formatAdminInstant
 import org.example.project.admin.shared.ui.formatAmount
 import org.example.project.admin.shared.ui.labelize
-import org.example.project.domain.admin.orders.AdminOrderDetail
-import org.example.project.domain.admin.orders.AdminOrderHistoryEvent
-import org.example.project.domain.admin.orders.AdminOrderItemDetail
-import org.example.project.domain.admin.orders.AdminSubOrderDetail
-import org.example.project.domain.admin.orders.OrderListItem
+import org.example.project.admin.orders.operations.AdminOrderDetail
+import org.example.project.admin.orders.operations.AdminOrderHistoryEvent
+import org.example.project.admin.orders.operations.AdminOrderItemDetail
+import org.example.project.admin.orders.operations.AdminSubOrderDetail
+import org.example.project.admin.orders.operations.OrderListItem
 import org.example.project.domain.order.OrderStatus
 import org.example.project.domain.shared.MerchantId
 import org.example.project.domain.shared.OrderId

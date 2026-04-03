@@ -1,4 +1,4 @@
-package org.example.project.domain.admin.merchants
+package org.example.project.admin.merchants
 
 import org.example.project.db.suspendTransaction
 import org.example.project.domain.catalog.MerchantRepository

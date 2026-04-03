@@ -1,4 +1,4 @@
-package org.example.project.domain.admin.products
+package org.example.project.admin.products
 
 import androidx.compose.runtime.Immutable
 import kotlin.time.Instant

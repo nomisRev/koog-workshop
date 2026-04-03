@@ -5,8 +5,6 @@ import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.PersistentSet
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
-import org.example.project.domain.admin.merchants.MerchantDetail
-import org.example.project.domain.admin.merchants.MerchantListItem
 import org.example.project.domain.shared.MerchantId
 import org.example.project.domain.shared.ShippingMethodId
 

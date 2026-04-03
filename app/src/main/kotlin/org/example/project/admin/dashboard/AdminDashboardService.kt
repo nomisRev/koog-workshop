@@ -1,4 +1,4 @@
-package org.example.project.domain.admin.dashboard
+package org.example.project.admin.dashboard
 
 import org.example.project.db.suspendTransaction
 import org.jetbrains.exposed.v1.jdbc.Database

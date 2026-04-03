@@ -49,9 +49,9 @@ import org.example.project.admin.shared.ui.formatAdminInstant
 import org.example.project.admin.shared.ui.formatAmount
 import org.example.project.admin.shared.ui.labelize
 import org.example.project.admin.shared.ui.toDisplayText
-import org.example.project.domain.admin.products.ProductActiveFilter
-import org.example.project.domain.admin.products.ProductDetail
-import org.example.project.domain.admin.products.ProductListItem
+import org.example.project.admin.products.ProductActiveFilter
+import org.example.project.admin.products.ProductDetail
+import org.example.project.admin.products.ProductListItem
 import org.example.project.domain.catalog.ProductCategory
 import org.example.project.domain.shared.MerchantId
 import org.example.project.domain.shared.ProductId

@@ -1,4 +1,4 @@
-package org.example.project.domain.admin.merchants
+package org.example.project.admin.merchants
 
 import kotlin.time.Duration.Companion.days
 import org.example.project.domain.catalog.MerchantRepository

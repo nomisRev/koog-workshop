@@ -1,4 +1,4 @@
-package org.example.project.domain.admin.dashboard
+package org.example.project.admin.dashboard
 
 import androidx.compose.runtime.Immutable
 import kotlin.time.Instant

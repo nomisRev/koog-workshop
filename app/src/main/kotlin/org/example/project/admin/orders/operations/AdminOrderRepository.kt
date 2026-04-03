@@ -1,4 +1,4 @@
-package org.example.project.domain.admin.orders
+package org.example.project.admin.orders.operations
 
 import org.example.project.domain.catalog.Merchants
 import org.example.project.domain.catalog.Products
