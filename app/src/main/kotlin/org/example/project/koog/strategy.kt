@@ -1,5 +1,6 @@
 package org.example.project.koog
 
+import ai.koog.agents.core.agent.context.DetachedPromptExecutorAPI
 import ai.koog.agents.core.agent.context.agentInput
 import ai.koog.agents.core.dsl.builder.AIAgentNodeDelegate
 import ai.koog.agents.core.dsl.builder.node
@@ -94,6 +95,7 @@ fun orderCustomerSupportStrategy(tools: CustomerSupportTools) = strategy<String,
 }
 
 // Avoids String -> Message.User wrapping
+@OptIn(DetachedPromptExecutorAPI::class)
 fun nodeLLMModerateString(
     name: String? = null,
     moderatingModel: LLModel? = null,
