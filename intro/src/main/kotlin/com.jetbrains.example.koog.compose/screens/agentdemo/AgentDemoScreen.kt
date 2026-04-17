@@ -3,6 +3,7 @@ package com.jetbrains.example.koog.compose.screens.agentdemo
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -55,6 +56,8 @@ import com.jetbrains.example.koog.compose.theme.AppTheme
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
 import com.mikepenz.markdown.m3.markdownTypography
+
+private const val MAX_BUBBLE_WIDTH_FRACTION = 0.85f
 
 @Composable
 fun AgentDemoScreen(viewModel: AgentDemoViewModel) {
@@ -157,44 +160,50 @@ private fun AgentDemoScreenContent(
 
 @Composable
 private fun UserMessageBubble(text: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.End
-    ) {
-        Box(
-            modifier = Modifier
-                .widthIn(max = 280.dp)
-                .clip(RoundedCornerShape(AppDimension.radiusExtraLarge))
-                .background(MaterialTheme.colorScheme.primary)
-                .padding(AppDimension.spacingMedium)
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val maxBubbleWidth = maxWidth * MAX_BUBBLE_WIDTH_FRACTION
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
         ) {
-            Text(
-                text = text,
-                color = MaterialTheme.colorScheme.onPrimary,
-                style = MaterialTheme.typography.bodyLarge
-            )
+            Box(
+                modifier = Modifier
+                    .widthIn(max = maxBubbleWidth)
+                    .clip(RoundedCornerShape(AppDimension.radiusExtraLarge))
+                    .background(MaterialTheme.colorScheme.primary)
+                    .padding(AppDimension.spacingMedium)
+            ) {
+                Text(
+                    text = text,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun AgentMessageBubble(text: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Start
-    ) {
-        Box(
-            modifier = Modifier
-                .widthIn(max = 280.dp)
-                .clip(RoundedCornerShape(AppDimension.radiusExtraLarge))
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .padding(AppDimension.spacingMedium)
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val maxBubbleWidth = maxWidth * MAX_BUBBLE_WIDTH_FRACTION
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start
         ) {
-            Markdown(
-                content = text,
-                colors = markdownColor(text = MaterialTheme.colorScheme.onPrimaryContainer),
-                typography = markdownTypography(text = MaterialTheme.typography.bodyLarge)
-            )
+            Box(
+                modifier = Modifier
+                    .widthIn(max = maxBubbleWidth)
+                    .clip(RoundedCornerShape(AppDimension.radiusExtraLarge))
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .padding(AppDimension.spacingMedium)
+            ) {
+                Markdown(
+                    content = text,
+                    colors = markdownColor(text = MaterialTheme.colorScheme.onPrimaryContainer),
+                    typography = markdownTypography(text = MaterialTheme.typography.bodyLarge)
+                )
+            }
         }
     }
 }
@@ -217,31 +226,34 @@ private fun SystemMessageItem(text: String) {
 
 @Composable
 private fun ErrorMessageItem(text: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Start
-    ) {
-        Column(
-            modifier = Modifier
-                .widthIn(max = 280.dp)
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val maxBubbleWidth = maxWidth * MAX_BUBBLE_WIDTH_FRACTION
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start
         ) {
-            Text(
-                text = "Error",
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(start = AppDimension.spacingSmall)
-            )
-            Box(
+            Column(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(AppDimension.radiusExtraLarge))
-                    .background(MaterialTheme.colorScheme.errorContainer)
-                    .padding(AppDimension.spacingMedium)
+                    .widthIn(max = maxBubbleWidth)
             ) {
                 Text(
-                    text = text,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    style = MaterialTheme.typography.bodyLarge
+                    text = "Error",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(start = AppDimension.spacingSmall)
                 )
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(AppDimension.radiusExtraLarge))
+                        .background(MaterialTheme.colorScheme.errorContainer)
+                        .padding(AppDimension.spacingMedium)
+                ) {
+                    Text(
+                        text = text,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
             }
         }
     }
@@ -249,31 +261,34 @@ private fun ErrorMessageItem(text: String) {
 
 @Composable
 private fun ToolCallMessageItem(text: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Start
-    ) {
-        Column(
-            modifier = Modifier
-                .widthIn(max = 280.dp)
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val maxBubbleWidth = maxWidth * MAX_BUBBLE_WIDTH_FRACTION
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start
         ) {
-            Text(
-                text = "Tool call",
-                color = MaterialTheme.colorScheme.tertiary,
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(start = AppDimension.spacingSmall)
-            )
-            Box(
+            Column(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(AppDimension.radiusExtraLarge))
-                    .background(MaterialTheme.colorScheme.tertiaryContainer)
-                    .padding(AppDimension.spacingMedium)
+                    .widthIn(max = maxBubbleWidth)
             ) {
                 Text(
-                    text = text,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer,
-                    style = MaterialTheme.typography.bodyLarge
+                    text = "Tool call",
+                    color = MaterialTheme.colorScheme.tertiary,
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(start = AppDimension.spacingSmall)
                 )
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(AppDimension.radiusExtraLarge))
+                        .background(MaterialTheme.colorScheme.tertiaryContainer)
+                        .padding(AppDimension.spacingMedium)
+                ) {
+                    Text(
+                        text = text,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
             }
         }
     }
@@ -281,31 +296,34 @@ private fun ToolCallMessageItem(text: String) {
 
 @Composable
 private fun ResultMessageItem(text: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Start
-    ) {
-        Column(
-            modifier = Modifier
-                .widthIn(max = 280.dp)
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val maxBubbleWidth = maxWidth * MAX_BUBBLE_WIDTH_FRACTION
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start
         ) {
-            Text(
-                text = "Result",
-                color = MaterialTheme.colorScheme.secondary,
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(start = AppDimension.spacingSmall)
-            )
-            Box(
+            Column(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(AppDimension.radiusExtraLarge))
-                    .background(MaterialTheme.colorScheme.secondaryContainer)
-                    .padding(AppDimension.spacingMedium)
+                    .widthIn(max = maxBubbleWidth)
             ) {
                 Text(
-                    text = text,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    style = MaterialTheme.typography.bodyLarge
+                    text = "Result",
+                    color = MaterialTheme.colorScheme.secondary,
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(start = AppDimension.spacingSmall)
                 )
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(AppDimension.radiusExtraLarge))
+                        .background(MaterialTheme.colorScheme.secondaryContainer)
+                        .padding(AppDimension.spacingMedium)
+                ) {
+                    Text(
+                        text = text,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
             }
         }
     }
