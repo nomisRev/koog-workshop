@@ -69,10 +69,10 @@ class AgentDemoViewModel(
             try {
                 val currentAgent = agent ?: agentProvider.provideAgent(
                     historyProvider = chatHistoryProvider,
-                    onToolCallEvent = { message ->
+                    onToolCallEvent = { toolName, args ->
                         viewModelScope.launch {
                             _uiState.update {
-                                it.copy(messages = it.messages + Message.ToolCallMessage(message))
+                                it.copy(messages = it.messages + Message.ToolCallMessage(toolName, args))
                             }
                         }
                     },

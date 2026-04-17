@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +20,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -48,6 +51,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -131,7 +136,7 @@ private fun AgentDemoScreenContent(
                         is Message.AgentMessage -> AgentMessageBubble(message.text)
                         is Message.SystemMessage -> SystemMessageItem(message.text)
                         is Message.ErrorMessage -> ErrorMessageItem(message.text)
-                        is Message.ToolCallMessage -> ToolCallMessageItem(message.text)
+                        is Message.ToolCallMessage -> ToolCallMessageItem(message.toolName, message.args)
                         is Message.ResultMessage -> ResultMessageItem(message.text)
                     }
                 }
@@ -259,35 +264,81 @@ private fun ErrorMessageItem(text: String) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ToolCallMessageItem(text: String) {
+private fun ToolCallMessageItem(toolName: String, args: Map<String, String>) {
+    val borderColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f)
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val maxBubbleWidth = maxWidth * MAX_BUBBLE_WIDTH_FRACTION
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Start
         ) {
-            Column(
-                modifier = Modifier
-                    .widthIn(max = maxBubbleWidth)
-            ) {
+            Column(modifier = Modifier.widthIn(max = maxBubbleWidth)) {
                 Text(
-                    text = "Tool call",
+                    text = "TOOL CALL",
                     color = MaterialTheme.colorScheme.tertiary,
-                    style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.padding(start = AppDimension.spacingSmall)
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    modifier = Modifier.padding(start = AppDimension.spacingSmall, bottom = 2.dp)
                 )
-                Box(
+                FlowRow(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(AppDimension.radiusExtraLarge))
-                        .background(MaterialTheme.colorScheme.tertiaryContainer)
-                        .padding(AppDimension.spacingMedium)
+                        .clip(RoundedCornerShape(6.dp))
+                        .border(1.dp, borderColor, RoundedCornerShape(6.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .padding(AppDimension.spacingSmall),
+                    horizontalArrangement = Arrangement.spacedBy(AppDimension.spacingSmall),
+                    verticalArrangement = Arrangement.spacedBy(AppDimension.spacingSmall)
                 ) {
-                    Text(
-                        text = text,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    // Tool name chip
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f))
+                            .border(1.dp, borderColor, RoundedCornerShape(4.dp))
+                            .padding(horizontal = AppDimension.spacingSmall, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = toolName,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
+                    // Argument chips
+                    args.forEach { (key, value) ->
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .border(1.dp, borderColor, RoundedCornerShape(4.dp))
+                                .padding(horizontal = AppDimension.spacingSmall, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = key,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            )
+                            Text(
+                                text = ": ",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
+                            )
+                            Text(
+                                text = value,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -435,7 +486,7 @@ fun AgentDemoScreenPreview() {
             messages = listOf(
                 Message.SystemMessage("Hi, I'm an agent that can help you"),
                 Message.UserMessage("Hello!"),
-                Message.ToolCallMessage("Tool example, args {a=2, b=2}"),
+                Message.ToolCallMessage("get_weather", mapOf("location" to "Paris", "date" to "2024-01-15")),
                 Message.ResultMessage("Result: 4"),
                 Message.AgentMessage("Hello! How can I help you today?"),
                 Message.ErrorMessage("Error: Something went wrong")

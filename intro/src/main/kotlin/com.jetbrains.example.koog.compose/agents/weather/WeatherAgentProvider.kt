@@ -28,7 +28,7 @@ internal class WeatherAgentProvider(
 
     override suspend fun provideAgent(
         historyProvider: ChatHistoryProvider,
-        onToolCallEvent: suspend (String) -> Unit,
+        onToolCallEvent: suspend (toolName: String, args: Map<String, String>) -> Unit,
         onErrorEvent: suspend (String) -> Unit,
     ): AIAgent<String, String> {
         val (llmClient, model) = provideLLMClient.invoke()
@@ -71,7 +71,7 @@ internal class WeatherAgentProvider(
             }
             handleEvents {
                 onToolCallStarting { ctx ->
-                    onToolCallEvent("Tool ${ctx.toolName}, args ${ctx.toolArgs}")
+                    onToolCallEvent(ctx.toolName, ctx.toolArgs.entries.mapValues { it.value.toString() })
                 }
 
                 onAgentExecutionFailed { ctx ->

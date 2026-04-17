@@ -15,6 +15,6 @@ sealed class Message {
     data class AgentMessage(val text: String) : Message()
     data class SystemMessage(val text: String) : Message()
     data class ErrorMessage(val text: String) : Message()
-    data class ToolCallMessage(val text: String) : Message()
+    data class ToolCallMessage(val toolName: String, val args: Map<String, String>) : Message()
     data class ResultMessage(val text: String) : Message()
 }

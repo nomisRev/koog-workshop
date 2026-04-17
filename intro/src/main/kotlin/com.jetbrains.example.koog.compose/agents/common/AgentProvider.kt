@@ -19,7 +19,7 @@ interface AgentProvider {
 
     suspend fun provideAgent(
         historyProvider: ChatHistoryProvider,
-        onToolCallEvent: suspend (String) -> Unit,
+        onToolCallEvent: suspend (toolName: String, args: Map<String, String>) -> Unit,
         onErrorEvent: suspend (String) -> Unit,
     ): AIAgent<String, String>
 }
