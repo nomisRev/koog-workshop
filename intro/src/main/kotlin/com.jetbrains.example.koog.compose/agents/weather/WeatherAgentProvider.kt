@@ -35,9 +35,7 @@ internal class WeatherAgentProvider(
         val executor = MultiLLMPromptExecutor(llmClient)
 
         val toolRegistry = ToolRegistry {
-            tool(WeatherTools.CurrentDatetimeTool())
-            tool(WeatherTools.AddDatetimeTool())
-            tool(WeatherTools.WeatherForecastTool())
+            tools(WeatherTools())
         }
 
         val agentConfig = AIAgentConfig(
