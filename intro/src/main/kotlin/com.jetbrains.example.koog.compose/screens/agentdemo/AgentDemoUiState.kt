@@ -20,7 +20,6 @@ sealed class ChatMessage {
     data class ErrorMessage(val text: String) : ChatMessage()
     data class ToolCallMessage(val toolName: String, val args: Map<String, String>) : ChatMessage()
     data class LLMCallMessage(val data: LlmCallData) : ChatMessage()
-    data class ResultMessage(val text: String) : ChatMessage()
 }
 
 data class LlmCallData(

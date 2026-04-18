@@ -107,7 +107,6 @@ private fun AgentDemoScreenContent(
                         is ChatMessage.SystemMessage -> SystemMessageItem(message.text)
                         is ChatMessage.ErrorMessage -> ErrorMessageItem(message.text)
                         is ChatMessage.ToolCallMessage -> ToolCallMessageItem(message.toolName, message.args)
-                        is ChatMessage.ResultMessage -> ResultMessageItem(message.text)
                         is ChatMessage.LLMCallMessage -> LLMCallMessageItem(message.data)
                     }
                 }
@@ -317,61 +316,6 @@ private fun ToolCallMessageItem(toolName: String, args: Map<String, String>) {
 }
 
 @Composable
-private fun ResultMessageItem(text: String) {
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val maxBubbleWidth = maxWidth * MAX_BUBBLE_WIDTH_FRACTION
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start
-        ) {
-            Column(
-                modifier = Modifier
-                    .widthIn(max = maxBubbleWidth)
-            ) {
-                Text(
-                    text = "Result",
-                    color = MaterialTheme.colorScheme.secondary,
-                    style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.padding(start = AppDimension.spacingSmall)
-                )
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(AppDimension.radiusExtraLarge))
-                        .background(MaterialTheme.colorScheme.secondaryContainer)
-                        .padding(AppDimension.spacingMedium)
-                ) {
-                    Text(
-                        text = text,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun RestartButton(onRestartClicked: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = AppDimension.spacingMedium, vertical = AppDimension.spacingSmall),
-        contentAlignment = Alignment.Center
-    ) {
-        Button(
-            onClick = onRestartClicked,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            )
-        ) {
-            Text("Start new chat")
-        }
-    }
-}
-
-@Composable
 private fun InputArea(
     text: String,
     onTextChanged: (String) -> Unit,
@@ -472,7 +416,6 @@ fun AgentDemoScreenPreview() {
                     )
                 ),
                 ChatMessage.ToolCallMessage("get_weather", mapOf("location" to "Paris", "date" to "2024-01-15")),
-                ChatMessage.ResultMessage("Result: 4"),
                 ChatMessage.AgentMessage("Hello! How can I help you today?"),
                 ChatMessage.ErrorMessage("Error: Something went wrong")
             ),
