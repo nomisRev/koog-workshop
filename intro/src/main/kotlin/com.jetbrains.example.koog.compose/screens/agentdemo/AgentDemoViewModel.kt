@@ -35,6 +35,7 @@ class AgentDemoViewModel(
         viewModelScope.launch {
             when (event) {
                 is AgentDemoUiEvents.UpdateInputText -> updateInputText(event.text)
+                is AgentDemoUiEvents.UpdateDebugView -> updateDebugView(event.debugView)
                 AgentDemoUiEvents.SendMessage -> sendMessage()
                 AgentDemoUiEvents.RestartChat -> restartChat()
                 AgentDemoUiEvents.NavigateBack -> navigationCallback.goBack()
@@ -44,6 +45,10 @@ class AgentDemoViewModel(
 
     private fun updateInputText(text: String) {
         _uiState.update { it.copy(inputText = text) }
+    }
+
+    private fun updateDebugView(debugView: DebugView) {
+        _uiState.update { it.copy(debugView = debugView) }
     }
 
     private fun sendMessage() {

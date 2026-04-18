@@ -7,10 +7,35 @@ import ai.koog.prompt.message.Message
 data class AgentDemoUiState(
     val title: String = "Agent Demo",
     val chatMessages: List<ChatMessage> = listOf(ChatMessage.SystemMessage("Hi, I'm an agent that can help you")),
+    val debugView: DebugView = DebugView.Off,
     val inputText: String = "",
     val isInputEnabled: Boolean = true,
     val isLoading: Boolean = false,
 )
+
+enum class DebugView(val title: String) {
+    Off("Off"),
+    Tools("Tools"),
+    FullTrace("Full Trace");
+
+    fun shows(message: ChatMessage): Boolean = shows(message.type)
+
+    fun shows(type: ChatMessageType): Boolean =
+        when (this) {
+            Off -> type in setOf(ChatMessageType.User, ChatMessageType.Agent, ChatMessageType.System)
+            Tools -> type != ChatMessageType.LlmCall
+            FullTrace -> true
+        }
+}
+
+enum class ChatMessageType {
+    User,
+    Agent,
+    System,
+    Error,
+    ToolCall,
+    LlmCall,
+}
 
 // Define message types for the chat
 sealed class ChatMessage {
@@ -21,6 +46,17 @@ sealed class ChatMessage {
     data class ToolCallMessage(val toolName: String, val args: Map<String, String>) : ChatMessage()
     data class LLMCallMessage(val data: LlmCallData) : ChatMessage()
 }
+
+val ChatMessage.type: ChatMessageType
+    get() =
+        when (this) {
+            is ChatMessage.UserMessage -> ChatMessageType.User
+            is ChatMessage.AgentMessage -> ChatMessageType.Agent
+            is ChatMessage.SystemMessage -> ChatMessageType.System
+            is ChatMessage.ErrorMessage -> ChatMessageType.Error
+            is ChatMessage.ToolCallMessage -> ChatMessageType.ToolCall
+            is ChatMessage.LLMCallMessage -> ChatMessageType.LlmCall
+        }
 
 data class LlmCallData(
     val messageHistory: List<LlmCallHistoryItem>,

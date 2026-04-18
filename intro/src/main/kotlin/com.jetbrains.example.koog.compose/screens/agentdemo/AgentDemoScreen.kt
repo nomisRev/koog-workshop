@@ -2,6 +2,8 @@ package com.jetbrains.example.koog.compose.screens.agentdemo
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -41,6 +43,7 @@ fun AgentDemoScreen(viewModel: AgentDemoViewModel) {
     AgentDemoScreenContent(
         title = uiState.title,
         chatMessages = uiState.chatMessages,
+        debugView = uiState.debugView,
         inputText = uiState.inputText,
         isInputEnabled = uiState.isInputEnabled,
         isLoading = uiState.isLoading,
@@ -53,6 +56,7 @@ fun AgentDemoScreen(viewModel: AgentDemoViewModel) {
 private fun AgentDemoScreenContent(
     title: String,
     chatMessages: List<ChatMessage>,
+    debugView: DebugView,
     inputText: String,
     isInputEnabled: Boolean,
     isLoading: Boolean,
@@ -61,11 +65,14 @@ private fun AgentDemoScreenContent(
     val listState = rememberLazyListState()
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
+    val visibleMessages = remember(chatMessages, debugView) {
+        chatMessages.filter(debugView::shows)
+    }
 
     // Scroll to bottom when messages change
-    LaunchedEffect(chatMessages.size) {
-        if (chatMessages.isNotEmpty()) {
-            listState.animateScrollToItem(chatMessages.size - 1)
+    LaunchedEffect(visibleMessages.size) {
+        if (visibleMessages.isNotEmpty()) {
+            listState.animateScrollToItem(visibleMessages.size - 1)
         }
     }
 
@@ -80,6 +87,13 @@ private fun AgentDemoScreenContent(
                             contentDescription = "Back"
                         )
                     }
+                },
+                actions = {
+                    DebugViewSelector(
+                        modifier = Modifier.padding(end = AppDimension.spacingMedium),
+                        debugView = debugView,
+                        onDebugViewChanged = { onEvent(AgentDemoUiEvents.UpdateDebugView(it)) }
+                    )
                 }
             )
         },
@@ -100,7 +114,7 @@ private fun AgentDemoScreenContent(
                 state = listState,
                 verticalArrangement = Arrangement.spacedBy(AppDimension.spacingMedium)
             ) {
-                items(chatMessages) { message ->
+                items(visibleMessages) { message ->
                     when (message) {
                         is ChatMessage.UserMessage -> UserMessageBubble(message.text)
                         is ChatMessage.AgentMessage -> AgentMessageBubble(message.text)
@@ -130,6 +144,58 @@ private fun AgentDemoScreenContent(
                 focusRequester = focusRequester
             )
         }
+    }
+}
+
+@Composable
+private fun DebugViewSelector(
+    modifier: Modifier = Modifier,
+    debugView: DebugView,
+    onDebugViewChanged: (DebugView) -> Unit,
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(AppDimension.spacingSmall)
+    ) {
+        Text(
+            text = "Debug View:",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        DebugView.entries.forEach { option ->
+            DebugViewOption(
+                label = option.title,
+                selected = debugView == option,
+                onClick = { onDebugViewChanged(option) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun DebugViewOption(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    Row(
+        modifier = Modifier.clickable(
+            interactionSource = interactionSource,
+            indication = null,
+            onClick = onClick
+        ),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(
+            selected = selected,
+            onClick = null
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium
+        )
     }
 }
 
@@ -419,6 +485,7 @@ fun AgentDemoScreenPreview() {
                 ChatMessage.AgentMessage("Hello! How can I help you today?"),
                 ChatMessage.ErrorMessage("Error: Something went wrong")
             ),
+            debugView = DebugView.FullTrace,
             inputText = "",
             isInputEnabled = true,
             isLoading = false,
@@ -439,6 +506,7 @@ fun AgentDemoScreenEndedPreview() {
                 ChatMessage.AgentMessage("Hello! How can I help you today?"),
                 ChatMessage.SystemMessage("The agent has stopped.")
             ),
+            debugView = DebugView.Off,
             inputText = "",
             isInputEnabled = false,
             isLoading = false,
