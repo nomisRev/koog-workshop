@@ -5,24 +5,26 @@ import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.prompt.message.Message
 
-/**
- * Interface for agent factory
- */
-interface AgentProvider {
-    /**
-     * Title for the agent demo screen
-     */
+sealed interface AgentProvider {
     val title: String
-
-    /**
-     * Description of the agent
-     */
     val description: String
+}
 
+interface ChatAgentProvider : AgentProvider {
     suspend fun provideAgent(
         historyProvider: ChatHistoryProvider,
         onToolCallEvent: suspend (toolName: String, args: Map<String, String>) -> Unit,
         onLLMCallEvent: suspend (messages: List<Message>, tools: List<ToolDescriptor>) -> Unit,
         onErrorEvent: suspend (String) -> Unit,
+    ): AIAgent<String, String>
+}
+
+interface TaskAgentProvider : AgentProvider {
+    suspend fun provideAgent(
+        historyProvider: ChatHistoryProvider,
+        onToolCallEvent: suspend (toolName: String, args: Map<String, String>) -> Unit,
+        onLLMCallEvent: suspend (messages: List<Message>, tools: List<ToolDescriptor>) -> Unit,
+        onErrorEvent: suspend (String) -> Unit,
+        onAssistantMessage: suspend (String) -> String,
     ): AIAgent<String, String>
 }

@@ -11,6 +11,9 @@ data class AgentDemoUiState(
     val inputText: String = "",
     val isInputEnabled: Boolean = true,
     val isLoading: Boolean = false,
+    val isChatEnded: Boolean = false,
+    val userResponseRequested: Boolean = false,
+    val currentUserResponse: String? = null,
 )
 
 enum class DebugView(val title: String) {
@@ -22,7 +25,7 @@ enum class DebugView(val title: String) {
 
     fun shows(type: ChatMessageType): Boolean =
         when (this) {
-            Off -> type in setOf(ChatMessageType.User, ChatMessageType.Agent, ChatMessageType.System)
+            Off -> type in setOf(ChatMessageType.User, ChatMessageType.Agent, ChatMessageType.System, ChatMessageType.Result)
             Tools -> type != ChatMessageType.LlmCall
             FullTrace -> true
         }
@@ -33,6 +36,7 @@ enum class ChatMessageType {
     Agent,
     System,
     Error,
+    Result,
     ToolCall,
     LlmCall,
 }
@@ -43,6 +47,7 @@ sealed class ChatMessage {
     data class AgentMessage(val text: String) : ChatMessage()
     data class SystemMessage(val text: String) : ChatMessage()
     data class ErrorMessage(val text: String) : ChatMessage()
+    data class ResultMessage(val text: String) : ChatMessage()
     data class ToolCallMessage(val toolName: String, val args: Map<String, String>) : ChatMessage()
     data class LLMCallMessage(val data: LlmCallData) : ChatMessage()
 }
@@ -54,6 +59,7 @@ val ChatMessage.type: ChatMessageType
             is ChatMessage.AgentMessage -> ChatMessageType.Agent
             is ChatMessage.SystemMessage -> ChatMessageType.System
             is ChatMessage.ErrorMessage -> ChatMessageType.Error
+            is ChatMessage.ResultMessage -> ChatMessageType.Result
             is ChatMessage.ToolCallMessage -> ChatMessageType.ToolCall
             is ChatMessage.LLMCallMessage -> ChatMessageType.LlmCall
         }

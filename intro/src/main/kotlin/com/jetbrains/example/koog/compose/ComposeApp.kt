@@ -67,6 +67,17 @@ fun ComposeApp() = AppTheme {
                         }
                     )
                 }
+
+                entry<NavRoute.AgentDemoRoute.HomeServicesScreen> {
+                    AgentDemoScreen(
+                        viewModel = koin.get {
+                            parametersOf(
+                                appNavigation,
+                                "home-services",
+                            )
+                        }
+                    )
+                }
             }
         )
     }
@@ -93,5 +104,8 @@ sealed interface NavRoute : NavKey {
 
         @Serializable
         data object BasicAgentScreen : AgentDemoRoute
+
+        @Serializable
+        data object HomeServicesScreen : AgentDemoRoute
     }
 }

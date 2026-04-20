@@ -6,10 +6,13 @@ import ai.koog.agents.core.agent.AIAgent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jetbrains.example.koog.compose.agents.common.AgentProvider
+import com.jetbrains.example.koog.compose.agents.common.ChatAgentProvider
+import com.jetbrains.example.koog.compose.agents.common.TaskAgentProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -55,79 +58,126 @@ class AgentDemoViewModel(
         val userInput = _uiState.value.inputText.trim()
         if (userInput.isEmpty()) return
 
+        val isResponse = _uiState.value.userResponseRequested
+
         _uiState.update {
             it.copy(
                 chatMessages = it.chatMessages + ChatMessage.UserMessage(userInput),
                 inputText = "",
                 isInputEnabled = false,
-                isLoading = true
+                isLoading = true,
+                currentUserResponse = if (isResponse) userInput else null,
+                userResponseRequested = false,
             )
         }
 
-        viewModelScope.launch {
-            runAgent(userInput)
+        if (!isResponse) {
+            viewModelScope.launch {
+                runAgent(userInput)
+            }
         }
     }
 
     private suspend fun runAgent(userInput: String) {
         withContext(Dispatchers.Default) {
             try {
-                val currentAgent = agent ?: agentProvider.provideAgent(
-                    historyProvider = chatHistoryProvider,
-                    onToolCallEvent = { toolName, args ->
-                        viewModelScope.launch {
-                            _uiState.update {
-                                it.copy(chatMessages = it.chatMessages + ChatMessage.ToolCallMessage(toolName, args))
-                            }
-                        }
-                    },
-                    onErrorEvent = { errorMessage ->
-                        viewModelScope.launch {
-                            _uiState.update {
-                                it.copy(
-                                    chatMessages = it.chatMessages + ChatMessage.ErrorMessage(errorMessage),
-                                    isInputEnabled = true,
-                                    isLoading = false
-                                )
-                            }
-                        }
-                    },
-                    onLLMCallEvent = { messages, tools ->
-                        viewModelScope.launch {
-                            _uiState.update {
-                                it.copy(
-                                    chatMessages = it.chatMessages + ChatMessage.LLMCallMessage(
-                                        LlmCallData(
-                                            messageHistory = messages.toHistoryItems(),
-                                            availableTools = tools.toToolData()
-                                        )
-                                    ),
-                                    isInputEnabled = true,
-                                    isLoading = false
-                                )
-                            }
-                        }
-                    }
-                ).also { agent = it }
-
+                val currentAgent = agent ?: createAgent().also { agent = it }
                 val result = currentAgent.run(userInput, sessionId)
 
                 _uiState.update {
-                    it.copy(
-                        chatMessages = it.chatMessages + ChatMessage.AgentMessage(result),
-                        isInputEnabled = true,
-                        isLoading = false
-                    )
+                    when (agentProvider) {
+                        is TaskAgentProvider -> it.copy(
+                            chatMessages = it.chatMessages +
+                                    ChatMessage.ResultMessage(result) +
+                                    ChatMessage.SystemMessage("The agent has stopped."),
+                            isInputEnabled = false,
+                            isLoading = false,
+                            isChatEnded = true,
+                        )
+
+                        is ChatAgentProvider -> it.copy(
+                            chatMessages = it.chatMessages + ChatMessage.AgentMessage(result),
+                            isInputEnabled = true,
+                            isLoading = false,
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
                         chatMessages = it.chatMessages + ChatMessage.ErrorMessage("Error: ${e.message}"),
-                        isInputEnabled = true,
-                        isLoading = false
+                        isInputEnabled = !_uiState.value.isChatEnded,
+                        isLoading = false,
                     )
                 }
             }
+        }
+    }
+
+    private suspend fun createAgent(): AIAgent<String, String> {
+        val onToolCallEvent: suspend (String, Map<String, String>) -> Unit = { toolName, args ->
+            _uiState.update {
+                it.copy(chatMessages = it.chatMessages + ChatMessage.ToolCallMessage(toolName, args))
+            }
+        }
+        val onErrorEvent: suspend (String) -> Unit = { errorMessage ->
+            _uiState.update {
+                it.copy(
+                    chatMessages = it.chatMessages + ChatMessage.ErrorMessage(errorMessage),
+                    isInputEnabled = true,
+                    isLoading = false,
+                )
+            }
+        }
+        val onLLMCallEvent: suspend (List<ai.koog.prompt.message.Message>, List<ai.koog.agents.core.tools.ToolDescriptor>) -> Unit =
+            { messages, tools ->
+                _uiState.update {
+                    it.copy(
+                        chatMessages = it.chatMessages + ChatMessage.LLMCallMessage(
+                            LlmCallData(
+                                messageHistory = messages.toHistoryItems(),
+                                availableTools = tools.toToolData()
+                            )
+                        ),
+                    )
+                }
+            }
+
+        return when (val provider = agentProvider) {
+            is ChatAgentProvider -> provider.provideAgent(
+                historyProvider = chatHistoryProvider,
+                onToolCallEvent = onToolCallEvent,
+                onLLMCallEvent = onLLMCallEvent,
+                onErrorEvent = onErrorEvent,
+            )
+
+            is TaskAgentProvider -> provider.provideAgent(
+                historyProvider = chatHistoryProvider,
+                onToolCallEvent = onToolCallEvent,
+                onLLMCallEvent = onLLMCallEvent,
+                onErrorEvent = onErrorEvent,
+                onAssistantMessage = { message ->
+                    _uiState.update {
+                        it.copy(
+                            chatMessages = it.chatMessages + ChatMessage.AgentMessage(message),
+                            isInputEnabled = true,
+                            isLoading = false,
+                            userResponseRequested = true,
+                        )
+                    }
+
+                    val userResponse = _uiState
+                        .first { it.currentUserResponse != null }
+                        .currentUserResponse
+                        ?: throw IllegalStateException("User response is null")
+
+                    _uiState.update {
+                        it.copy(currentUserResponse = null)
+                    }
+
+                    userResponse
+                },
+            )
         }
     }
 

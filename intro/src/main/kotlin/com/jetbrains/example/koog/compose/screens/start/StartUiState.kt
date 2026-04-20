@@ -14,6 +14,11 @@ data class StartUiState(
             description = "A weather agent that can provide forecasts for any location. Ask about weather conditions, dates, and more.",
             agentDemoRoute = NavRoute.AgentDemoRoute.WeatherScreen
         ),
+        CardItem(
+            title = "Home Services Scheduling",
+            description = "Schedule plumbing, electrical, HVAC, cleaning, or handyman service. The assistant gathers the missing details and books from sample appointment slots.",
+            agentDemoRoute = NavRoute.AgentDemoRoute.HomeServicesScreen
+        ),
     )
 )
 

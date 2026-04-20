@@ -118,6 +118,7 @@ private fun AgentDemoScreenContent(
                     when (message) {
                         is ChatMessage.UserMessage -> UserMessageBubble(message.text)
                         is ChatMessage.AgentMessage -> AgentMessageBubble(message.text)
+                        is ChatMessage.ResultMessage -> AgentMessageBubble(message.text)
                         is ChatMessage.SystemMessage -> SystemMessageItem(message.text)
                         is ChatMessage.ErrorMessage -> ErrorMessageItem(message.text)
                         is ChatMessage.ToolCallMessage -> ToolCallMessageItem(message.toolName, message.args)
