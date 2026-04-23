@@ -123,6 +123,7 @@ private fun AgentDemoScreenContent(
                         is ChatMessage.ErrorMessage -> ErrorMessageItem(message.text)
                         is ChatMessage.ToolCallMessage -> ToolCallMessageItem(message.toolName, message.args)
                         is ChatMessage.LLMCallMessage -> LLMCallMessageItem(message.data)
+                        is ChatMessage.ExecutionTraceMessage -> ExecutionTraceMessageItem(message.item)
                     }
                 }
 
@@ -383,6 +384,67 @@ private fun ToolCallMessageItem(toolName: String, args: Map<String, String>) {
 }
 
 @Composable
+private fun ExecutionTraceMessageItem(item: ExecutionTraceItem) {
+    when (item) {
+        is ExecutionTraceItem.Node -> NodeExecutionTraceItem(item.name)
+        is ExecutionTraceItem.Subgraph -> SubgraphExecutionTraceItem(item.name)
+    }
+}
+
+@Composable
+private fun NodeExecutionTraceItem(name: String) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val maxBubbleWidth = maxWidth * MAX_BUBBLE_WIDTH_FRACTION
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            Text(
+                text = "NODE: $name",
+                color = MaterialTheme.colorScheme.outline,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold
+                ),
+                modifier = Modifier
+                    .widthIn(max = maxBubbleWidth)
+                    .padding(start = AppDimension.spacingSmall, bottom = 2.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SubgraphExecutionTraceItem(name: String) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val maxBubbleWidth = maxWidth * MAX_BUBBLE_WIDTH_FRACTION
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            Text(
+                text = "TASK: $name",
+                color = MaterialTheme.colorScheme.secondary,
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.ExtraBold
+                ),
+                modifier = Modifier
+                    .widthIn(max = maxBubbleWidth)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f))
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.35f),
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .padding(horizontal = AppDimension.spacingSmall, vertical = 2.dp)
+            )
+        }
+    }
+}
+
+@Composable
 private fun InputArea(
     text: String,
     onTextChanged: (String) -> Unit,
@@ -483,6 +545,8 @@ fun AgentDemoScreenPreview() {
                     )
                 ),
                 ChatMessage.ToolCallMessage("get_weather", mapOf("location" to "Paris", "date" to "2024-01-15")),
+                ChatMessage.ExecutionTraceMessage(ExecutionTraceItem.Node("nodeCallLLM")),
+                ChatMessage.ExecutionTraceMessage(ExecutionTraceItem.Subgraph("assess")),
                 ChatMessage.AgentMessage("Hello! How can I help you today?"),
                 ChatMessage.ErrorMessage("Error: Something went wrong")
             ),

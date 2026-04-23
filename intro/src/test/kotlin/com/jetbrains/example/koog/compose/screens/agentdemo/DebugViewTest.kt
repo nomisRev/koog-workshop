@@ -12,12 +12,14 @@ class DebugViewTest {
             visible = listOf(
                 ChatMessageType.User,
                 ChatMessageType.Agent,
-                ChatMessageType.System
+                ChatMessageType.System,
+                ChatMessageType.Result,
             ),
             hidden = listOf(
                 ChatMessageType.Error,
                 ChatMessageType.ToolCall,
-                ChatMessageType.LlmCall
+                ChatMessageType.LlmCall,
+                ChatMessageType.ExecutionTrace,
             )
         )
     }
@@ -31,9 +33,10 @@ class DebugViewTest {
                 ChatMessageType.Agent,
                 ChatMessageType.System,
                 ChatMessageType.Error,
-                ChatMessageType.ToolCall
+                ChatMessageType.Result,
+                ChatMessageType.ToolCall,
             ),
-            hidden = listOf(ChatMessageType.LlmCall)
+            hidden = listOf(ChatMessageType.LlmCall, ChatMessageType.ExecutionTrace)
         )
     }
 

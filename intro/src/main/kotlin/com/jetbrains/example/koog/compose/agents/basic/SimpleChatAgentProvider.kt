@@ -10,6 +10,7 @@ import ai.koog.prompt.executor.clients.LLMClient
 import ai.koog.prompt.executor.llms.MultiLLMPromptExecutor
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
+import com.jetbrains.example.koog.compose.agents.common.AgentExecutionTraceEvent
 import com.jetbrains.example.koog.compose.agents.common.ChatAgentProvider
 import com.jetbrains.example.koog.compose.agents.common.trackSystemMessages
 
@@ -27,6 +28,7 @@ internal class SimpleChatAgentProvider(
         onToolCallEvent: suspend (toolName: String, args: Map<String, String>) -> Unit,
         onLLMCallEvent: suspend (messages: List<Message>, tools: List<ToolDescriptor>) -> Unit,
         onErrorEvent: suspend (String) -> Unit,
+        onExecutionTraceEvent: suspend (AgentExecutionTraceEvent) -> Unit,
     ): AIAgent<String, String> {
         val (llmClient, model) = provideLLMClient.invoke()
         val executor = MultiLLMPromptExecutor(llmClient)
@@ -47,7 +49,7 @@ internal class SimpleChatAgentProvider(
                 chatHistoryProvider = historyProvider
                 windowSize(50)
             }
-            trackSystemMessages(onToolCallEvent, onErrorEvent, onLLMCallEvent)
+            trackSystemMessages(onToolCallEvent, onErrorEvent, onLLMCallEvent, onExecutionTraceEvent)
         }
     }
 }

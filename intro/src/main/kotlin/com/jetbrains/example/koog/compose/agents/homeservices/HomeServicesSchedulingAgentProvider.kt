@@ -11,6 +11,7 @@ import ai.koog.prompt.executor.clients.LLMClient
 import ai.koog.prompt.executor.llms.MultiLLMPromptExecutor
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
+import com.jetbrains.example.koog.compose.agents.common.AgentExecutionTraceEvent
 import com.jetbrains.example.koog.compose.agents.common.AskUserTool
 import com.jetbrains.example.koog.compose.agents.common.TaskAgentProvider
 import com.jetbrains.example.koog.compose.agents.common.trackSystemMessages
@@ -27,6 +28,7 @@ internal class HomeServicesSchedulingAgentProvider(
         onToolCallEvent: suspend (toolName: String, args: Map<String, String>) -> Unit,
         onLLMCallEvent: suspend (messages: List<Message>, tools: List<ToolDescriptor>) -> Unit,
         onErrorEvent: suspend (String) -> Unit,
+        onExecutionTraceEvent: suspend (AgentExecutionTraceEvent) -> Unit,
         onAssistantMessage: suspend (String) -> String,
     ): AIAgent<String, String> {
         val (llmClient, model) = provideLLMClient.invoke()
@@ -57,7 +59,7 @@ internal class HomeServicesSchedulingAgentProvider(
             install(ChatMemory) {
                 chatHistoryProvider = historyProvider
             }
-            trackSystemMessages(onToolCallEvent, onErrorEvent, onLLMCallEvent)
+            trackSystemMessages(onToolCallEvent, onErrorEvent, onLLMCallEvent, onExecutionTraceEvent)
         }
     }
 }

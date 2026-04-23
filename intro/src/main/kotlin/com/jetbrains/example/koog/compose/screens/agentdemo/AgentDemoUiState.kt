@@ -26,7 +26,7 @@ enum class DebugView(val title: String) {
     fun shows(type: ChatMessageType): Boolean =
         when (this) {
             Off -> type in setOf(ChatMessageType.User, ChatMessageType.Agent, ChatMessageType.System, ChatMessageType.Result)
-            Tools -> type != ChatMessageType.LlmCall
+            Tools -> type !in setOf(ChatMessageType.LlmCall, ChatMessageType.ExecutionTrace)
             FullTrace -> true
         }
 }
@@ -39,6 +39,7 @@ enum class ChatMessageType {
     Result,
     ToolCall,
     LlmCall,
+    ExecutionTrace,
 }
 
 // Define message types for the chat
@@ -50,6 +51,7 @@ sealed class ChatMessage {
     data class ResultMessage(val text: String) : ChatMessage()
     data class ToolCallMessage(val toolName: String, val args: Map<String, String>) : ChatMessage()
     data class LLMCallMessage(val data: LlmCallData) : ChatMessage()
+    data class ExecutionTraceMessage(val item: ExecutionTraceItem) : ChatMessage()
 }
 
 val ChatMessage.type: ChatMessageType
@@ -62,7 +64,15 @@ val ChatMessage.type: ChatMessageType
             is ChatMessage.ResultMessage -> ChatMessageType.Result
             is ChatMessage.ToolCallMessage -> ChatMessageType.ToolCall
             is ChatMessage.LLMCallMessage -> ChatMessageType.LlmCall
+            is ChatMessage.ExecutionTraceMessage -> ChatMessageType.ExecutionTrace
         }
+
+sealed interface ExecutionTraceItem {
+    val name: String
+
+    data class Node(override val name: String) : ExecutionTraceItem
+    data class Subgraph(override val name: String) : ExecutionTraceItem
+}
 
 data class LlmCallData(
     val messageHistory: List<LlmCallHistoryItem>,

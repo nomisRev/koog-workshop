@@ -6,6 +6,7 @@ import ai.koog.agents.core.agent.AIAgent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jetbrains.example.koog.compose.agents.common.AgentProvider
+import com.jetbrains.example.koog.compose.agents.common.AgentExecutionTraceEvent
 import com.jetbrains.example.koog.compose.agents.common.ChatAgentProvider
 import com.jetbrains.example.koog.compose.agents.common.TaskAgentProvider
 import kotlinx.coroutines.Dispatchers
@@ -142,6 +143,15 @@ class AgentDemoViewModel(
                     )
                 }
             }
+        val onExecutionTraceEvent: suspend (AgentExecutionTraceEvent) -> Unit = { event ->
+            val item = when (event) {
+                is AgentExecutionTraceEvent.Node -> ExecutionTraceItem.Node(event.name)
+                is AgentExecutionTraceEvent.Subgraph -> ExecutionTraceItem.Subgraph(event.name)
+            }
+            _uiState.update {
+                it.copy(chatMessages = it.chatMessages + ChatMessage.ExecutionTraceMessage(item))
+            }
+        }
 
         return when (val provider = agentProvider) {
             is ChatAgentProvider -> provider.provideAgent(
@@ -149,6 +159,7 @@ class AgentDemoViewModel(
                 onToolCallEvent = onToolCallEvent,
                 onLLMCallEvent = onLLMCallEvent,
                 onErrorEvent = onErrorEvent,
+                onExecutionTraceEvent = onExecutionTraceEvent,
             )
 
             is TaskAgentProvider -> provider.provideAgent(
@@ -156,6 +167,7 @@ class AgentDemoViewModel(
                 onToolCallEvent = onToolCallEvent,
                 onLLMCallEvent = onLLMCallEvent,
                 onErrorEvent = onErrorEvent,
+                onExecutionTraceEvent = onExecutionTraceEvent,
                 onAssistantMessage = { message ->
                     _uiState.update {
                         it.copy(
