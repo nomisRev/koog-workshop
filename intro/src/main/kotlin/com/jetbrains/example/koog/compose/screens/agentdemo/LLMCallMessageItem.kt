@@ -60,7 +60,7 @@ internal fun LLMCallMessageItem(data: LlmCallData) {
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
+            horizontalArrangement = Arrangement.Start
         ) {
             Column(modifier = Modifier.widthIn(max = maxBubbleWidth)) {
                 Text(
