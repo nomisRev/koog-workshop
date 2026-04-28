@@ -3,16 +3,25 @@ package com.jetbrains.example.koog.compose.agents.homeservices
 import ai.koog.agents.core.tools.annotations.LLMDescription
 import ai.koog.agents.core.tools.annotations.Tool
 import ai.koog.agents.core.tools.reflect.ToolSet
+import com.jetbrains.example.koog.compose.agents.homeservices.TimeWindow.EARLY_AFTERNOON
+import com.jetbrains.example.koog.compose.agents.homeservices.TimeWindow.LATE_AFTERNOON
+import com.jetbrains.example.koog.compose.agents.homeservices.TimeWindow.MORNING
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
-import kotlin.math.absoluteValue
 
 enum class ServiceType {
-    PLUMBING, ELECTRICAL, HVAC, CLEANING, HANDYMAN
+    PLUMBING, ELECTRICAL, HVAC, HANDYMAN
+}
+
+enum class SpecialistType(val idPart: String, val supportedServices: Set<ServiceType>) {
+    SHK("shk", setOf(ServiceType.PLUMBING, ServiceType.HVAC)),
+    ELECTRICIAN("electrician", setOf(ServiceType.ELECTRICAL)),
+    HANDYMAN_1("handyman_1", setOf(ServiceType.HANDYMAN)),
+    HANDYMAN_2("handyman_2", setOf(ServiceType.HANDYMAN)),
 }
 
 enum class Urgency {
@@ -20,17 +29,21 @@ enum class Urgency {
 }
 
 enum class TimeWindow(val label: String, val hours: String, val startHour: Int) {
-    MORNING("Morning", "9:00–12:00", 9),
-    EARLY_AFTERNOON("Early afternoon", "12:00–15:00", 12),
-    LATE_AFTERNOON("Late afternoon", "15:00–18:00", 15),
+    MORNING("Morning", "9:00-12:00", 9),
+    EARLY_AFTERNOON("Early afternoon", "12:00-15:00", 12),
+    LATE_AFTERNOON("Late afternoon", "15:00-18:00", 15),
+}
+
+enum class SlotStatus {
+    BOOKED, FREE
 }
 
 data class Slot(
     val id: String,
-    val serviceType: ServiceType,
+    val specialistType: SpecialistType,
     val date: LocalDate,
     val timeWindow: TimeWindow,
-    var booked: Boolean = false,
+    var status: SlotStatus,
     var customerName: String? = null,
     var address: String? = null,
     var notes: String? = null,
@@ -41,64 +54,120 @@ data class Slot(
  */
 class HomeServicesSchedule {
     val today: LocalDate = LocalDate.now()
-    val slots: MutableList<Slot> = generateSlots()
+    val currentTime: LocalTime = LocalTime.now().withSecond(0).withNano(0)
+    val slots: MutableList<Slot> = sampleSlots().toMutableList()
 
-    private fun tradeWindows(type: ServiceType): List<TimeWindow> = when (type) {
-        ServiceType.PLUMBING -> listOf(TimeWindow.MORNING, TimeWindow.EARLY_AFTERNOON)
-        ServiceType.ELECTRICAL -> listOf(TimeWindow.MORNING, TimeWindow.LATE_AFTERNOON)
-        ServiceType.HVAC -> listOf(TimeWindow.MORNING, TimeWindow.EARLY_AFTERNOON, TimeWindow.LATE_AFTERNOON)
-        ServiceType.CLEANING -> listOf(TimeWindow.MORNING, TimeWindow.EARLY_AFTERNOON)
-        ServiceType.HANDYMAN -> listOf(TimeWindow.EARLY_AFTERNOON, TimeWindow.LATE_AFTERNOON)
-    }
+    val startDate: LocalDate = slots.minOf { it.date }
+    val endDate: LocalDate = slots.maxOf { it.date }
 
-    private fun availableOnSaturday(type: ServiceType): Boolean = when (type) {
-        ServiceType.PLUMBING, ServiceType.HVAC, ServiceType.CLEANING -> true
-        ServiceType.ELECTRICAL, ServiceType.HANDYMAN -> false
-    }
+    private fun sampleSlots(): List<Slot> {
+        val sampleNames = listOf(
+            "J. Smith", "M. Garcia", "A. Johnson", "R. Patel",
+            "K. Williams", "T. Brown", "L. Davis", "S. Lee",
+        )
+        val bookedAppointmentsBySpecialist = bookedAppointmentsBySpecialist()
 
-    private fun generateSlots(): MutableList<Slot> {
-        val result = mutableListOf<Slot>()
-        val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+        return businessDates().flatMapIndexed { dayIndex, date ->
+            SpecialistType.entries.flatMap { specialist ->
+                val bookedWindows = bookedAppointmentsBySpecialist
+                    .getValue(specialist)
+                    .getOrElse(dayIndex) { emptyList() }
+                    .toMutableList()
 
-        for (dayOffset in 0..13) {
-            val date = today.plusDays(dayOffset.toLong())
-            if (date.dayOfWeek == DayOfWeek.SUNDAY) continue
+                (1..6).map { slotIndex ->
+                    val timeWindow = slotTimeWindow(slotIndex)
+                    val booked = bookedWindows.remove(timeWindow)
+                    val customerName = if (booked) {
+                        sampleNames[(dayIndex * 6 + slotIndex + specialist.ordinal) % sampleNames.size]
+                    } else {
+                        null
+                    }
 
-            for (type in ServiceType.entries) {
-                if (date.dayOfWeek == DayOfWeek.SATURDAY && !availableOnSaturday(type)) continue
-
-                for (window in tradeWindows(type)) {
-                    val id = "svc_${type.name.lowercase()}_${date.format(dateFormatter)}_${window.name.lowercase()}_1"
-                    result.add(Slot(id = id, serviceType = type, date = date, timeWindow = window))
+                    Slot(
+                        id = "svc_${specialist.idPart}_${date.format(ID_DATE_FORMATTER)}_$slotIndex",
+                        specialistType = specialist,
+                        date = date,
+                        timeWindow = timeWindow,
+                        status = if (booked) SlotStatus.BOOKED else SlotStatus.FREE,
+                        customerName = customerName,
+                    )
                 }
             }
         }
+    }
 
-        // Pre-book more slots in the nearest days, fewer further out
-        val sampleNames = listOf("J. Smith", "M. Garcia", "A. Johnson", "R. Patel", "K. Williams")
-        for (slot in result) {
-            val daysAway = (slot.date.toEpochDay() - today.toEpochDay()).toInt()
-            val hash = slot.id.hashCode().absoluteValue
-            // Days 0-2: ~60% booked, days 3-5: ~40%, days 6-9: ~20%, days 10+: ~10%
-            val threshold = when {
-                daysAway <= 2 -> 5
-                daysAway <= 5 -> 5
-                daysAway <= 9 -> 5
-                else -> 10
+    private fun bookedAppointmentsBySpecialist(): Map<SpecialistType, List<List<TimeWindow>>> = mapOf(
+        SpecialistType.SHK to listOf(
+            listOf(MORNING, MORNING, EARLY_AFTERNOON, LATE_AFTERNOON),
+            listOf(MORNING, EARLY_AFTERNOON, LATE_AFTERNOON, LATE_AFTERNOON),
+            listOf(MORNING, MORNING, EARLY_AFTERNOON),
+            listOf(MORNING, EARLY_AFTERNOON, EARLY_AFTERNOON),
+            listOf(MORNING, LATE_AFTERNOON),
+            listOf(EARLY_AFTERNOON, LATE_AFTERNOON),
+            listOf(MORNING, EARLY_AFTERNOON),
+            emptyList(),
+            emptyList(),
+            emptyList(),
+        ),
+        SpecialistType.ELECTRICIAN to listOf(
+            listOf(MORNING, MORNING, EARLY_AFTERNOON, EARLY_AFTERNOON, LATE_AFTERNOON),
+            listOf(MORNING, MORNING, EARLY_AFTERNOON, LATE_AFTERNOON),
+            listOf(MORNING, EARLY_AFTERNOON, LATE_AFTERNOON),
+            listOf(MORNING, EARLY_AFTERNOON, EARLY_AFTERNOON),
+            listOf(MORNING, LATE_AFTERNOON),
+            listOf(EARLY_AFTERNOON, LATE_AFTERNOON),
+            listOf(LATE_AFTERNOON),
+            emptyList(),
+            emptyList(),
+            emptyList(),
+        ),
+        SpecialistType.HANDYMAN_1 to listOf(
+            listOf(MORNING, MORNING, EARLY_AFTERNOON, EARLY_AFTERNOON, LATE_AFTERNOON),
+            listOf(MORNING, EARLY_AFTERNOON, EARLY_AFTERNOON, LATE_AFTERNOON),
+            listOf(MORNING, MORNING, LATE_AFTERNOON),
+            listOf(MORNING, EARLY_AFTERNOON, LATE_AFTERNOON),
+            listOf(EARLY_AFTERNOON, EARLY_AFTERNOON),
+            listOf(MORNING, LATE_AFTERNOON),
+            listOf(LATE_AFTERNOON),
+            emptyList(),
+            emptyList(),
+            emptyList(),
+        ),
+        SpecialistType.HANDYMAN_2 to listOf(
+            listOf(MORNING, EARLY_AFTERNOON, EARLY_AFTERNOON, LATE_AFTERNOON, LATE_AFTERNOON),
+            listOf(MORNING, MORNING, EARLY_AFTERNOON, LATE_AFTERNOON),
+            listOf(MORNING, EARLY_AFTERNOON, LATE_AFTERNOON),
+            listOf(MORNING, MORNING, EARLY_AFTERNOON),
+            listOf(EARLY_AFTERNOON, LATE_AFTERNOON),
+            listOf(MORNING, EARLY_AFTERNOON),
+            listOf(MORNING),
+            emptyList(),
+            emptyList(),
+            emptyList(),
+        ),
+    )
+
+    private fun businessDates(): List<LocalDate> {
+        val dates = mutableListOf<LocalDate>()
+        var cursor = today
+        while (dates.size < 10) {
+            if (cursor.dayOfWeek != DayOfWeek.SATURDAY && cursor.dayOfWeek != DayOfWeek.SUNDAY) {
+                dates += cursor
             }
-            val cutoff = when {
-                daysAway <= 2 -> 3
-                daysAway <= 5 -> 2
-                daysAway <= 9 -> 1
-                else -> 1
-            }
-            if (hash % threshold < cutoff) {
-                slot.booked = true
-                slot.customerName = sampleNames[hash % sampleNames.size]
-            }
+            cursor = cursor.plusDays(1)
         }
+        return dates
+    }
 
-        return result
+    private fun slotTimeWindow(slotIndex: Int): TimeWindow = when (slotIndex) {
+        1, 2 -> MORNING
+        3, 4 -> EARLY_AFTERNOON
+        5, 6 -> LATE_AFTERNOON
+        else -> error("Unsupported slot index: $slotIndex")
+    }
+
+    companion object {
+        private val ID_DATE_FORMATTER = DateTimeFormatter.ofPattern("MMdd")
     }
 }
 
@@ -109,73 +178,53 @@ class HomeServicesFindTools(private val schedule: HomeServicesSchedule) : ToolSe
 
     @Tool
     @LLMDescription(
-        "Find available appointment slots for a home service. Returns only unbooked slots matching the criteria. " +
-                "The schedule covers the next 14 days from today (Sundays excluded)."
+        "Check available appointment slots for a home service. Returns all free slots for the requested service type."
     )
-    fun findAvailableSlots(
-        @LLMDescription("Service type: PLUMBING, ELECTRICAL, HVAC, CLEANING, or HANDYMAN") serviceType: String,
-        @LLMDescription("Urgency level: EMERGENCY (same-day / next-day preferred), SOON (within 3 days), or FLEXIBLE (any open slot)") urgency: String,
-        @LLMDescription("Preferred day in yyyy-MM-dd format, or 'any' to see all available days") preferredDay: String,
-        @LLMDescription("Preferred time window: MORNING (9-12), EARLY_AFTERNOON (12-15), LATE_AFTERNOON (15-18), or 'any'") timeWindow: String,
+    fun checkAvailableSlot(
+        @LLMDescription("Service type enum value")
+        serviceType: ServiceType,
     ): String {
-        val type = ServiceType.entries.find { it.name.equals(serviceType, ignoreCase = true) }
-            ?: return "Error: Invalid service type '$serviceType'. Valid: ${ServiceType.entries.joinToString()}."
+        val compatibleSpecialists = SpecialistType.entries.filter { serviceType in it.supportedServices }.toSet()
+        val now = schedule.currentTime
 
-        val urg = Urgency.entries.find { it.name.equals(urgency, ignoreCase = true) }
-            ?: return "Error: Invalid urgency '$urgency'. Valid: ${Urgency.entries.joinToString()}."
-
-        val prefDay = if (preferredDay.equals("any", ignoreCase = true)) null
-        else runCatching { LocalDate.parse(preferredDay) }.getOrNull()
-            ?: return "Error: Invalid date '$preferredDay'. Use yyyy-MM-dd or 'any'."
-
-        val prefWindow = if (timeWindow.equals("any", ignoreCase = true)) null
-        else TimeWindow.entries.find { it.name.equals(timeWindow, ignoreCase = true) }
-            ?: return "Error: Invalid time window '$timeWindow'. Valid: ${TimeWindow.entries.joinToString()} or 'any'."
-
-        val now = LocalTime.now()
-        var matches = schedule.slots.filter { slot ->
-            !slot.booked
-                    && slot.serviceType == type
-                    && (prefDay == null || slot.date == prefDay)
-                    && (prefWindow == null || slot.timeWindow == prefWindow)
-                    // Skip today's windows that have already started
-                    && !(slot.date == schedule.today && now.hour >= slot.timeWindow.startHour)
-        }
-
-        // Narrow results by urgency preference
-        if (urg == Urgency.EMERGENCY) {
-            val urgent = matches.filter { it.date <= schedule.today.plusDays(1) }
-            if (urgent.isNotEmpty()) matches = urgent
-        } else if (urg == Urgency.SOON) {
-            val soon = matches.filter { it.date <= schedule.today.plusDays(3) }
-            if (soon.isNotEmpty()) matches = soon
+        val matches = schedule.slots.filter { slot ->
+            slot.status == SlotStatus.FREE &&
+                slot.specialistType in compatibleSpecialists &&
+                !(slot.date == schedule.today && now.hour >= slot.timeWindow.startHour)
         }
 
         if (matches.isEmpty()) {
             val nextAvailable = schedule.slots.firstOrNull { slot ->
-                !slot.booked
-                        && slot.serviceType == type
-                        && !(slot.date == schedule.today && now.hour >= slot.timeWindow.startHour)
+                slot.status == SlotStatus.FREE &&
+                    slot.specialistType in compatibleSpecialists &&
+                    !(slot.date == schedule.today && now.hour >= slot.timeWindow.startHour)
             }
             return if (nextAvailable != null) {
-                val fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd")
                 val day = nextAvailable.date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.US)
-                "No available slots found for $type with the given criteria. " +
-                        "The earliest available slot is on $day ${nextAvailable.date.format(fmt)}, " +
-                        "${nextAvailable.timeWindow.label} (${nextAvailable.timeWindow.hours})."
+                "No available slots found for $serviceType. " +
+                    "The earliest available slot is ${nextAvailable.id} with ${nextAvailable.specialistType} on " +
+                    "$day ${nextAvailable.date.format(DISPLAY_DATE_FORMATTER)}, " +
+                    "${nextAvailable.timeWindow.label} (${nextAvailable.timeWindow.hours})."
             } else {
-                "No available slots found for $type in the next 14 days."
+                "No available slots found for $serviceType from ${schedule.startDate.format(DISPLAY_DATE_FORMATTER)} " +
+                    "through ${schedule.endDate.format(DISPLAY_DATE_FORMATTER)}."
             }
         }
 
-        val fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd")
         return buildString {
             appendLine("Available slots (${matches.size} found):")
             for (slot in matches) {
                 val day = slot.date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.US)
-                appendLine("  • ${slot.id} — $day ${slot.date.format(fmt)}, ${slot.timeWindow.label} (${slot.timeWindow.hours})")
+                appendLine(
+                    "  - ${slot.id} - ${slot.specialistType}, $day ${slot.date.format(DISPLAY_DATE_FORMATTER)}, " +
+                        "${slot.timeWindow.label} (${slot.timeWindow.hours})"
+                )
             }
         }
+    }
+
+    companion object {
+        private val DISPLAY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd")
     }
 }
 
@@ -186,42 +235,46 @@ class HomeServicesFindTools(private val schedule: HomeServicesSchedule) : ToolSe
 class HomeServicesBookTools(private val schedule: HomeServicesSchedule) : ToolSet {
 
     @Tool
-    @LLMDescription("Book a home service appointment into a specific slot. Fails if the slot is already booked or invalid.")
+    @LLMDescription("Book a home service appointment into a specific slot. Fails if the slot is already BOOKED or if the specialist cannot handle the requested service.")
     fun scheduleAppointment(
         @LLMDescription("Customer's full name") customerName: String,
-        @LLMDescription("Service type: PLUMBING, ELECTRICAL, HVAC, CLEANING, or HANDYMAN") serviceType: String,
-        @LLMDescription("Slot ID from findAvailableSlots, e.g. svc_plumbing_20260422_morning_1") slotId: String,
+        @LLMDescription("Service type: PLUMBING, ELECTRICAL, HVAC, or HANDYMAN") serviceType: String,
+        @LLMDescription("Slot ID from checkAvailableSlot, e.g. svc_shk_0428_2") slotId: String,
         @LLMDescription("Service address") address: String,
         @LLMDescription("Optional access notes (gate code, pet, parking, etc.) or empty string") notes: String,
     ): String {
         val slot = schedule.slots.find { it.id == slotId }
             ?: return "Error: Unknown slot ID '$slotId'."
 
-        if (slot.booked) return "Error: Slot $slotId is already booked."
+        if (slot.status == SlotStatus.BOOKED) return "Error: Slot $slotId is already booked."
 
         val type = ServiceType.entries.find { it.name.equals(serviceType, ignoreCase = true) }
             ?: return "Error: Invalid service type '$serviceType'."
 
-        if (slot.serviceType != type) {
-            return "Error: Slot $slotId is for ${slot.serviceType}, not $type."
+        if (type !in slot.specialistType.supportedServices) {
+            return "Error: Slot $slotId belongs to ${slot.specialistType}, which cannot handle $type."
         }
 
-        slot.booked = true
+        slot.status = SlotStatus.BOOKED
         slot.customerName = customerName
         slot.address = address
         slot.notes = notes.ifBlank { null }
 
         val dayName = slot.date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.US)
-        val fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd")
         return buildString {
             appendLine("Appointment confirmed!")
-            appendLine("  Service: ${slot.serviceType}")
+            appendLine("  Service: $type")
+            appendLine("  Specialist: ${slot.specialistType}")
             appendLine("  Customer: $customerName")
-            appendLine("  Date: $dayName, ${slot.date.format(fmt)}")
+            appendLine("  Date: $dayName, ${slot.date.format(DISPLAY_DATE_FORMATTER)}")
             appendLine("  Window: ${slot.timeWindow.label} (${slot.timeWindow.hours})")
             appendLine("  Address: $address")
-            if (!notes.isNullOrBlank()) appendLine("  Notes: $notes")
+            if (notes.isNotBlank()) appendLine("  Notes: $notes")
             appendLine("  Booking ID: $slotId")
         }
+    }
+
+    companion object {
+        private val DISPLAY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd")
     }
 }

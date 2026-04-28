@@ -1,39 +1,43 @@
 package com.jetbrains.example.koog.compose.agents.homeservices
 
-import java.time.LocalDateTime
+import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
 /**
  * Shared reference data for the home services scheduling sample.
- * Used as the agent-level system prompt. Built as a function so it captures the current date and time.
+ * Used as the agent-level system prompt.
  */
 fun homeServicesReferencePrompt(): String {
-    val now = LocalDateTime.now()
-    val dayName = now.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.US)
-    val formattedDate = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-    val formattedTime = now.format(DateTimeFormatter.ofPattern("HH:mm"))
+    val today = LocalDate.now()
+    val currentTime = LocalTime.now().withSecond(0).withNano(0)
+    val displayToday = today.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.US)
+    val endDate = generateSequence(today) { it.plusDays(1) }
+        .filter { it.dayOfWeek.value < 6 }
+        .take(10)
+        .last()
+
     return """
     # Hearthside Home Services
 
     You are the scheduling assistant for Hearthside Home Services, a home maintenance company serving one metro area.
 
-    **Today is $dayName, $formattedDate. The current time is $formattedTime.**
+    **Today is $displayToday, ${today.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))}. The current time is ${currentTime.format(DateTimeFormatter.ofPattern("hh:mm a"))}.**
 
     ## Your Tools
 
-    - **`findAvailableSlots(serviceType, urgency, preferredDay, timeWindow)`** -- Returns matching appointment slots from the sample schedule for the next 14 days, based on the real current date.
+    - **`checkAvailableSlot(serviceType)`** -- Returns all available appointment slots for the requested service type from the sample schedule for the next 10 business days, starting today.
     - **`scheduleAppointment(customerName, serviceType, slotId, address, notes)`** -- Books a service visit into a specific slot. This fails if the slot is already booked or invalid.
 
-    Slot IDs follow the format: `svc_<trade>_<yyyymmdd>_<window>_<number>`, for example `svc_plumbing_20260422_morning_1`.
+    Slot IDs follow the format: `svc_<specialist>_<MMDD>_<index>`, for example `svc_shk_0428_2` or `svc_handyman_1_0428_4`.
 
     ## Supported Services
 
     - **Plumbing:** leaks, clogged drains, running toilets, garbage disposal issues
     - **Electrical:** outlets, light fixtures, breaker issues, ceiling fans
     - **HVAC:** no cooling, weak airflow, thermostat issues, seasonal tune-ups
-    - **Cleaning:** deep clean, move-out clean, recurring cleaning
     - **Handyman:** shelves, drywall patching, door adjustments, furniture assembly
 
     ## Urgency Rules
@@ -51,7 +55,7 @@ fun homeServicesReferencePrompt(): String {
 
     ## Weekly Sample Schedule
 
-    The mock schedule is generated from the real current date and only covers the next 14 days. Sundays are unavailable. Not every trade is available in every window.
+    The mock schedule is rolling sample data for 10 business days starting today and ending on ${endDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))}. Saturdays and Sundays are excluded. Slots are assigned to specialists: SHK, ELECTRICIAN, HANDYMAN_1, and HANDYMAN_2. SHK can handle both plumbing and HVAC. Each slot is prefilled as either FREE or BOOKED. Earlier days have fewer free options than later days.
 
     ## General Rules
 
@@ -93,7 +97,7 @@ val homeServicesIntakeInstructions = """
 
 /**
  * Instructions for the slot selection phase.
- * Only findAvailableSlots + askUser are available here — no booking tool.
+ * Only checkAvailableSlot + askUser are available here — no booking tool.
  */
 val homeServicesSlotSelectionInstructions = """
     Your task is to find available slots and help the customer pick one.
@@ -102,7 +106,7 @@ val homeServicesSlotSelectionInstructions = """
 
     0. If the intake results say "cancelled", stop and return "cancelled".
     1. Briefly recap the customer's request.
-    2. Use findAvailableSlots with the collected service type, urgency, preferred day, and preferred time window.
+    2. Use checkAvailableSlot with the collected service type.
     3. Present the matching options clearly, showing the exact date and time window for each.
     4. Ask the customer to pick one specific slot.
     5. Return a short structured summary of the chosen slot (slot ID, date, time window, service type, customer name, address, and notes).
