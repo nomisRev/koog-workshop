@@ -10,6 +10,7 @@ fun homeServicesSchedulingStrategy(
     findTools: HomeServicesFindTools,
     bookTools: HomeServicesBookTools,
 ) = strategy<String, String>("home-services-scheduling") {
+    // FIXME Let's try non String inputs/outputs in some of these subtasks, to showcase domain modeling approach which is one of the Koog's strengths
     // Phase 1: gather service details from the user (no search or booking tools)
     val assess by subgraphWithTask<String, String>(
         tools = askUserTool.asTools()
@@ -73,6 +74,9 @@ fun homeServicesSchedulingStrategy(
 
     nodeStart then assess then compressHistory then selectSlot then confirmSlot
 
+    // FIXME If we introduce domain modeling approach, these conditions will get cleaner, with explicit boolean expressions instead of string matching
+    //  Check e.g. how nodes are wired in this example using domain modeling approach
+    //  https://github.com/JetBrains/koog/blob/06f44722b6c221d9e61de4aa9814f60b68e8b38a/examples/simple-examples/src/main/kotlin/ai/koog/agents/example/a2a/advancedjoke/JokeWriterAgentExecutor.kt#L302
     edge(confirmSlot forwardTo selectSlot onCondition { it.contains("change_requested") })
     edge(confirmSlot forwardTo finish onCondition { it.contains("cancelled") })
     edge(confirmSlot forwardTo book onCondition { !it.contains("change_requested") && !it.contains("cancelled") })
