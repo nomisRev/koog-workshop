@@ -46,6 +46,8 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.compose.uiTest)
+    testImplementation(libs.dokimos.core)
+    testImplementation(libs.dokimos.kotlin)
 }
 
 compose.desktop {
