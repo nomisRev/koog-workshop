@@ -213,7 +213,7 @@ private fun UserMessageBubble(text: String) {
         val maxBubbleWidth = maxWidth * MAX_BUBBLE_WIDTH_FRACTION
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start
+            horizontalArrangement = Arrangement.End
         ) {
             Box(
                 modifier = Modifier
@@ -238,7 +238,7 @@ private fun AgentMessageBubble(text: String) {
         val maxBubbleWidth = maxWidth * MAX_BUBBLE_WIDTH_FRACTION
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
+            horizontalArrangement = Arrangement.Start
         ) {
             Box(
                 modifier = Modifier
@@ -279,7 +279,7 @@ private fun ErrorMessageItem(text: String) {
         val maxBubbleWidth = maxWidth * MAX_BUBBLE_WIDTH_FRACTION
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
+            horizontalArrangement = Arrangement.Start
         ) {
             Column(
                 modifier = Modifier
@@ -316,7 +316,7 @@ private fun ToolCallMessageItem(toolName: String, args: Map<String, String>) {
         val maxBubbleWidth = maxWidth * MAX_BUBBLE_WIDTH_FRACTION
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
+            horizontalArrangement = Arrangement.Start
         ) {
             Column(modifier = Modifier.widthIn(max = maxBubbleWidth)) {
                 Text(
