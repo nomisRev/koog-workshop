@@ -27,6 +27,12 @@ import kotlin.uuid.Uuid
 @Serializable
 private data class ToolMessage(val message: String)
 
+// FIXME I tested the agent briefly and have the following suggestions:
+//  * Let's add loading indicator when waiting for agent messages, otherwise it's not clear if the agent is still thinking or the app is stuck.
+//  * Let's add error messages. E.g. if the agent fails with "max iterations exceeded" or other error, there's no indiction in the UI.
+//  * When switching the characters, the chat history is not cleared/switched. I would expect each character to have their own chat history.
+//  * When restarting the app, it's not possible to load the previous chat. This kinda undermines the whole idea of ChatMemory feature.
+//      Let's add a history of chats to each character, so that we can resume the chat after an app restart.
 class ChatAgent(
     private val executor: PromptExecutor,
     private val orderService: OrderService,
@@ -55,6 +61,15 @@ class ChatAgent(
         }.toPersistentList()
     }
 
+    // FIXME General style-related question. I see a dedicated "koog" package where most of the Koog-related entities are defined.
+    //   I like such an approach, since it helps us to separate Koog-related code vs required "boring" app/server code (that is not directly relevant to the workshop).
+    //   However, the method below doesn't seem to follow this approach fully.
+    //   The final "piecing it all together" step - agent creation - happens in place.
+    //   What if keep a full separation of concerns and introduce smth like "Agents.kt" in the "koog" package and then
+    //   in the "sendMessage" method delegate to the factory methods from the "Agent.kt"?
+    //   Like:
+    //     val agent = if (characterId == null) createSimpleAgent(...) else createCharacterAwareAgent(...)
+    //     return ChatUi.Message.CustomerSupport(agent.run(...))
     suspend fun sendMessage(
         characterId: CharacterId?,
         sessionId: Uuid,
