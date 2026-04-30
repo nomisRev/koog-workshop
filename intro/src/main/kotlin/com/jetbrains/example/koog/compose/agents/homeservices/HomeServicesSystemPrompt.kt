@@ -6,6 +6,12 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
+// FIXME Let's rename the file to "HomeServicesPrompts", since it contains multiple prompts, not just the system one.
+//  Also, listing the tools in the system prompt looks like a bad practice to me:
+//    * It's exessive
+//    * The tools actually supplied to the agent and the tools defined in the prompt might drift apart since there are no checks, confusing the agent.
+//    * Each subgraph might get its own subset of tools, so again, the system prompt would lie and confuse the agent
+
 /**
  * Shared reference data for the home services scheduling sample.
  * Used as the agent-level system prompt.
