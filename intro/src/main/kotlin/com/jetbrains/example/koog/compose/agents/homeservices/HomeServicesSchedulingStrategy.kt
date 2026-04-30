@@ -1,9 +1,17 @@
 package com.jetbrains.example.koog.compose.agents.homeservices
 
+import ai.koog.agents.core.agent.context.agentInput
 import ai.koog.agents.core.dsl.builder.strategy
 import ai.koog.agents.core.dsl.extension.nodeLLMCompressHistory
 import ai.koog.agents.ext.agent.subgraphWithTask
 import com.jetbrains.example.koog.compose.agents.common.AskUserTool
+import kotlinx.serialization.Serializable
+
+@Serializable
+enum class EmergencyCheckResult {
+    EMERGENCY_ACKNOWLEDGED,
+    PROCEED_WITH_SCHEDULING,
+}
 
 fun homeServicesSchedulingStrategy(
     askUserTool: AskUserTool,
@@ -11,14 +19,25 @@ fun homeServicesSchedulingStrategy(
     bookTools: HomeServicesBookTools,
 ) = strategy<String, String>("home-services-scheduling") {
     // FIXME Let's try non String inputs/outputs in some of these subtasks, to showcase domain modeling approach which is one of the Koog's strengths
-    // Phase 1: gather service details from the user (no search or booking tools)
-    val assess by subgraphWithTask<String, String>(
+    // Phase 0: check whether the request is an emergency before any scheduling
+    val checkEmergency by subgraphWithTask<String, EmergencyCheckResult>(
         tools = askUserTool.asTools()
     ) { input ->
         """
-        $homeServicesIntakeInstructions
+        $homeServicesEmergencyCheckInstructions
 
         The user's initial message: $input
+        """.trimIndent()
+    }
+
+    // Phase 1: gather service details from the user (no search or booking tools)
+    val assess by subgraphWithTask<EmergencyCheckResult, String>(
+        tools = askUserTool.asTools()
+    ) { _ ->
+        """
+        $homeServicesIntakeInstructions
+
+        The user's initial message: ${agentInput<String>()}
         """.trimIndent()
     }
 
@@ -72,7 +91,11 @@ fun homeServicesSchedulingStrategy(
         """.trimIndent()
     }
 
-    nodeStart then assess then compressHistory then selectSlot then confirmSlot
+    nodeStart then checkEmergency
+    edge(checkEmergency forwardTo nodeFinish onCondition { it == EmergencyCheckResult.EMERGENCY_ACKNOWLEDGED } transformed { "Handling emergency" })
+    edge(checkEmergency forwardTo assess onCondition { it == EmergencyCheckResult.PROCEED_WITH_SCHEDULING })
+
+    assess then compressHistory then selectSlot then confirmSlot
 
     // FIXME If we introduce domain modeling approach, these conditions will get cleaner, with explicit boolean expressions instead of string matching
     //  Check e.g. how nodes are wired in this example using domain modeling approach
