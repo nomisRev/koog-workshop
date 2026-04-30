@@ -14,6 +14,7 @@ class UpdateOrderTools(
     val orderService: OrderService
 ) : ToolSet {
     // TODO: update cancelOrder such that it guarantees that its characterId is the owner of the order??
+    // FIXME add LLM descriptions for tools and arguments
     @Tool
     suspend fun cancelOrder(orderId: String) = orderService.cancelOrder(OrderId(Uuid.parse(orderId)))
 

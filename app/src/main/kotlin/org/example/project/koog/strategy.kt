@@ -26,6 +26,11 @@ data class OrderDetails(
 @Serializable
 data class IssueSolution(val actionsTaken: String)
 
+// FIXME I see a problem with how this strategy works with ChatMemory feature.
+//  ChatMemory only persists messages in the agent's prompt when the strategy finishes.
+//  Strategy outputs (like a String message in this case) are not persisted.
+//  So if we want the strategy result to be some message, let's make the return type Message.Assistant
+//  and make sure to add it to the agent's prompt at the end of the strategy, e.g. with a custom node.
 fun orderCustomerSupportStrategy(tools: CustomerSupportTools) = strategy<String, String>("order-customer-support") {
     // TODO add context gathering custom node?
 

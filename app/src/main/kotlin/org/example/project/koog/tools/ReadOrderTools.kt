@@ -12,6 +12,7 @@ class ReadOrderTools(
     val characterId: CharacterId,
     val orderService: OrderService
 ) : ToolSet {
+    // FIXME Add LLM descriptions for tools and arguments
     @Tool
     suspend fun getOrderHistory(offset: Long = 0, limit: Long = 5): List<OrderDetails> =
         orderService.getOrderHistory(characterId)
