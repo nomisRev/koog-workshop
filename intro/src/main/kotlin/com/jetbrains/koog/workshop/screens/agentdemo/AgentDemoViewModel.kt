@@ -68,6 +68,7 @@ class AgentDemoViewModel(
         }
     }
 
+    // TODO check structure, maybe refactor
     private fun sendMessage() {
         val userInput = _uiState.value.inputText.trim()
         if (userInput.isEmpty()) return

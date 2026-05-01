@@ -43,6 +43,8 @@ data class OrderDetails(
 data class IssueSolution(val actionsTaken: String)
 
 fun orderCustomerSupportStrategy(tools: CustomerSupportTools) = strategy<String, String>("order-customer-support") {
+    // TODO add context gathering custom node?
+
     val moderate by nodeLLMModerateString(
         moderatingModel = OpenAIModels.Moderation.Omni
     )
@@ -95,6 +97,7 @@ fun orderCustomerSupportStrategy(tools: CustomerSupportTools) = strategy<String,
 }
 
 // Avoids String -> Message.User wrapping
+// TODO check if built-in agent moderation can be used instead of detached prompt executor?
 @OptIn(DetachedPromptExecutorAPI::class)
 fun nodeLLMModerateString(
     name: String? = null,
