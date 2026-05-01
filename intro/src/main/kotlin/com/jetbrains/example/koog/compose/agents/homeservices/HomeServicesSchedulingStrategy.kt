@@ -3,56 +3,94 @@ package com.jetbrains.example.koog.compose.agents.homeservices
 import ai.koog.agents.core.agent.context.agentInput
 import ai.koog.agents.core.dsl.builder.strategy
 import ai.koog.agents.core.dsl.extension.nodeLLMCompressHistory
+import ai.koog.agents.core.tools.annotations.LLMDescription
 import ai.koog.agents.ext.agent.subgraphWithTask
 import com.jetbrains.example.koog.compose.agents.common.AskUserTool
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
+@LLMDescription("Result of the emergency check phase")
 @Serializable
 enum class EmergencyCheckResult {
+    @LLMDescription("User acknowledged the emergency and will call emergency services; do not proceed with scheduling")
     EMERGENCY_ACKNOWLEDGED,
+    @LLMDescription("No emergency detected; proceed with regular appointment scheduling")
     PROCEED_WITH_SCHEDULING,
 }
 
+@LLMDescription("Collected details required to schedule a home service visit")
 @Serializable
 data class IntakeResult(
+    @LLMDescription("Type of home service needed: PLUMBING, ELECTRICAL, HVAC, or HANDYMAN")
     val serviceType: ServiceType,
+    @LLMDescription("One-sentence description of the issue to be resolved")
     val issueSummary: String,
+    @LLMDescription("Full service address")
     val address: String,
+    @LLMDescription("Customer's full name")
     val customerName: String,
+    @LLMDescription("Optional access instructions such as gate code, pet, parking, or buzzer notes")
     val accessNotes: String? = null,
 )
-
+/*
+@LLMDescription("Outcome of the intake assessment phase: either all details collected or user cancelled")
 @Serializable
-sealed class AssessResult {
-    @Serializable @SerialName("cancelled")
-    data object Cancelled : AssessResult()
+sealed interface AssessResult {
+    @LLMDescription("User chose to cancel the scheduling process")
+    @Serializable
+    @SerialName("Cancelled")
+    data object Cancelled : AssessResult
 
-    @Serializable @SerialName("collected")
-    data class Collected(val details: IntakeResult) : AssessResult()
-}
+    @LLMDescription("All required intake details were successfully collected")
+    @Serializable
+    @SerialName("Collected")
+    data class Collected(
+        @LLMDescription("The collected intake details")
+        val details: IntakeResult,
+    ) : AssessResult
+}*/
 
+@LLMDescription("Outcome of the intake assessment phase: either all details collected or user cancelled")
+@Serializable
+data class AssessResult(
+    @LLMDescription("Intake details collected by the agent, if any")
+    val collected: IntakeResult?,
+    @LLMDescription("Whether the user chose to cancel the scheduling process")
+    val cancelled: Boolean,
+)
+
+@LLMDescription("An available appointment slot selected by the customer")
 @Serializable
 data class SelectedSlot(
+    @LLMDescription("Unique slot identifier returned by getAvailableSlots")
     val slotId: String,
+    @LLMDescription("Appointment date in yyyy-MM-dd format")
     val date: String,
+    @LLMDescription("Time window: Morning (9:00-12:00), Early afternoon (12:00-15:00), or Late afternoon (15:00-18:00)")
     val timeWindow: String,
+    @LLMDescription("Intake details associated with this slot")
     val intake: IntakeResult,
 )
 
+@LLMDescription("Customer's confirmation decision for the proposed appointment slot")
 @Serializable
-sealed class ConfirmResult {
-    @Serializable @SerialName("confirmed")
-    data class Confirmed(val slot: SelectedSlot) : ConfirmResult()
-
-    @Serializable @SerialName("change_requested")
-    data class ChangeRequested(val intake: IntakeResult) : ConfirmResult()
-
-    @Serializable @SerialName("cancelled")
-    data object Cancelled : ConfirmResult()
+enum class ConfirmationStatus {
+    @LLMDescription("Customer confirmed the slot and wants to proceed with booking")
+    CONFIRMED,
+    @LLMDescription("Customer wants to pick a different slot")
+    CHANGE_REQUESTED,
+    @LLMDescription("Customer cancelled the scheduling process")
+    CANCELLED,
 }
+
+@LLMDescription("Result of the confirmation phase: the customer's decision and the slot under review")
+@Serializable
+data class ConfirmResult(
+    @LLMDescription("Customer's confirmation decision")
+    val status: ConfirmationStatus,
+    @LLMDescription("The slot that was presented to the customer for confirmation")
+    val slot: SelectedSlot,
+)
 
 fun homeServicesSchedulingStrategy(
     askUserTool: AskUserTool,
@@ -155,14 +193,14 @@ fun homeServicesSchedulingStrategy(
     edge(checkEmergency forwardTo nodeFinish onCondition { it == EmergencyCheckResult.EMERGENCY_ACKNOWLEDGED } transformed { "Handling emergency" })
     edge(checkEmergency forwardTo assess onCondition { it == EmergencyCheckResult.PROCEED_WITH_SCHEDULING })
 
-    edge(assess forwardTo finish onCondition { it is AssessResult.Cancelled } transformed { "cancelled" })
-    edge(assess forwardTo compressHistory onCondition { it is AssessResult.Collected } transformed { (it as AssessResult.Collected).details })
+    edge(assess forwardTo finish onCondition { it.cancelled || it.collected == null } transformed { "cancelled" })
+    edge(assess forwardTo compressHistory onCondition { !it.cancelled && it.collected != null } transformed { it.collected!! })
 
     compressHistory then selectSlot then confirmSlot
 
-    edge(confirmSlot forwardTo selectSlot onCondition { it is ConfirmResult.ChangeRequested } transformed { (it as ConfirmResult.ChangeRequested).intake })
-    edge(confirmSlot forwardTo finish onCondition { it is ConfirmResult.Cancelled } transformed { "cancelled" })
-    edge(confirmSlot forwardTo book onCondition { it is ConfirmResult.Confirmed } transformed { (it as ConfirmResult.Confirmed).slot })
+    edge(confirmSlot forwardTo selectSlot onCondition { it.status == ConfirmationStatus.CHANGE_REQUESTED } transformed { it.slot.intake })
+    edge(confirmSlot forwardTo finish onCondition { it.status == ConfirmationStatus.CANCELLED } transformed { "cancelled" })
+    edge(confirmSlot forwardTo book onCondition { it.status == ConfirmationStatus.CONFIRMED } transformed { it.slot })
 
     book then finish then nodeFinish
 }
