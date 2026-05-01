@@ -1,6 +1,7 @@
 package com.jetbrains.example.koog.compose.agents.homeservices.graph
 
 import ai.koog.agents.core.agent.context.agentInput
+import ai.koog.agents.core.agent.entity.createStorageKey
 import ai.koog.agents.core.dsl.builder.node
 import ai.koog.agents.core.dsl.builder.strategy
 import ai.koog.agents.core.dsl.extension.nodeLLMCompressHistory
@@ -74,8 +75,8 @@ fun homeServicesSchedulingStrategy(
     findTools: HomeServicesFindTools,
     bookTools: HomeServicesBookTools,
 ) = strategy<String, String>("home-services-scheduling") {
-    val intakeResult = mutableListOf<IntakeResult>()
-    val slotToBook = mutableListOf<SelectedSlot>()
+    val selectedSlotKey = createStorageKey<SelectedSlot>("selected-slot")
+    val intakeResultKey = createStorageKey<IntakeResult>("intake-results")
 
     // Phase 0: check whether the request is an emergency before any scheduling
     val checkEmergency by subgraphWithTask<String, EmergencyCheckResult>(
@@ -99,7 +100,7 @@ fun homeServicesSchedulingStrategy(
         """.trimIndent()
     }
     val storeIntake by node<IntakeResult, String> { intake ->
-        intakeResult.add(intake)
+        storage.set(intakeResultKey, intake)
         "Intake details stored; proceeding to slot selection."
     }
 
@@ -110,7 +111,7 @@ fun homeServicesSchedulingStrategy(
         tools = askUserTool.asTools() + findTools.asTools()
     ) { state ->
 
-        val intake = intakeResult.last()
+        val intake = storage.get(intakeResultKey)!!
         """
         $homeServicesSlotSelectionInstructions
         
@@ -125,7 +126,7 @@ fun homeServicesSchedulingStrategy(
         """.trimIndent()
     }
     val storeSlot by node<SelectedSlot, String> { slot ->
-        slotToBook.add(slot)
+        storage.set(selectedSlotKey, slot)
         "Slot selected and stored for booking."
     }
 
@@ -134,8 +135,8 @@ fun homeServicesSchedulingStrategy(
         tools = askUserTool.asTools()
     ) { state ->
 
-        val intake = intakeResult.last()
-        val slot = slotToBook.last()
+        val intake = storage.get(intakeResultKey)!!
+        val slot = storage.get(selectedSlotKey)!!
 
         """
         $homeServicesConfirmationInstructions
@@ -157,8 +158,8 @@ fun homeServicesSchedulingStrategy(
     val book by subgraphWithTask<String, String>(
         tools = askUserTool.asTools() + bookTools.asTools()
     ) { state ->
-        val intake = intakeResult.last()
-        val slot = slotToBook.last()
+        val intake = storage.get(intakeResultKey)!!
+        val slot = storage.get(selectedSlotKey)!!
         """
         $homeServicesBookingInstructions
         
