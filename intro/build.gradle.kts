@@ -52,11 +52,11 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "com.jetbrains.example.koog.compose.MainKt"
+        mainClass = "com.jetbrains.koog.workshop.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.jetbrains.example.koog.compose"
+            packageName = "com.jetbrains.koog.workshop"
             packageVersion = "1.0.0"
         }
     }

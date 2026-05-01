@@ -1,0 +1,7 @@
+package com.jetbrains.koog.workshop.settings
+
+import okio.Path
+
+interface PrefPathProvider {
+    fun get(): Path
+}

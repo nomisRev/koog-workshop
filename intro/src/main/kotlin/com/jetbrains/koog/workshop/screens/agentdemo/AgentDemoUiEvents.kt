@@ -1,0 +1,11 @@
+package com.jetbrains.koog.workshop.screens.agentdemo
+
+// Define UI Events for the agent demo screen
+sealed interface AgentDemoUiEvents {
+    data class UpdateInputText(val text: String) : AgentDemoUiEvents
+    data object ToggleDebugEnabled : AgentDemoUiEvents
+    data class ToggleDebugOption(val option: DebugOption) : AgentDemoUiEvents
+    data object SendMessage : AgentDemoUiEvents
+    data object RestartChat : AgentDemoUiEvents
+    data object NavigateBack : AgentDemoUiEvents
+}
