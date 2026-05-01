@@ -1,4 +1,4 @@
-package com.jetbrains.example.koog.compose.agents.homeservices
+package com.jetbrains.example.koog.compose.agents.homeservices.graph
 
 import ai.koog.agents.core.agent.context.agentInput
 import ai.koog.agents.core.dsl.builder.node
@@ -7,6 +7,9 @@ import ai.koog.agents.core.dsl.extension.nodeLLMCompressHistory
 import ai.koog.agents.core.tools.annotations.LLMDescription
 import ai.koog.agents.ext.agent.subgraphWithTask
 import com.jetbrains.example.koog.compose.agents.common.AskUserTool
+import com.jetbrains.example.koog.compose.agents.homeservices.HomeServicesBookTools
+import com.jetbrains.example.koog.compose.agents.homeservices.HomeServicesFindTools
+import com.jetbrains.example.koog.compose.agents.homeservices.ServiceType
 import kotlinx.serialization.Serializable
 
 @LLMDescription("Result of the emergency check phase")

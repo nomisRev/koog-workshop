@@ -15,6 +15,8 @@ import com.jetbrains.example.koog.compose.agents.common.AgentExecutionTraceEvent
 import com.jetbrains.example.koog.compose.agents.common.AskUserTool
 import com.jetbrains.example.koog.compose.agents.common.TaskAgentProvider
 import com.jetbrains.example.koog.compose.agents.common.trackSystemMessages
+import com.jetbrains.example.koog.compose.agents.homeservices.graph.homeServicesSchedulingStrategy
+import com.jetbrains.example.koog.compose.agents.homeservices.graph.homeServicesSystemPrompt
 
 internal class HomeServicesSchedulingAgentProvider(
     private val provideLLMClient: suspend () -> Pair<LLMClient, LLModel>,

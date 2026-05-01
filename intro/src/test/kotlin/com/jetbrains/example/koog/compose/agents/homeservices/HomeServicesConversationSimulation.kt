@@ -9,6 +9,8 @@ import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.MultiLLMPromptExecutor
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import com.jetbrains.example.koog.compose.agents.common.AskUserTool
+import com.jetbrains.example.koog.compose.agents.homeservices.graph.homeServicesSchedulingStrategy
+import com.jetbrains.example.koog.compose.agents.homeservices.graph.homeServicesSystemPrompt
 import dev.dokimos.core.JudgeLM
 import dev.dokimos.core.conversation.ConversationTrajectory
 import dev.dokimos.core.conversation.EvaluationCriterion

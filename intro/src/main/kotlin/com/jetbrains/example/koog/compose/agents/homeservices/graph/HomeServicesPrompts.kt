@@ -1,4 +1,4 @@
-package com.jetbrains.example.koog.compose.agents.homeservices
+package com.jetbrains.example.koog.compose.agents.homeservices.graph
 
 import java.time.LocalDate
 import java.time.LocalTime
