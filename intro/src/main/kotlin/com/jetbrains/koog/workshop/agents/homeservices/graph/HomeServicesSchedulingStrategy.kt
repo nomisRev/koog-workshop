@@ -111,7 +111,7 @@ fun homeServicesSchedulingStrategy(
         tools = askUserTool.asTools() + findTools.asTools()
     ) { state ->
 
-        val intake = storage.get(intakeResultKey)!!
+        val intake = storage.getValue(intakeResultKey)
         """
         $homeServicesSlotSelectionInstructions
         
@@ -135,8 +135,8 @@ fun homeServicesSchedulingStrategy(
         tools = askUserTool.asTools()
     ) { state ->
 
-        val intake = storage.get(intakeResultKey)!!
-        val slot = storage.get(selectedSlotKey)!!
+        val intake = storage.getValue(intakeResultKey)
+        val slot = storage.getValue(selectedSlotKey)
 
         """
         $homeServicesConfirmationInstructions
@@ -158,8 +158,8 @@ fun homeServicesSchedulingStrategy(
     val book by subgraphWithTask<String, String>(
         tools = askUserTool.asTools() + bookTools.asTools()
     ) { state ->
-        val intake = storage.get(intakeResultKey)!!
-        val slot = storage.get(selectedSlotKey)!!
+        val intake = storage.getValue(intakeResultKey)
+        val slot = storage.getValue(selectedSlotKey)
         """
         $homeServicesBookingInstructions
         
