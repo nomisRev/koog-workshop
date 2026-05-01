@@ -1,33 +1,17 @@
 package org.example.project.koog
 
-import ai.koog.agents.core.agent.context.DetachedPromptExecutorAPI
 import ai.koog.agents.core.agent.context.agentInput
-import ai.koog.agents.core.dsl.builder.AIAgentNodeDelegate
-import ai.koog.agents.core.dsl.builder.node
 import ai.koog.agents.core.dsl.builder.strategy
-import ai.koog.agents.core.dsl.extension.ModeratedMessage
-import ai.koog.agents.core.tools.annotations.Tool
-import ai.koog.agents.core.tools.reflect.ToolFromCallable
-import ai.koog.agents.core.tools.reflect.ToolSet
+import ai.koog.agents.core.dsl.extension.nodeLLMModerateMessage
 import ai.koog.agents.ext.agent.CriticResult
 import ai.koog.agents.ext.agent.subgraphWithTask
 import ai.koog.agents.ext.agent.subgraphWithVerification
-import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
-import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
 import ai.koog.prompt.message.RequestMetaInfo
 import kotlinx.serialization.Serializable
-import org.example.project.domain.order.OrderService
 import org.example.project.domain.order.OrderStatus
-import kotlin.uuid.Uuid
-import org.example.project.domain.shared.CharacterId
-import org.example.project.domain.shared.OrderId
-import org.example.project.domain.shared.SubOrderId
-import org.example.project.koog.tools.AskQuestionTool
 import org.example.project.koog.tools.CustomerSupportTools
-import org.example.project.koog.tools.ReadOrderTools
-import org.example.project.koog.tools.UpdateOrderTools
 import org.example.project.koog.tools.plus
 import kotlin.time.Instant
 
@@ -45,7 +29,7 @@ data class IssueSolution(val actionsTaken: String)
 fun orderCustomerSupportStrategy(tools: CustomerSupportTools) = strategy<String, String>("order-customer-support") {
     // TODO add context gathering custom node?
 
-    val moderate by nodeLLMModerateString(
+    val moderate by nodeLLMModerateMessage(
         moderatingModel = OpenAIModels.Moderation.Omni
     )
 
@@ -82,7 +66,7 @@ fun orderCustomerSupportStrategy(tools: CustomerSupportTools) = strategy<String,
         """.trimIndent()
     }
 
-    nodeStart then moderate
+    edge(nodeStart forwardTo moderate transformed { Message.User(it, RequestMetaInfo.Empty) })
     edge(moderate forwardTo summarize onCondition { !it.moderationResult.isHarmful } transformed { it.message.content })
     edge(
         moderate forwardTo nodeFinish
@@ -95,24 +79,3 @@ fun orderCustomerSupportStrategy(tools: CustomerSupportTools) = strategy<String,
     adjust then verify
     describe then nodeFinish
 }
-
-// Avoids String -> Message.User wrapping
-// TODO check if built-in agent moderation can be used instead of detached prompt executor?
-@OptIn(DetachedPromptExecutorAPI::class)
-fun nodeLLMModerateString(
-    name: String? = null,
-    moderatingModel: LLModel? = null,
-    includeCurrentPrompt: Boolean = false,
-): AIAgentNodeDelegate<String, ModeratedMessage> =
-    node<String, ModeratedMessage>(name) { prompt ->
-        val message = Message.User(prompt, RequestMetaInfo.Empty)
-        val moderationPrompt = if (includeCurrentPrompt) {
-            prompt(llm.prompt) { message(message) }
-        } else {
-            prompt("single-message-moderation") { message(message) }
-        }
-
-        val moderationResult = llm.promptExecutor.moderate(moderationPrompt, moderatingModel ?: llm.model)
-
-        ModeratedMessage(message, moderationResult)
-    }
