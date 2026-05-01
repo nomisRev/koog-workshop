@@ -32,23 +32,6 @@ data class IntakeResult(
     @LLMDescription("Optional access instructions such as gate code, pet, parking, or buzzer notes")
     val accessNotes: String? = null,
 )
-/*
-@LLMDescription("Outcome of the intake assessment phase: either all details collected or user cancelled")
-@Serializable
-sealed interface AssessResult {
-    @LLMDescription("User chose to cancel the scheduling process")
-    @Serializable
-    @SerialName("Cancelled")
-    data object Cancelled : AssessResult
-
-    @LLMDescription("All required intake details were successfully collected")
-    @Serializable
-    @SerialName("Collected")
-    data class Collected(
-        @LLMDescription("The collected intake details")
-        val details: IntakeResult,
-    ) : AssessResult
-}*/
 
 @LLMDescription("Outcome of the intake assessment phase: either all details collected or user cancelled")
 @Serializable
@@ -91,7 +74,6 @@ fun homeServicesSchedulingStrategy(
     val intakeResult = mutableListOf<IntakeResult>()
     val slotToBook = mutableListOf<SelectedSlot>()
 
-    // FIXME Let's try non String inputs/outputs in some of these subtasks, to showcase domain modeling approach which is one of the Koog's strengths
     // Phase 0: check whether the request is an emergency before any scheduling
     val checkEmergency by subgraphWithTask<String, EmergencyCheckResult>(
         tools = askUserTool.asTools()

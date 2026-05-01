@@ -65,11 +65,10 @@ val homeServicesIntakeInstructions = """
 
     - Service type (plumbing, electrical, HVAC, or handyman)
     - Issue summary (one short sentence)
-    - Service address
     - Customer name
-     
-    If the user provides additional details, like access notes such as gate code, pet, parking, or buzzer instructions, save them, but do not ask explicitly about that.
-    
+    - Service address
+    - Any special access instructions
+         
     Do NOT ask about urgency, preferred day, or time window — scheduling will be handled in the slot selection phase based on actual availability.
          
     ## Supported Services
@@ -114,7 +113,7 @@ val homeServicesSlotSelectionInstructions = """
     3. Present the options clearly, showing the exact date and time window for each.
     4. Ask the customer which slot works best, or whether they'd prefer a different day or time.
     5. If the customer wants to see other dates, call getAvailableSlots again with the appropriate startDate or a higher limit.
-    6. Return the chosen slot as structrured type. 
+    6. Return the chosen slot as the structured type. 
 
     ## Appointment Windows
 
@@ -124,7 +123,9 @@ val homeServicesSlotSelectionInstructions = """
 
     ## Rules
 
-    - Show real availability first, then let the customer choose — do not ask for preferred day/time before checking slots.
+    - Check real availability first, then let the customer choose — do not ask for preferred day/time before checking slots.
+    - If the customer has already provided preferences, use them to filter the slots.
+    - If the customer asks for earlier dates, highlight that "these are already the earliest available slots" rather than re-fetching the same data.
     - Do NOT finish until the customer has picked a slot or explicitly cancels.
     - If the customer no longer wants to proceed, say goodbye politely and return "cancelled".
     - If the customer asks questions along the way, answer them before continuing.
