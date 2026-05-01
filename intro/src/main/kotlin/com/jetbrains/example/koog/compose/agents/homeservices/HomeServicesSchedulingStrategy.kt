@@ -1,13 +1,13 @@
 package com.jetbrains.example.koog.compose.agents.homeservices
 
 import ai.koog.agents.core.agent.context.agentInput
+import ai.koog.agents.core.dsl.builder.node
 import ai.koog.agents.core.dsl.builder.strategy
 import ai.koog.agents.core.dsl.extension.nodeLLMCompressHistory
 import ai.koog.agents.core.tools.annotations.LLMDescription
 import ai.koog.agents.ext.agent.subgraphWithTask
 import com.jetbrains.example.koog.compose.agents.common.AskUserTool
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 @LLMDescription("Result of the emergency check phase")
 @Serializable
@@ -57,7 +57,9 @@ data class AssessResult(
     val collected: IntakeResult?,
     @LLMDescription("Whether the user chose to cancel the scheduling process")
     val cancelled: Boolean,
-)
+) {
+    fun success() = collected != null && !cancelled
+}
 
 @LLMDescription("An available appointment slot selected by the customer")
 @Serializable
@@ -67,9 +69,7 @@ data class SelectedSlot(
     @LLMDescription("Appointment date in yyyy-MM-dd format")
     val date: String,
     @LLMDescription("Time window: Morning (9:00-12:00), Early afternoon (12:00-15:00), or Late afternoon (15:00-18:00)")
-    val timeWindow: String,
-    @LLMDescription("Intake details associated with this slot")
-    val intake: IntakeResult,
+    val timeWindow: String
 )
 
 @LLMDescription("Customer's confirmation decision for the proposed appointment slot")
@@ -83,20 +83,14 @@ enum class ConfirmationStatus {
     CANCELLED,
 }
 
-@LLMDescription("Result of the confirmation phase: the customer's decision and the slot under review")
-@Serializable
-data class ConfirmResult(
-    @LLMDescription("Customer's confirmation decision")
-    val status: ConfirmationStatus,
-    @LLMDescription("The slot that was presented to the customer for confirmation")
-    val slot: SelectedSlot,
-)
-
 fun homeServicesSchedulingStrategy(
     askUserTool: AskUserTool,
     findTools: HomeServicesFindTools,
     bookTools: HomeServicesBookTools,
 ) = strategy<String, String>("home-services-scheduling") {
+    val intakeResult = mutableListOf<IntakeResult>()
+    val slotToBook = mutableListOf<SelectedSlot>()
+
     // FIXME Let's try non String inputs/outputs in some of these subtasks, to showcase domain modeling approach which is one of the Koog's strengths
     // Phase 0: check whether the request is an emergency before any scheduling
     val checkEmergency by subgraphWithTask<String, EmergencyCheckResult>(
@@ -119,15 +113,23 @@ fun homeServicesSchedulingStrategy(
         The user's initial message: ${agentInput<String>()}
         """.trimIndent()
     }
+    val storeIntake by node<IntakeResult, String> { intake ->
+        intakeResult.add(intake)
+        "Intake details stored; proceeding to slot selection."
+    }
 
-    val compressHistory by nodeLLMCompressHistory<IntakeResult>()
+    val compressHistory by nodeLLMCompressHistory<String>()
 
     // Phase 2: find slots and let the user pick one (no booking tool available)
-    val selectSlot by subgraphWithTask<IntakeResult, SelectedSlot>(
+    val selectSlot by subgraphWithTask<String, SelectedSlot>(
         tools = askUserTool.asTools() + findTools.asTools()
-    ) { intake ->
+    ) { state ->
+
+        val intake = intakeResult.last()
         """
         $homeServicesSlotSelectionInstructions
+        
+        Agent state: $state
 
         Intake results:
         - Customer: ${intake.customerName}
@@ -137,43 +139,55 @@ fun homeServicesSchedulingStrategy(
         ${intake.accessNotes?.let { "- Access notes: $it" } ?: ""}
         """.trimIndent()
     }
+    val storeSlot by node<SelectedSlot, String> { slot ->
+        slotToBook.add(slot)
+        "Slot selected and stored for booking."
+    }
 
-    // Phase 3: confirm the chosen date and time (only askUser — no tools to find or book)
-    val confirmSlot by subgraphWithTask<SelectedSlot, ConfirmResult>(
+    // Phase 3: confirm the chosen date and time
+    val confirmSlot by subgraphWithTask<String, ConfirmationStatus>(
         tools = askUserTool.asTools()
-    ) { slot ->
+    ) { state ->
+
+        val intake = intakeResult.last()
+        val slot = slotToBook.last()
+
         """
         $homeServicesConfirmationInstructions
+        
+        Agent state: $state
 
         Selected slot:
         - Date: ${slot.date}
         - Time window: ${slot.timeWindow}
-        - Service type: ${slot.intake.serviceType}
-        - Customer: ${slot.intake.customerName}
-        - Address: ${slot.intake.address}
-        ${slot.intake.accessNotes?.let { "- Notes: $it" } ?: ""}
-
-        Slot JSON (use this verbatim as the "slot" value when returning the result):
-        ${Json.encodeToString(slot)}
+        
+        - Service type: ${intake.serviceType}
+        - Customer: ${intake.customerName}
+        - Address: ${intake.address}
+        ${intake.accessNotes?.let { "- Notes: $it" } ?: ""}
         """.trimIndent()
     }
 
     // Phase 4: book the appointment (booking tool now available)
-    val book by subgraphWithTask<SelectedSlot, String>(
+    val book by subgraphWithTask<String, String>(
         tools = askUserTool.asTools() + bookTools.asTools()
-    ) { slot ->
+    ) { state ->
+        val intake = intakeResult.last()
+        val slot = slotToBook.last()
         """
         $homeServicesBookingInstructions
+        
+        Agent state: $state
 
         Confirmed booking details:
-        - Customer: ${slot.intake.customerName}
-        - Service type: ${slot.intake.serviceType}
-        - Issue: ${slot.intake.issueSummary}
+        - Customer: ${intake.customerName}
+        - Service type: ${intake.serviceType}
+        - Issue: ${intake.issueSummary}
         - Slot ID: ${slot.slotId}
         - Date: ${slot.date}
         - Time window: ${slot.timeWindow}
-        - Address: ${slot.intake.address}
-        ${slot.intake.accessNotes?.let { "- Notes: $it" } ?: ""}
+        - Address: ${intake.address}
+        ${intake.accessNotes?.let { "- Notes: $it" } ?: ""}
         """.trimIndent()
     }
 
@@ -193,14 +207,15 @@ fun homeServicesSchedulingStrategy(
     edge(checkEmergency forwardTo nodeFinish onCondition { it == EmergencyCheckResult.EMERGENCY_ACKNOWLEDGED } transformed { "Handling emergency" })
     edge(checkEmergency forwardTo assess onCondition { it == EmergencyCheckResult.PROCEED_WITH_SCHEDULING })
 
-    edge(assess forwardTo finish onCondition { it.cancelled || it.collected == null } transformed { "cancelled" })
-    edge(assess forwardTo compressHistory onCondition { !it.cancelled && it.collected != null } transformed { it.collected!! })
+    edge(assess forwardTo finish onCondition { !it.success() } transformed { "cancelled" })
+    edge(assess forwardTo storeIntake onCondition { it.success() } transformed { it.collected!! })
 
-    compressHistory then selectSlot then confirmSlot
+    storeIntake then compressHistory
+    compressHistory then selectSlot then storeSlot then confirmSlot
 
-    edge(confirmSlot forwardTo selectSlot onCondition { it.status == ConfirmationStatus.CHANGE_REQUESTED } transformed { it.slot.intake })
-    edge(confirmSlot forwardTo finish onCondition { it.status == ConfirmationStatus.CANCELLED } transformed { "cancelled" })
-    edge(confirmSlot forwardTo book onCondition { it.status == ConfirmationStatus.CONFIRMED } transformed { it.slot })
+    edge(confirmSlot forwardTo selectSlot onCondition { it == ConfirmationStatus.CHANGE_REQUESTED } transformed { "Slot was selected, but the change was requested." })
+    edge(confirmSlot forwardTo finish onCondition { it == ConfirmationStatus.CANCELLED } transformed { "cancelled" })
+    edge(confirmSlot forwardTo book onCondition { it == ConfirmationStatus.CONFIRMED } transformed { "Slot confirmed, proceeding to booking." })
 
     book then finish then nodeFinish
 }

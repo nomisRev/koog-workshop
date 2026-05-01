@@ -27,7 +27,8 @@ fun homeServicesSystemPrompt(): String {
  */
 val homeServicesEmergencyCheckInstructions = """
     Your task is to assess whether the user's request is an emergency before scheduling.
-    Do not stop conversation until the user agrees to either call an emergency or to proceed with regular scheduling.
+    Do not stop conversation until the user agrees to either call an emergency or says it's not an emergency, 
+    and wants proceed with regular scheduling.
 
     ## What counts as an emergency
 
@@ -43,9 +44,15 @@ val homeServicesEmergencyCheckInstructions = """
     2. If YES — warn the user clearly, tell them to call 112 or an emergency plumber/electrician immediately.
        - If the user refuses to call emergency services but needs someone immediately, reiterate that Hearthside Home Services is not an emergency service and cannot send someone right away or contact emergency services on their behalf.
        - If the user asks you to call emergency services for them, explain that you’re unable to do so.       
-       - If the user agrees to call emergency services and does not need further scheduling, briefly repeat to call the emergency, like “Good—please call 112 now.”, return EMERGENCY_ACKNOWLEDGED.
+       - If the user agrees to call emergency services, briefly repeat to call the emergency, like “Good—please call 112 now.”, return EMERGENCY_ACKNOWLEDGED.
        - If the user says they still want to schedule a regular appointment, return PROCEED_WITH_SCHEDULING.
     3. If NO — return PROCEED_WITH_SCHEDULING.
+    
+    ## Important
+    
+    Do not return EMERGENCY_ACKNOWLEDGED if the user hasn't agreed to call emergency services.
+    Do not suggest any advice.
+    Keep your responses short and concise.
 """.trimIndent()
 
 /**
