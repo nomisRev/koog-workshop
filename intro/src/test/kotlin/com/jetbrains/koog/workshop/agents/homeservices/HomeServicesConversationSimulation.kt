@@ -304,8 +304,13 @@ class HomeServicesConversationSimulation {
             .build()
 
         val conversation = mutableListOf<Pair<String, String>>()
-        conversation.add("User" to case.initialMessage)
-        println("\nUser: ${case.initialMessage}")
+        fun addMessage(role: String, content: String) {
+            conversation.add(role to case.initialMessage)
+            println("\n$role: $content")
+            System.out.flush()
+        }
+
+        addMessage("User", case.initialMessage)
 
         val schedule = HomeServicesSchedule()
         case.setupSchedule?.invoke(schedule)
@@ -314,9 +319,7 @@ class HomeServicesConversationSimulation {
         val bookTools = HomeServicesBookTools(schedule)
 
         val askUserTool = AskUserTool { question ->
-            conversation.add("Assistant" to question)
-            println("\nAssistant: $question")
-            System.out.flush()
+            addMessage("Assistant", question)
 
             val trajectory = ConversationTrajectory(
                 conversation.map { (role, content) ->
@@ -331,9 +334,7 @@ class HomeServicesConversationSimulation {
             }
             val responseText = response.content()
 
-            conversation.add("User" to responseText)
-            println("\nUser: $responseText")
-            System.out.flush()
+            addMessage("User", responseText)
 
             responseText
         }
@@ -356,7 +357,10 @@ class HomeServicesConversationSimulation {
         )
 
         runBlocking {
-            agent.run(case.initialMessage)
+            val finalMessage = agent.run(case.initialMessage)
+            conversation.add("Assistant" to finalMessage)
+            println("\nAssistant: $finalMessage")
+            System.out.flush()
         }
 
         if (writeToFile) {
