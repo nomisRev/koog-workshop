@@ -198,27 +198,36 @@ fun homeServicesSchedulingStrategy(
         """.trimIndent()
     }
 
+    // Cancellation path: single LLM call to thank and close the conversation
+    val handleCancellation by node<String, String> { _ ->
+        llm.writeSession {
+            appendPrompt { user(homeServicesCancellationInstructions) }
+            requestLLM().content
+        }
+    }
+
     nodeStart then checkEmergency
     edge(checkEmergency forwardTo assess onCondition { it == EmergencyCheckResult.PROCEED_WITH_SCHEDULING })
-    edge(checkEmergency forwardTo finish onCondition { it == EmergencyCheckResult.CANCELLED } transformed { "Cancelled" })
+    edge(checkEmergency forwardTo handleCancellation onCondition { it == EmergencyCheckResult.CANCELLED } transformed { "Cancelled" })
     edge(checkEmergency forwardTo nodeFinish onCondition { it == EmergencyCheckResult.EMERGENCY_ACKNOWLEDGED } transformed { "Handling emergency" })
 
     val cancellationCondition: suspend AIAgentGraphContextBase.(AssessResult) -> Boolean = { !it.success() }
 
     edge(assess forwardTo storeIntake onCondition { it.success() } transformed { it.collected!! })
-    edge(assess forwardTo finish onCondition cancellationCondition transformed { "Cancelled" })
+    edge(assess forwardTo handleCancellation onCondition cancellationCondition transformed { "Cancelled" })
 
     storeIntake then compressHistory
     compressHistory then selectSlot
 
     edge(selectSlot forwardTo storeSlot onCondition { it.success() } transformed { it.selected!! })
-    edge(selectSlot forwardTo finish onCondition { !it.success() } transformed { "Cancelled" })
+    edge(selectSlot forwardTo handleCancellation onCondition { !it.success() } transformed { "Cancelled" })
 
     storeSlot then confirmSlot
 
     edge(confirmSlot forwardTo selectSlot onCondition { it == ConfirmationStatus.CHANGE_REQUESTED } transformed { "Slot was selected, but the change was requested." })
-    edge(confirmSlot forwardTo finish onCondition { it == ConfirmationStatus.CANCELLED } transformed { "Cancelled" })
+    edge(confirmSlot forwardTo handleCancellation onCondition { it == ConfirmationStatus.CANCELLED } transformed { "Cancelled" })
     edge(confirmSlot forwardTo book onCondition { it == ConfirmationStatus.CONFIRMED } transformed { "Slot confirmed, proceeding to booking." })
 
+    handleCancellation then nodeFinish
     book then finish then nodeFinish
 }

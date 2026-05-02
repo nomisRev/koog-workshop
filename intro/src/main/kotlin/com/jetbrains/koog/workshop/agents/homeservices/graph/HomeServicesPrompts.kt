@@ -180,19 +180,22 @@ val homeServicesBookingInstructions = """
 """.trimIndent()
 
 /**
+ * Instructions for wrapping up a cancelled conversation.
+ */
+val homeServicesCancellationInstructions = """
+    Your task is to wrap up a cancelled conversation. Thank the customer for contacting Hearthside Home Services, 
+    and tell them they can start a new conversation if they still need assistance. 
+    Respond in a natural, friendly tone, base it on the user's cancellation reason.
+""".trimIndent()
+
+/**
  * Instructions for the finish phase.
  */
 val homeServicesFinishInstructions = """
-    Your task is to wrap up the conversation.
+    Your task is to wrap up a successful conversation.
 
     ## Steps
-    
-    - If the conversation outcome is "Cancelled":
-    1. Thank the customer for contacting Hearthside Home Services. 
-    2. Tell them they can start a new conversation if they still need assistance. 
-    3. Do not ask for a rating, return "no rating - cancelled".
 
-    - If the conversation was successful: 
     1. Thank the customer for using Hearthside Home Services.
     2. Ask them to rate their experience on a scale from 1 to 5 (1 = very unsatisfied, 5 = very satisfied).
     3. After receiving the rating, thank them again and wish them a great day.
