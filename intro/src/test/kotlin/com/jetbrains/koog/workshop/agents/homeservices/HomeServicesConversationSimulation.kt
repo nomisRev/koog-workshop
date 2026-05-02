@@ -43,6 +43,8 @@ class HomeServicesConversationSimulation {
     private lateinit var apiKey: String
     private lateinit var judge: JudgeLM
 
+    private val writeToFile = false
+
     @Before
     fun setup() {
         val key = System.getenv("OPENAI_API_KEY") ?: ""
@@ -321,21 +323,8 @@ class HomeServicesConversationSimulation {
             agent.run(case.initialMessage)
         }
 
-        val outputFile = File("build/conversation-simulation/${case.id}.txt")
-        outputFile.parentFile.mkdirs()
-        outputFile.bufferedWriter().use { writer ->
-            writer.write("=".repeat(60))
-            writer.newLine()
-            writer.write("${case.id}: ${case.scenarioName}")
-            writer.newLine()
-            writer.write("=".repeat(60))
-            writer.newLine()
-            writer.newLine()
-            for ((role, content) in conversation) {
-                writer.write("$role: $content")
-                writer.newLine()
-                writer.newLine()
-            }
+        if (writeToFile) {
+            writeConversationToAFile("build/conversation-simulation/${case.id}.txt", case, conversation)
         }
 
         val finalTrajectory = ConversationTrajectory(
@@ -364,6 +353,29 @@ class HomeServicesConversationSimulation {
 
         case.additionalEvaluation?.let { criterion ->
             evaluateConversationTrajectory(case, criterion, finalTrajectory)
+        }
+    }
+
+    private fun writeConversationToAFile(
+        fileName: String,
+        case: SimulationCase,
+        conversation: MutableList<Pair<String, String>>
+    ) {
+        val outputFile = File(fileName)
+        outputFile.parentFile.mkdirs()
+        outputFile.bufferedWriter().use { writer ->
+            writer.write("=".repeat(60))
+            writer.newLine()
+            writer.write("${case.id}: ${case.scenarioName}")
+            writer.newLine()
+            writer.write("=".repeat(60))
+            writer.newLine()
+            writer.newLine()
+            for ((role, content) in conversation) {
+                writer.write("$role: $content")
+                writer.newLine()
+                writer.newLine()
+            }
         }
     }
 
