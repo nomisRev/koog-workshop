@@ -260,6 +260,42 @@ class HomeServicesConversationSimulation {
         ),
     ))
 
+    @Test fun `P13 - Early Canceller - Cancels during intake`() = runCase(SimulationCase(
+        id = "P13",
+        scenarioName = "Early Canceller — Cancels during intake",
+        initialMessage = "I need a plumber to fix a leak.",
+        persona = "homeowner who starts the booking process but changes mind partway through gathering details",
+        behaviorGuidelines = """
+            - Answer the first question from the agent, then cancel: say you have decided not to proceed for now
+        """.trimIndent(),
+        additionalEvaluation = EvaluationCriterion(
+            "Graceful Cancellation During Intake",
+            "After the user cancelled, the agent acknowledged the cancellation gracefully, " +
+                "mentioned that the user can start a new conversation whenever they are ready, " +
+                "and did not ask for a satisfaction rating.",
+            1.0,
+        ),
+    ))
+
+    @Test fun `P14 - Slot Canceller - Cancels after seeing available slots`() = runCase(SimulationCase(
+        id = "P14",
+        scenarioName = "Slot Canceller — Cancels after seeing available slots",
+        initialMessage = "I need an electrician to look at a tripping breaker.",
+        persona = "homeowner who provides all details but decides to cancel once appointment slots are presented",
+        behaviorGuidelines = """
+            - Your name is Quinn Foster, address is 21 Riverbank Drive
+            - Provide all requested details without hesitation
+            - When the agent presents available appointment slots, cancel: say none of the times work and you will call back later
+        """.trimIndent(),
+        additionalEvaluation = EvaluationCriterion(
+            "Graceful Cancellation During Slot Selection",
+            "After the user cancelled while viewing slots, the agent acknowledged the cancellation gracefully, " +
+                "mentioned that the user can start a new conversation whenever they are ready, " +
+                "and did not ask for a satisfaction rating.",
+            1.0,
+        ),
+    ))
+
     private fun runCase(case: SimulationCase) {
         val simulatedUser = LLMSimulatedUser.builder()
             .judge(judge)
@@ -391,7 +427,7 @@ class HomeServicesConversationSimulation {
         }
         val result = evaluator.evaluate(EvalTestCase(actualOutputs = mapOf("trajectory" to finalTrajectory)))
 
-        println("${case.id} score=${result.score()} passed=${result.success()} reason=${result.reason()}")
+        println("\n${case.id} score=${result.score()} passed=${result.success()} reason=${result.reason()}")
 
         assertTrue(result.success(), "${case.id} ${criterion.name} check failed: ${result.reason()}")
     }

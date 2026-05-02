@@ -187,7 +187,10 @@ val homeServicesFinishInstructions = """
 
     ## Steps
     
-    - If the conversation outcome is "cancelled", thank the customer, tell them they can start a new conversation if they still need assistance, and finish without asking for a rating.
+    - If the conversation outcome is "Cancelled":
+    1. Thank the customer for contacting Hearthside Home Services. 
+    2. Tell them they can start a new conversation if they still need assistance. 
+    3. Do not ask for a rating, return "no rating - cancelled".
 
     - If the conversation was successful: 
     1. Thank the customer for using Hearthside Home Services.
