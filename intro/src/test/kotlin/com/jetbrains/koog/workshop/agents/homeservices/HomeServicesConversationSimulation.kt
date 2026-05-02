@@ -240,6 +240,23 @@ class HomeServicesConversationSimulation {
         evaluations = listOf(appointmentScheduled),
     ))
 
+    @Test
+    fun `Scheduling-Saturday-2 - Weekend Requester Who Cancels - Handyman door hinge`() = runCase(
+        SimulationCase(
+            id = "Scheduling-Saturday-2",
+            scenarioName = "Weekend Requester Who Cancels — Handyman door hinge",
+            initialMessage = "I need a handyman this Saturday to fix a loose door hinge.",
+            persona = "homeowner who specifically requests a Saturday appointment but cancels when told Saturday is unavailable",
+            behaviorGuidelines = """
+        - Your name is Avery Clarke, address is 34 Willow Street
+        - Request Saturday specifically
+        - When told Saturday is unavailable, cancel: say you can only do weekends and will find another provider
+    """.trimIndent(),
+            evaluations = listOf(gracefulCancellation),
+        )
+    )
+
+
     @Test fun `P9 - Busy Schedule - Electrical outlet`() = runCase(SimulationCase(
         id = "P9",
         scenarioName = "Busy Schedule / Limited Availability — Electrical outlet",
