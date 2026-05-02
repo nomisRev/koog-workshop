@@ -68,7 +68,6 @@ val homeServicesIntakeInstructions = """
 
     - Service type (plumbing, electrical, HVAC, or handyman)
     - Issue summary (one short sentence)
-    - Urgency level (URGENT or STANDARD — see criteria below)
     - Customer name
     - Service address
     - Any special access instructions
@@ -83,9 +82,9 @@ val homeServicesIntakeInstructions = """
     - **HVAC:** no cooling, weak airflow, thermostat issues, seasonal tune-ups
     - **Handyman:** shelves, drywall patching, door adjustments, furniture assembly
 
-    ## Urgency Assessment
+    ## Urgency Assessment (internal — never ask the user about urgency directly)
 
-    Evaluate urgency based on the issue description. If needed, ask clarifying questions to better evaluate the situation.
+    Determine urgency yourself based on the issue description. Never ask "is this urgent or standard?" — only ask situational clarifying questions when needed (e.g. "is this your only bathroom?").
 
     **URGENT** — significant disruption to daily life or issue that could worsen quickly (but not life-threatening):
     - Loss of an essential service: no hot water, heating/AC not working, toilet not flushing (only toilet), full drain clog
@@ -103,9 +102,8 @@ val homeServicesIntakeInstructions = """
     ## Steps
 
     1. Review the user's initial message and extract any details already provided.
-       - If the user mentions a Saturday or Sunday, immediately inform them that Hearthside Home Services operates Monday–Friday only, then continue collecting details.
     2. Classify the service type based on the user's request. If unsure, ask.
-    3. Assess urgency from the issue description. Ask clarifying questions if urgency is ambiguous (e.g. number of bathrooms).
+    3. Assess urgency internally from the issue description. Ask situational clarifying questions only if needed (e.g. "Is this your only bathroom?") — never mention "urgent" or "standard" to the user.
     4. If all required details are present, skip redundant questions and return the result.
     5. Otherwise, ask only for missing details — one question at a time.
     6. Return the result as a structured type.
