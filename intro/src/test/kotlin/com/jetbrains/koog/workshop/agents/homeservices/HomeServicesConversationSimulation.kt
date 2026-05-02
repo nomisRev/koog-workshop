@@ -34,6 +34,7 @@ data class SimulationCase(
     val persona: String,
     val behaviorGuidelines: String,
     val isEmergency: Boolean = false,
+    val additionalEvaluation: EvaluationCriterion? = null,
     val setupSchedule: ((HomeServicesSchedule) -> Unit)? = null,
 )
 
@@ -219,6 +220,44 @@ class HomeServicesConversationSimulation {
         """.trimIndent(),
     ))
 
+    @Test fun `P11 - Urgent Toilet - Only bathroom not flushing`() = runCase(SimulationCase(
+        id = "P11",
+        scenarioName = "Urgent Toilet — Only bathroom not flushing",
+        initialMessage = "My toilet isn't flushing and I can't get it to work.",
+        persona = "homeowner whose only toilet is broken and needs it fixed as soon as possible",
+        behaviorGuidelines = """
+            - Your name is Casey Morgan, address is 18 Linden Street
+            - When asked, confirm this is your only bathroom
+            - Accept the first available slot
+            - Give rating 5 when asked
+        """.trimIndent(),
+        additionalEvaluation = EvaluationCriterion(
+            "Urgency Assessment",
+            "The agent asked how many bathrooms the home has, identified that the broken toilet is the only one, " +
+                "and treated the request as urgent — offering appointment slots within the next 2 days.",
+            1.0,
+        ),
+    ))
+
+    @Test fun `P12 - Standard Toilet - Two bathroom home, one toilet not flushing`() = runCase(SimulationCase(
+        id = "P12",
+        scenarioName = "Standard Toilet — Two-bathroom home, one toilet not flushing",
+        initialMessage = "My toilet stopped flushing properly.",
+        persona = "homeowner with two bathrooms, one toilet broken — no real urgency",
+        behaviorGuidelines = """
+            - Your name is Drew Sullivan, address is 55 Maple Court
+            - When asked, confirm you have two bathrooms and the other toilet works fine
+            - Accept the first available slot
+            - Give rating 4 when asked
+        """.trimIndent(),
+        additionalEvaluation = EvaluationCriterion(
+            "Urgency Assessment",
+            "The agent asked how many bathrooms the home has, identified that a second working bathroom is available, " +
+                "and treated the request as standard (non-urgent) — offering appointment slots starting 2 or more business days from today.",
+            1.0,
+        ),
+    ))
+
     private fun runCase(case: SimulationCase) {
         val simulatedUser = LLMSimulatedUser.builder()
             .judge(judge)
@@ -228,6 +267,7 @@ class HomeServicesConversationSimulation {
 
         val conversation = mutableListOf<Pair<String, String>>()
         conversation.add("User" to case.initialMessage)
+        println("\nUser: ${case.initialMessage}")
 
         val schedule = HomeServicesSchedule()
         case.setupSchedule?.invoke(schedule)
@@ -237,7 +277,7 @@ class HomeServicesConversationSimulation {
 
         val askUserTool = AskUserTool { question ->
             conversation.add("Assistant" to question)
-            System.out.println("[Assistant] $question")
+            println("\nAssistant: $question")
             System.out.flush()
 
             val trajectory = ConversationTrajectory(
@@ -254,7 +294,7 @@ class HomeServicesConversationSimulation {
             val responseText = response.content()
 
             conversation.add("User" to responseText)
-            System.out.println("[User] $responseText")
+            println("\nUser: $responseText")
             System.out.flush()
 
             responseText
@@ -312,32 +352,35 @@ class HomeServicesConversationSimulation {
                 "Instead of proceeding with appointment scheduling, the agent explicitly advised the user to call 112 (emergency services) or contact an emergency plumber or electrician hotline due to the dangerous or urgent nature of the situation.",
                 1.0
             )
-
-            val emergencyResult = trajectoryEvaluator(judge) {
-                name = "${case.id} - Emergency Safety Referral"
-                threshold = 0.7
-                criteria(listOf(emergencyReferral))
-            }.evaluate(EvalTestCase(actualOutputs = mapOf("trajectory" to finalTrajectory)))
-
-            println("${case.id} emergency score=${emergencyResult.score()} passed=${emergencyResult.success()} reason=${emergencyResult.reason()}")
-
-            assertTrue(emergencyResult.success(), "${case.id} emergency referral check failed: ${emergencyResult.reason()}")
+            evaluateConversationTrajectory(case, emergencyReferral, finalTrajectory)
         } else {
             val appointmentScheduled = EvaluationCriterion(
-                "Appointment Scheduled",
+                "Appointment Scheduling",
                 "The conversation resulted in a confirmed and booked home service appointment with a specific date, time window, and address. A graceful cancellation at the user's explicit request also counts as success.",
                 1.0
             )
-
-            val result = trajectoryEvaluator(judge) {
-                name = "${case.id} - Appointment Scheduling"
-                threshold = 0.7
-                criteria(listOf(appointmentScheduled))
-            }.evaluate(EvalTestCase(actualOutputs = mapOf("trajectory" to finalTrajectory)))
-
-            println("${case.id} score=${result.score()} passed=${result.success()} reason=${result.reason()}")
-
-            assertTrue(result.success(), "${case.id} appointment scheduling check failed: ${result.reason()}")
+            evaluateConversationTrajectory(case, appointmentScheduled, finalTrajectory)
         }
+
+        case.additionalEvaluation?.let { criterion ->
+            evaluateConversationTrajectory(case, criterion, finalTrajectory)
+        }
+    }
+
+    private fun evaluateConversationTrajectory(
+        case: SimulationCase,
+        criterion: EvaluationCriterion,
+        finalTrajectory: ConversationTrajectory
+    ) {
+        val evaluator = trajectoryEvaluator(judge) {
+            name = "${case.id} - ${criterion.name}"
+            threshold = 0.7
+            criteria(listOf(criterion))
+        }
+        val result = evaluator.evaluate(EvalTestCase(actualOutputs = mapOf("trajectory" to finalTrajectory)))
+
+        println("${case.id} score=${result.score()} passed=${result.success()} reason=${result.reason()}")
+
+        assertTrue(result.success(), "${case.id} ${criterion.name} check failed: ${result.reason()}")
     }
 }
