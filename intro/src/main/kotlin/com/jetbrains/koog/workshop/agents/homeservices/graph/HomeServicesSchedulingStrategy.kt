@@ -16,8 +16,16 @@ import kotlinx.serialization.Serializable
 
 @LLMDescription("Result of the emergency check phase")
 @Serializable
-enum class EmergencyCheckResult {
-    @LLMDescription("The emergency has been detected and the user has been informed; do not proceed with scheduling")
+data class EmergencyCheckResult(
+    @LLMDescription("The outcome status of the emergency check")
+    val status: EmergencyStatus,
+    @LLMDescription("Brief justification of why this is an emergency. Required when status is EMERGENCY_DETECTED, null otherwise.")
+    val justification: String? = null,
+)
+
+@Serializable
+enum class EmergencyStatus {
+    @LLMDescription("Emergency detected; justification must be provided")
     EMERGENCY_DETECTED,
     @LLMDescription("No emergency detected; proceed with regular appointment scheduling")
     PROCEED_WITH_SCHEDULING,
@@ -165,17 +173,17 @@ fun homeServicesSchedulingStrategy(
     }
 
     // Handling emergency path: single LLM call to close the conversation
-    val handleEmergency by node<String, String> { _ ->
+    val handleEmergency by node<String, String> { justification ->
         llm.writeSession {
-            appendPrompt { user(HomeServicesPrompts.handleEmergencyInstructions) }
+            appendPrompt { user(HomeServicesPrompts.handleEmergencyInstructions(justification)) }
             requestLLM().content
         }
     }
 
     nodeStart then checkEmergency
-    edge(checkEmergency forwardTo assess onCondition { it == EmergencyCheckResult.PROCEED_WITH_SCHEDULING })
-    edge(checkEmergency forwardTo handleCancellation onCondition { it == EmergencyCheckResult.CANCELLED } transformed { "Cancelled" })
-    edge(checkEmergency forwardTo handleEmergency onCondition { it == EmergencyCheckResult.EMERGENCY_DETECTED } transformed { "Handling emergency" })
+    edge(checkEmergency forwardTo assess onCondition { it.status == EmergencyStatus.PROCEED_WITH_SCHEDULING })
+    edge(checkEmergency forwardTo handleCancellation onCondition { it.status == EmergencyStatus.CANCELLED } transformed { "Cancelled" })
+    edge(checkEmergency forwardTo handleEmergency onCondition { it.status == EmergencyStatus.EMERGENCY_DETECTED } transformed { it.justification ?: "Emergency situation detected" })
 
     edge(assess forwardTo storeIntake onCondition { it.success() } transformed { it.collected!! })
     edge(assess forwardTo handleCancellation onCondition { !it.success() } transformed { "Cancelled" })

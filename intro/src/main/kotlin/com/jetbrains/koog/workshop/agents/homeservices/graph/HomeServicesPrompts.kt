@@ -29,36 +29,32 @@ object HomeServicesPrompts {
      */
     fun checkEmergencyInstructions(initialMessage: String) = """
         Your task is to assess whether the user's request is an emergency before scheduling.
-    
+
         ## What counts as an emergency
-    
+
         - Gas leak or smell of gas
         - Active flooding or burst pipe with water spreading
         - Electrical fire, sparks, burning smell, or live exposed wires
         - Complete loss of power with a safety risk
         - Any situation that poses immediate risk to life or property
-    
+
         ## Steps
-    
-        1. Read the user's message and decide: is this an emergency?
-        2. If YES — warn the user clearly, tell them to call 112 or an emergency plumber/electrician immediately.
-           a. If the user refuses to call emergency services but needs someone immediately, reiterate that Hearthside Home Services is not an emergency service and cannot send someone right away or contact emergency services on their behalf.
-           b. If the user asks you to call emergency services for them, explain that you’re unable to do so.
-           c. If the user agrees to call emergency services, return EMERGENCY_DETECTED.
-           d. If the user says they still want to schedule a regular appointment, ask why they don’t think it’s an emergency. Wait for their response.
-               - After receiving their explanation: if you are satisfied (i.e., it does not seem like an emergency), return PROCEED_WITH_SCHEDULING.
-               - After receiving their explanation: if you are not satisfied (i.e., it still seems like an emergency), return EMERGENCY_DETECTED.
-        3. If NO — return PROCEED_WITH_SCHEDULING.
-        
-        ## Important
-    
-        Do not suggest any advice.
-        Keep your responses short and concise.
-        Never call the return tool and askUser in the same step. Always send a message to the user, wait for their reply, then return the result.
-        
+
+        1. Read the user’s initial message.
+        2. If the situation is clearly an emergency, return EMERGENCY_DETECTED with a brief justification immediately — do not ask any questions.
+        3. If you need more information to decide (e.g. ambiguous description), ask the user exactly one focused question using askUser, wait for the reply, then return the result.
+        4. If the situation is not an emergency, return PROCEED_WITH_SCHEDULING.
+        5. If the user cancels, return CANCELLED.
+
+        ## Rules
+
+        - Never call askUser and the return tool in the same step.
+        - Keep questions short and focused on determining the severity.
+        - Do not suggest advice or reassure the user.
+
         ## Initial message
-        
-        The user's initial message: 
+
+        The user's initial message:
         $initialMessage
         """.trimIndent()
 
@@ -211,12 +207,12 @@ object HomeServicesPrompts {
     /**
      * Instructions for wrapping up an emergency conversation.
      */
-    val handleEmergencyInstructions = """
+    fun handleEmergencyInstructions(justification: String) = """
         Your task is to provide a short final reply to conclude a conversation about an emergency.
-        Your response should be very concise and must not distract the user from contacting emergency services.
-        Briefly restate the user’s situation and why it is an emergency, 
-        add that the company technicians are not available to help immediately,
-        and include a short, appropriate instruction such as: ‘Please call the emergency services or 112 now.’
+        Your response must be very concise and must not distract the user from contacting emergency services.
+        Emergency situation: $justification
+        Briefly acknowledge the situation, state that Hearthside Home Services cannot respond immediately,
+        and tell the user to call emergency services or 112 now.
         """.trimIndent()
 
     /**

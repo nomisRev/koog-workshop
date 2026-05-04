@@ -211,6 +211,34 @@ class HomeServicesConversationSimulation {
         )
     )
 
+    @Test fun `Emergency-4 - Ambiguous Flooding - Water on bathroom floor turns out to be burst pipe`() = runCase(SimulationCase(
+        id = "Emergency-4",
+        scenarioName = "Ambiguous Flooding — Water on bathroom floor turns out to be a burst pipe",
+        initialMessage = "There's water all over my bathroom floor.",
+        persona = "homeowner whose pipe under the bathroom vanity just burst, water actively spreading",
+        behaviorGuidelines = """
+            - Your name is Jamie Torres, address is 14 Birch Lane
+            - When the agent asks where the water is coming from or for more details, explain it is spraying from a pipe under the bathroom vanity and spreading across the floor
+            - Confirm the water is still actively coming out and getting worse
+            - After the agent advises calling emergency services, acknowledge you will call immediately
+        """.trimIndent(),
+        evaluations = listOf(emergencyReferral),
+    ))
+
+    @Test fun `Emergency-5 - Ambiguous Electrical - Buzzing panel turns out not to be emergency`() = runCase(SimulationCase(
+        id = "Emergency-5",
+        scenarioName = "Ambiguous Electrical — Buzzing panel turns out not to be an emergency",
+        initialMessage = "My electrical panel is buzzing loudly.",
+        persona = "homeowner with a buzzing electrical panel but no sparks or burning smell",
+        behaviorGuidelines = """
+            - Your name is Robin Sanders, address is 27 Elmwood Drive
+            - When the agent asks for more details (sparks, burning smell, etc.), confirm there are no sparks and no burning smell — just a persistent buzzing sound that started a couple of days ago
+            - Accept the first available electrical slot
+            - Give rating 4 when asked
+        """.trimIndent(),
+        evaluations = listOf(appointmentScheduled),
+    ))
+
     @Test fun `Scheduling-3 - Apartment Renter with Access Constraints - Handyman shelves`() = runCase(SimulationCase(
         id = "Scheduling-3",
         scenarioName = "Apartment Renter with Access Constraints — Handyman shelves",
