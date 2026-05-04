@@ -225,8 +225,7 @@ object HomeServicesPrompts {
 
         1. Thank the customer for using Hearthside Home Services.
         2. Ask them to rate their experience on a scale from 1 to 5 (1 = very unsatisfied, 5 = very satisfied).
-        3. After receiving the rating, thank them again and wish them a great day.
-        4. Return the rating as a single number.
+        3. Return a concise closing message as a result (e.g. "Thank you!").
 
         ## Context
 
