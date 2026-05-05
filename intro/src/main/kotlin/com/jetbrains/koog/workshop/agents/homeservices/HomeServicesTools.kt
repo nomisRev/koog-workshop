@@ -281,7 +281,7 @@ class HomeServicesFindTools(private val schedule: HomeServicesSchedule) : ToolSe
                 !(slot.date == schedule.today && now.hour >= slot.timeWindow.startHour) &&
                 (timeWindowFilter.isEmpty() || slot.timeWindow in timeWindowFilter) &&
                 (dayOfWeekFilter.isEmpty() || slot.date.dayOfWeek in dayOfWeekFilter)
-        }
+        }.distinctBy { it.date to it.timeWindow }
 
         val matches = allFree.take(limit)
 
