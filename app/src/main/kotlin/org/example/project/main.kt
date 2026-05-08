@@ -1,16 +1,11 @@
 package org.example.project
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -20,7 +15,6 @@ import androidx.compose.ui.window.rememberWindowState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import org.example.project.admin.app.AdminRoute
 import org.example.project.chat.ChatScreen
-import org.example.project.chat.ChatTopBar
 import org.example.project.chat.ChatViewModel
 import org.example.project.domain.character.Character
 import org.example.project.login.LoginScreen
@@ -54,12 +48,6 @@ fun main() {
                     size = DpSize(1200.dp, 800.dp)
                 )
             ) {
-                val chatViewModel: ChatViewModel =
-                    viewModel(factory = ChatViewModel.factory(session, dependencies.chatAgent, dependencies.characterServices.chatService))
-                val chatUiState by chatViewModel.uiState.collectAsState()
-
-                LaunchedEffect(Unit) { chatViewModel.loadHistory() }
-
                 when (val current = screen) {
                     is Screen.Login -> {
                         LoginScreen(
@@ -70,22 +58,18 @@ fun main() {
                     }
 
                     is Screen.Chat -> {
-                        Scaffold(
-                            topBar = {
-                                ChatTopBar(
-                                    characterName = current.character.name,
-                                    onBackClick = { screen = Screen.Login }
-                                )
-                            }
-                        ) { paddingValues ->
-                            Box(modifier = Modifier.padding(paddingValues)) {
-                                ChatScreen(
-                                    uiState = chatUiState,
-                                    onInputChange = chatViewModel::updateInputText,
-                                    onSendMessage = { chatViewModel.sendMessage(current.character.id) }
-                                )
-                            }
-                        }
+                        val chatViewModel: ChatViewModel = viewModel(
+                            key = current.character.id.value.toString(),
+                            factory = ChatViewModel.factory(
+                                character = current.character,
+                                session = session,
+                                chatAgentProvider = dependencies.chatAgentProvider,
+                                chatService = dependencies.characterServices.chatService,
+                                historyProvider = dependencies.chatHistoryProvider,
+                                onNavigateBack = { screen = Screen.Login },
+                            )
+                        )
+                        ChatScreen(viewModel = chatViewModel)
                     }
                 }
 

@@ -1,7 +1,7 @@
 package org.example.project
 
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
-import org.example.project.chat.ChatAgent
+import org.example.project.chat.ChatAgentProvider
 import org.example.project.db.createDataSource
 import org.example.project.db.createDatabase
 import org.example.project.admin.merchants.AdminMerchantService
@@ -24,19 +24,21 @@ fun dependencies(): Dependencies {
     val chatService = ChatService(database, chatHistoryProvider)
     val executor = simpleOpenAIExecutor(requireNotNull(getenv("OPENAI_API_KEY")) { "OPENAI_API_KEY not set" })
 
-    val chatAgent = ChatAgent(executor = executor, chatHistoryProvider = chatHistoryProvider, orderService = OrderService(database))
+    val chatAgentProvider = ChatAgentProvider(executor = executor, orderService = OrderService(database))
 
     return Dependencies(
         storeServices = Dependencies.StoreServices(productService, merchantService, orderService),
         characterServices = Dependencies.CharacterServices(characterService, chatService),
-        chatAgent = chatAgent
+        chatAgentProvider = chatAgentProvider,
+        chatHistoryProvider = chatHistoryProvider,
     )
 }
 
 class Dependencies(
     val storeServices: StoreServices,
     val characterServices: CharacterServices,
-    val chatAgent: ChatAgent
+    val chatAgentProvider: ChatAgentProvider,
+    val chatHistoryProvider: JdbcChatHistoryProvider,
 ) {
     class StoreServices(
         val productService: AdminProductService,

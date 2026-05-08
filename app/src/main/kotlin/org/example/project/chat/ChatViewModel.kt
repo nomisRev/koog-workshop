@@ -1,153 +1,279 @@
 package org.example.project.chat
 
+import ai.koog.agents.chatMemory.feature.ChatHistoryProvider
+import ai.koog.agents.core.agent.AIAgent
+import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.prompt.message.Message
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
-import kotlinx.collections.immutable.PersistentList
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toPersistentList
-import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
+import org.example.project.domain.character.Character
 import org.example.project.domain.chat.ChatService
-import org.example.project.domain.shared.CharacterId
+import org.example.project.koog.AgentExecutionTraceEvent
 import kotlin.reflect.KClass
 import kotlin.uuid.Uuid
-
-sealed interface ChatState {
-    /** User can type and send a new message to the agent. */
-    data object Idle : ChatState
-
-    /** Agent is processing — input disabled. */
-    data object WaitingForAgent : ChatState
-
-    /** Agent asked a question — user input completes the deferred. */
-    class AwaitingUserAnswer(val deferred: CompletableDeferred<String>) : ChatState
-}
-
-data class ChatUi(
-    val messages: PersistentList<Message> = persistentListOf(),
-    val inputText: String = "",
-    val isWaiting: Boolean = false
-) {
-    sealed interface Message {
-        val id: String
-        val content: String
-
-        data class User(val user: String) : Message {
-            override val id: String = Uuid.random().toString()
-            override val content: String = user
-        }
-
-        data class CustomerSupport(val customerSupport: String) : Message {
-            override val id: String = Uuid.random().toString()
-            override val content: String = customerSupport
-        }
-    }
-}
 
 @Serializable
 private data class ToolMessage(val message: String)
 
 class ChatViewModel(
-    private val session: Uuid,
-    private val chatAgent: ChatAgent,
+    private val character: Character,
+    initialSession: Uuid,
+    private val chatAgentProvider: ChatAgentProvider,
     private val chatService: ChatService,
+    private val historyProvider: ChatHistoryProvider,
+    private val onNavigateBack: () -> Unit,
 ) : ViewModel() {
-    val uiState: StateFlow<ChatUi>
-        field = MutableStateFlow(ChatUi())
+    private val _uiState = MutableStateFlow(
+        ChatUiState(
+            title = character.name,
+            chatMessages = listOf(
+                ChatMessage.SystemMessage("Hi ${character.name}! I'm the Fantasy Store assistant. How can I help?")
+            )
+        )
+    )
+    val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
-    private var state: ChatState = ChatState.Idle
+    private var sessionId: String = initialSession.toString()
+    private var agent: AIAgent<String, String>? = null
 
-    private fun updateState(state: ChatState, update: ChatUi.() -> ChatUi) {
-        this.state = state
-        uiState.value = uiState.value.update().copy(isWaiting = state is ChatState.WaitingForAgent)
+    init {
+        loadHistory()
     }
 
-    fun loadHistory() = viewModelScope.launch {
-        val messages = chatService
-            .getChatHistory(session.toString())
-            .mapNotNull { message ->
-                // Convert Koog messages to appropriate UI representation
-                when (message) {
-                    is Message.User -> ChatUi.Message.User(message.content)
-                    is Message.Assistant -> ChatUi.Message.CustomerSupport(message.content)
-                    is Message.Reasoning -> ChatUi.Message.CustomerSupport(message.content)
-                    is Message.System -> ChatUi.Message.CustomerSupport(message.content)
-
-                    is Message.Tool.Call if message.tool == "askQuestion" -> {
-                        val message = Json.decodeFromString<ToolMessage>(message.parts.single().text).message
-                        ChatUi.Message.CustomerSupport(message)
-                    }
-
-                    is Message.Tool.Result if message.tool == "askQuestion" ->
-                        ChatUi.Message.User(Json.decodeFromString(String.serializer(), message.content))
-
-                    is Message.Tool.Result,
-                    is Message.Tool.Call -> null
-                }
+    fun onEvent(event: ChatUiEvents) {
+        viewModelScope.launch {
+            when (event) {
+                is ChatUiEvents.UpdateInputText -> updateInputText(event.text)
+                is ChatUiEvents.ToggleDebugEnabled -> toggleDebugEnabled()
+                is ChatUiEvents.ToggleDebugOption -> toggleDebugOption(event.option)
+                ChatUiEvents.SendMessage -> sendMessage()
+                ChatUiEvents.RestartChat -> restartChat()
+                ChatUiEvents.NavigateBack -> onNavigateBack()
             }
-            .toPersistentList()
-
-        uiState.value = uiState.value.copy(messages = messages)
+        }
     }
 
-    fun updateInputText(text: String) {
-        uiState.value = uiState.value.copy(inputText = text)
+    private fun loadHistory() = viewModelScope.launch {
+        val historicalMessages = chatService
+            .getChatHistory(sessionId)
+            .mapNotNull(::toChatMessage)
+
+        if (historicalMessages.isEmpty()) return@launch
+
+        _uiState.update { it.copy(chatMessages = it.chatMessages + historicalMessages) }
     }
 
-    fun sendMessage(characterId: CharacterId) = viewModelScope.launch {
-        val message = uiState.value.inputText.trim()
-        if (message.isEmpty()) return@launch
+    private fun toChatMessage(message: Message): ChatMessage? = when (message) {
+        is Message.User -> ChatMessage.UserMessage(message.content)
+        is Message.Assistant -> ChatMessage.AgentMessage(message.content)
+        is Message.Reasoning -> null
+        is Message.System -> null
 
-        when (val current = state) {
-            is ChatState.AwaitingUserAnswer -> {
-                updateState(ChatState.WaitingForAgent) {
-                    copy(
-                        inputText = "",
-                        messages = messages.add(ChatUi.Message.User(message))
+        is Message.Tool.Call if message.tool == "askQuestion" -> {
+            val text = Json.decodeFromString<ToolMessage>(message.parts.single().text).message
+            ChatMessage.AgentMessage(text)
+        }
+
+        is Message.Tool.Result if message.tool == "askQuestion" ->
+            ChatMessage.UserMessage(Json.decodeFromString(String.serializer(), message.content))
+
+        is Message.Tool.Call -> ChatMessage.ToolCallMessage(
+            toolName = message.tool,
+            args = mapOf("args" to message.content)
+        )
+
+        is Message.Tool.Result -> null
+    }
+
+    private fun updateInputText(text: String) {
+        _uiState.update { it.copy(inputText = text) }
+    }
+
+    private fun toggleDebugEnabled() {
+        _uiState.update {
+            it.copy(debugView = it.debugView.copy(enabled = !it.debugView.enabled))
+        }
+    }
+
+    private fun toggleDebugOption(option: DebugOption) {
+        _uiState.update {
+            val current = it.debugView
+            val newOptions = if (option in current.options) current.options - option else current.options + option
+            it.copy(debugView = current.copy(options = newOptions))
+        }
+    }
+
+    private fun sendMessage() {
+        val userInput = _uiState.value.inputText.trim()
+        if (userInput.isEmpty()) return
+
+
+        if (_uiState.value.userResponseRequested) {
+            _uiState.update {
+                it.copy(
+                    chatMessages = it.chatMessages + ChatMessage.UserMessage(userInput),
+                    inputText = "",
+                    isInputEnabled = false,
+                    isLoading = true,
+                    userResponseRequested = false,
+                    currentUserResponse = userInput,
+                )
+            }
+        } else {
+            _uiState.update {
+                it.copy(
+                    chatMessages = it.chatMessages + ChatMessage.UserMessage(userInput),
+                    inputText = "",
+                    isInputEnabled = false,
+                    isLoading = true,
+                )
+            }
+
+            viewModelScope.launch {
+                runAgent(userInput)
+            }
+        }
+    }
+
+    private suspend fun runAgent(userInput: String) {
+        withContext(Dispatchers.Default) {
+            try {
+                val currentAgent = agent ?: createAgent().also { agent = it }
+                val result = currentAgent.run(userInput, sessionId)
+
+                _uiState.update {
+                    it.copy(
+                        chatMessages = it.chatMessages + ChatMessage.AgentMessage(result),
+                        isInputEnabled = true,
+                        isLoading = false,
                     )
                 }
-                current.deferred.complete(message)
-            }
-
-            is ChatState.Idle -> {
-                updateState(ChatState.WaitingForAgent) {
-                    copy(
-                        inputText = "",
-                        messages = messages.add(ChatUi.Message.User(message))
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        chatMessages = it.chatMessages + ChatMessage.ErrorMessage("Error: ${e.message}"),
+                        isInputEnabled = true,
+                        isLoading = false,
                     )
                 }
+            }
+        }
+    }
 
-                val reply = chatAgent.sendMessage(characterId, session, message) { question ->
-                    val deferred = CompletableDeferred<String>()
-                    updateState(ChatState.AwaitingUserAnswer(deferred)) {
-                        copy(messages = messages.add(ChatUi.Message.CustomerSupport(question)))
-                    }
-                    deferred.await()
-                }
-
-                updateState(ChatState.Idle) {
-                    copy(messages = messages.add(reply))
+    private suspend fun createAgent(): AIAgent<String, String> {
+        val onToolCallEvent: suspend (String, Map<String, String>) -> Unit = { toolName, args ->
+            _uiState.update {
+                it.copy(chatMessages = it.chatMessages + ChatMessage.ToolCallMessage(toolName, args))
+            }
+        }
+        val onErrorEvent: suspend (String) -> Unit = { errorMessage ->
+            _uiState.update {
+                it.copy(
+                    chatMessages = it.chatMessages + ChatMessage.ErrorMessage(errorMessage),
+                    isInputEnabled = true,
+                    isLoading = false,
+                )
+            }
+        }
+        val onLLMCallEvent: suspend (List<Message>, List<ToolDescriptor>) -> Unit =
+            { messages, tools ->
+                _uiState.update {
+                    it.copy(
+                        chatMessages = it.chatMessages + ChatMessage.LLMCallMessage(
+                            LlmCallData(
+                                messageHistory = messages.toHistoryItems(),
+                                availableTools = tools.toToolData()
+                            )
+                        ),
+                    )
                 }
             }
+        val onExecutionTraceEvent: suspend (AgentExecutionTraceEvent) -> Unit = { event ->
+            val item = when (event) {
+                is AgentExecutionTraceEvent.Node -> ExecutionTraceItem.Node(event.name)
+                is AgentExecutionTraceEvent.Subgraph -> ExecutionTraceItem.Subgraph(event.name)
+            }
+            _uiState.update {
+                it.copy(chatMessages = it.chatMessages + ChatMessage.ExecutionTraceMessage(item))
+            }
+        }
+        val onAssistantMessage: suspend (String) -> String = { message ->
+            _uiState.update {
+                it.copy(
+                    chatMessages = it.chatMessages + ChatMessage.AgentMessage(message),
+                    isInputEnabled = true,
+                    isLoading = false,
+                    userResponseRequested = true,
+                )
+            }
 
-            is ChatState.WaitingForAgent -> Unit
+            val userResponse = _uiState
+                .first { it.currentUserResponse != null }
+                .currentUserResponse
+                ?: error("User response is null")
+
+            _uiState.update { it.copy(currentUserResponse = null) }
+
+            userResponse
+        }
+
+        return chatAgentProvider.provideAgent(
+            characterId = character.id,
+            historyProvider = historyProvider,
+            onToolCallEvent = onToolCallEvent,
+            onLLMCallEvent = onLLMCallEvent,
+            onErrorEvent = onErrorEvent,
+            onExecutionTraceEvent = onExecutionTraceEvent,
+            onAssistantMessage = onAssistantMessage,
+        )
+    }
+
+    private fun restartChat() {
+        sessionId = Uuid.random().toString()
+        agent = null
+        _uiState.update {
+            ChatUiState(
+                title = character.name,
+                chatMessages = listOf(
+                    ChatMessage.SystemMessage("Hi ${character.name}! I'm the Fantasy Store assistant. How can I help?")
+                )
+            )
         }
     }
 
     companion object {
-        fun factory(session: Uuid, chatAgent: ChatAgent, chatService: ChatService): ViewModelProvider.Factory =
+        fun factory(
+            character: Character,
+            session: Uuid,
+            chatAgentProvider: ChatAgentProvider,
+            chatService: ChatService,
+            historyProvider: ChatHistoryProvider,
+            onNavigateBack: () -> Unit,
+        ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: KClass<T>, extras: CreationExtras): T {
-                    return ChatViewModel(session, chatAgent, chatService) as T
+                    return ChatViewModel(
+                        character = character,
+                        initialSession = session,
+                        chatAgentProvider = chatAgentProvider,
+                        chatService = chatService,
+                        historyProvider = historyProvider,
+                        onNavigateBack = onNavigateBack,
+                    ) as T
                 }
             }
     }
