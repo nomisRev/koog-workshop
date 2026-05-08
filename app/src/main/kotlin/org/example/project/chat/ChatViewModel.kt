@@ -21,6 +21,7 @@ import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import org.example.project.domain.character.Character
 import org.example.project.domain.chat.ChatService
+import org.example.project.domain.chat.ChatUpdate
 import org.example.project.koog.AgentExecutionTraceEvent
 import kotlin.reflect.KClass
 import kotlin.uuid.Uuid
@@ -30,7 +31,8 @@ private data class ToolMessage(val message: String)
 
 class ChatViewModel(
     private val character: Character,
-    initialSession: Uuid,
+    initialConversationId: String,
+    initialMessages: List<Message>?,
     private val chatAgentProvider: ChatAgentProvider,
     private val chatService: ChatService,
     private val historyProvider: ChatHistoryProvider,
@@ -39,19 +41,16 @@ class ChatViewModel(
     private val _uiState = MutableStateFlow(
         ChatUiState(
             title = character.name,
-            chatMessages = listOf(
-                ChatMessage.SystemMessage("Hi ${character.name}! I'm the Fantasy Store assistant. How can I help?")
-            )
+            chatMessages = buildList {
+                add(ChatMessage.SystemMessage("Hi ${character.name}! I'm the Fantasy Store assistant. How can I help?"))
+                initialMessages?.mapNotNull(::toChatMessage)?.let { addAll(it) }
+            }
         )
     )
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
-    private var sessionId: String = initialSession.toString()
+    private var sessionId: String = initialConversationId
     private var agent: AIAgent<String, String>? = null
-
-    init {
-        loadHistory()
-    }
 
     fun onEvent(event: ChatUiEvents) {
         viewModelScope.launch {
@@ -64,16 +63,6 @@ class ChatViewModel(
                 ChatUiEvents.NavigateBack -> onNavigateBack()
             }
         }
-    }
-
-    private fun loadHistory() = viewModelScope.launch {
-        val historicalMessages = chatService
-            .getChatHistory(sessionId)
-            .mapNotNull(::toChatMessage)
-
-        if (historicalMessages.isEmpty()) return@launch
-
-        _uiState.update { it.copy(chatMessages = it.chatMessages + historicalMessages) }
     }
 
     private fun toChatMessage(message: Message): ChatMessage? = when (message) {
@@ -153,6 +142,8 @@ class ChatViewModel(
             try {
                 val currentAgent = agent ?: createAgent().also { agent = it }
                 val result = currentAgent.run(userInput, sessionId)
+                // Write that a new chat was created
+                chatService.updateChat(ChatUpdate(character.id, sessionId))
 
                 _uiState.update {
                     it.copy(
@@ -257,7 +248,8 @@ class ChatViewModel(
     companion object {
         fun factory(
             character: Character,
-            session: Uuid,
+            conversationId: String,
+            initialMessages: List<Message>?,
             chatAgentProvider: ChatAgentProvider,
             chatService: ChatService,
             historyProvider: ChatHistoryProvider,
@@ -268,7 +260,8 @@ class ChatViewModel(
                 override fun <T : ViewModel> create(modelClass: KClass<T>, extras: CreationExtras): T {
                     return ChatViewModel(
                         character = character,
-                        initialSession = session,
+                        initialConversationId = conversationId,
+                        initialMessages = initialMessages,
                         chatAgentProvider = chatAgentProvider,
                         chatService = chatService,
                         historyProvider = historyProvider,

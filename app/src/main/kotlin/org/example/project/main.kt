@@ -1,5 +1,6 @@
 package org.example.project
 
+import ai.koog.prompt.message.Message
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -14,21 +15,24 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import org.example.project.admin.app.AdminRoute
+import org.example.project.chat.ChatListScreen
+import org.example.project.chat.ChatListViewModel
 import org.example.project.chat.ChatScreen
 import org.example.project.chat.ChatViewModel
 import org.example.project.domain.character.Character
 import org.example.project.login.LoginScreen
-import kotlin.uuid.Uuid
 
 private sealed interface Screen {
     data object Login : Screen
-    data class Chat(val character: Character) : Screen
+    data class ChatList(val character: Character) : Screen
+    data class Chat(
+        val character: Character,
+        val conversationId: String,
+        val initialMessages: List<Message>?,
+    ) : Screen
 }
 
 fun main() {
-    val session = Uuid.random()
-    println("Session: $session")
-
     val dependencies = dependencies()
 
     application {
@@ -53,20 +57,39 @@ fun main() {
                         LoginScreen(
                             characters = characters,
                             onAdminClick = { adminWindowOpen = true },
-                            onCharacterSelected = { screen = Screen.Chat(it) }
+                            onCharacterSelected = { screen = Screen.ChatList(it) }
                         )
+                    }
+
+                    is Screen.ChatList -> {
+                        val chatListViewModel: ChatListViewModel = viewModel(
+                            key = "chatlist-${current.character.id.value}",
+                            factory = ChatListViewModel.factory(
+                                character = current.character,
+                                chatService = dependencies.characterServices.chatService,
+                                onNavigateBack = { screen = Screen.Login },
+                                onChatSelected = { conversationId, messages ->
+                                    screen = Screen.Chat(current.character, conversationId, messages)
+                                },
+                                onNewChat = { conversationId ->
+                                    screen = Screen.Chat(current.character, conversationId, null)
+                                },
+                            )
+                        )
+                        ChatListScreen(viewModel = chatListViewModel)
                     }
 
                     is Screen.Chat -> {
                         val chatViewModel: ChatViewModel = viewModel(
-                            key = current.character.id.value.toString(),
+                            key = current.conversationId,
                             factory = ChatViewModel.factory(
                                 character = current.character,
-                                session = session,
+                                conversationId = current.conversationId,
+                                initialMessages = current.initialMessages,
                                 chatAgentProvider = dependencies.chatAgentProvider,
                                 chatService = dependencies.characterServices.chatService,
                                 historyProvider = dependencies.chatHistoryProvider,
-                                onNavigateBack = { screen = Screen.Login },
+                                onNavigateBack = { screen = Screen.ChatList(current.character) },
                             )
                         )
                         ChatScreen(viewModel = chatViewModel)
