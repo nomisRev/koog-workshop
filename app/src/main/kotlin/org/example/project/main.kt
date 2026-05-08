@@ -45,7 +45,7 @@ fun main() {
         var characters by remember { mutableStateOf<List<Character>>(emptyList()) }
 
         LaunchedEffect(Unit) {
-            characters = dependencies.characterService.listCharacters()
+            characters = dependencies.characterServices.characterService.listCharacters()
         }
 
         MaterialTheme(AppColorScheme) {
@@ -57,7 +57,7 @@ fun main() {
                 )
             ) {
                 val chatViewModel: ChatViewModel =
-                    viewModel(factory = ChatViewModel.factory(session, dependencies.chat))
+                    viewModel(factory = ChatViewModel.factory(session, dependencies.chatAgent, dependencies.characterServices.chatService))
                 val chatUiState by chatViewModel.uiState.collectAsState()
 
                 LaunchedEffect(Unit) { chatViewModel.loadHistory() }
@@ -123,7 +123,7 @@ fun main() {
                             position = WindowPosition(100.dp, 100.dp)
                         )
                     ) {
-                        AdminRoute(dependencies.services)
+                        AdminRoute(dependencies.storeServices)
                     }
                 }
             }

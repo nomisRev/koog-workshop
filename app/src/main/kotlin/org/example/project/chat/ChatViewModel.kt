@@ -1,16 +1,21 @@
 package org.example.project.chat
 
+import ai.koog.prompt.message.Message
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import org.example.project.chat.ChatUi.Message.User
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.json.Json
+import org.example.project.domain.chat.ChatService
 import org.example.project.domain.shared.CharacterId
 import kotlin.reflect.KClass
 import kotlin.uuid.Uuid
@@ -47,9 +52,13 @@ data class ChatUi(
     }
 }
 
+@Serializable
+private data class ToolMessage(val message: String)
+
 class ChatViewModel(
     private val session: Uuid,
-    private val chat: ChatAgent
+    private val chatAgent: ChatAgent,
+    private val chatService: ChatService,
 ) : ViewModel() {
     val uiState: StateFlow<ChatUi>
         field = MutableStateFlow(ChatUi())
@@ -62,7 +71,30 @@ class ChatViewModel(
     }
 
     fun loadHistory() = viewModelScope.launch {
-        val messages = chat.loadChat(session)
+        val messages = chatService
+            .getChatHistory(session.toString())
+            .mapNotNull { message ->
+                // Convert Koog messages to appropriate UI representation
+                when (message) {
+                    is Message.User -> ChatUi.Message.User(message.content)
+                    is Message.Assistant -> ChatUi.Message.CustomerSupport(message.content)
+                    is Message.Reasoning -> ChatUi.Message.CustomerSupport(message.content)
+                    is Message.System -> ChatUi.Message.CustomerSupport(message.content)
+
+                    is Message.Tool.Call if message.tool == "askQuestion" -> {
+                        val message = Json.decodeFromString<ToolMessage>(message.parts.single().text).message
+                        ChatUi.Message.CustomerSupport(message)
+                    }
+
+                    is Message.Tool.Result if message.tool == "askQuestion" ->
+                        ChatUi.Message.User(Json.decodeFromString(String.serializer(), message.content))
+
+                    is Message.Tool.Result,
+                    is Message.Tool.Call -> null
+                }
+            }
+            .toPersistentList()
+
         uiState.value = uiState.value.copy(messages = messages)
     }
 
@@ -79,7 +111,7 @@ class ChatViewModel(
                 updateState(ChatState.WaitingForAgent) {
                     copy(
                         inputText = "",
-                        messages = messages.add(User(message))
+                        messages = messages.add(ChatUi.Message.User(message))
                     )
                 }
                 current.deferred.complete(message)
@@ -89,11 +121,11 @@ class ChatViewModel(
                 updateState(ChatState.WaitingForAgent) {
                     copy(
                         inputText = "",
-                        messages = messages.add(User(message))
+                        messages = messages.add(ChatUi.Message.User(message))
                     )
                 }
 
-                val reply = chat.sendMessage(characterId, session, message) { question ->
+                val reply = chatAgent.sendMessage(characterId, session, message) { question ->
                     val deferred = CompletableDeferred<String>()
                     updateState(ChatState.AwaitingUserAnswer(deferred)) {
                         copy(messages = messages.add(ChatUi.Message.CustomerSupport(question)))
@@ -111,11 +143,11 @@ class ChatViewModel(
     }
 
     companion object {
-        fun factory(session: Uuid, chat: ChatAgent): ViewModelProvider.Factory =
+        fun factory(session: Uuid, chatAgent: ChatAgent, chatService: ChatService): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: KClass<T>, extras: CreationExtras): T {
-                    return ChatViewModel(session, chat) as T
+                    return ChatViewModel(session, chatAgent, chatService) as T
                 }
             }
     }

@@ -57,13 +57,13 @@ private enum class AdminWorkspaceTab(val title: String) {
 }
 
 @Composable
-fun AdminRoute(services: Dependencies.Services) {
+fun AdminRoute(storeServices: Dependencies.StoreServices) {
     val productViewModel: ProductAdminViewModel =
-        viewModel(factory = ProductAdminViewModel.factory(services.productService))
+        viewModel(factory = ProductAdminViewModel.factory(storeServices.productService))
     val merchantViewModel: MerchantAdminViewModel =
-        viewModel(factory = MerchantAdminViewModel.factory(services.merchantService))
+        viewModel(factory = MerchantAdminViewModel.factory(storeServices.merchantService))
     val orderViewModel: OrderAdminViewModel =
-        viewModel(factory = OrderAdminViewModel.factory(services.orderService))
+        viewModel(factory = OrderAdminViewModel.factory(storeServices.orderService))
     val productState by productViewModel.uiState.collectAsState()
     val merchantState by merchantViewModel.uiState.collectAsState()
     val orderState by orderViewModel.uiState.collectAsState()
