@@ -1,6 +1,7 @@
 package org.example.project.domain.chat
 
 import ai.koog.agents.chatMemory.feature.ChatHistoryProvider
+import ai.koog.prompt.message.Message
 import org.example.project.db.suspendTransaction
 import org.example.project.domain.shared.CharacterId
 import org.jetbrains.exposed.v1.jdbc.Database
@@ -33,4 +34,7 @@ class ChatService(
     suspend fun updateChat(update: ChatUpdate) = database.suspendTransaction {
         chatRepository.updateChat(update)
     }
+
+    suspend fun getChatHistory(conversationId: String): List<Message> =
+        chatHistoryProvider.load(conversationId)
 }

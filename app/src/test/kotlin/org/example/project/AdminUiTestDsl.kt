@@ -17,12 +17,12 @@ import org.jetbrains.exposed.v1.jdbc.Database
 
 @Composable
 internal fun AdminApp(database: Database) {
-    val services = Dependencies.Services(
+    val storeServices = Dependencies.StoreServices(
         productService = AdminProductService(database),
         merchantService = AdminMerchantService(database),
         orderService = AdminOrderService(database)
     )
-    AdminRoute(services = services)
+    AdminRoute(storeServices = storeServices)
 }
 
 internal class AdminAppHarness(

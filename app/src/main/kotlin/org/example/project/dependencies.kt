@@ -8,33 +8,44 @@ import org.example.project.admin.merchants.AdminMerchantService
 import org.example.project.admin.orders.operations.AdminOrderService
 import org.example.project.admin.products.AdminProductService
 import org.example.project.domain.character.CharacterService
+import org.example.project.domain.chat.ChatService
 import org.example.project.domain.order.OrderService
 import org.example.project.koog.JdbcChatHistoryProvider
 import java.lang.System.getenv
 
 fun dependencies(): Dependencies {
     val dataSource = createDataSource()
-    val chatProvider = JdbcChatHistoryProvider(dataSource).also { it.createTable() }
+    val chatHistoryProvider = JdbcChatHistoryProvider(dataSource).also { it.createTable() }
     val database = createDatabase(dataSource)
     val productService = AdminProductService(database)
     val merchantService = AdminMerchantService(database)
     val orderService = AdminOrderService(database)
     val characterService = CharacterService(database)
+    val chatService = ChatService(database, chatHistoryProvider)
     val executor = simpleOpenAIExecutor(requireNotNull(getenv("OPENAI_API_KEY")) { "OPENAI_API_KEY not set" })
 
-    val chat = ChatAgent(executor = executor, history = chatProvider, orderService = OrderService(database))
+    val chatAgent = ChatAgent(executor = executor, chatHistoryProvider = chatHistoryProvider, orderService = OrderService(database))
 
-    return Dependencies(Dependencies.Services(productService, merchantService, orderService), characterService, chat)
+    return Dependencies(
+        storeServices = Dependencies.StoreServices(productService, merchantService, orderService),
+        characterServices = Dependencies.CharacterServices(characterService, chatService),
+        chatAgent = chatAgent
+    )
 }
 
 class Dependencies(
-    val services: Services,
-    val characterService: CharacterService,
-    val chat: ChatAgent
+    val storeServices: StoreServices,
+    val characterServices: CharacterServices,
+    val chatAgent: ChatAgent
 ) {
-    class Services(
+    class StoreServices(
         val productService: AdminProductService,
         val merchantService: AdminMerchantService,
-        val orderService: AdminOrderService
+        val orderService: AdminOrderService,
+    )
+
+    class CharacterServices(
+        val characterService: CharacterService,
+        val chatService: ChatService,
     )
 }

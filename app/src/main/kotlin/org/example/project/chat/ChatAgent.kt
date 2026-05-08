@@ -8,13 +8,7 @@ import ai.koog.agents.features.tracing.feature.Tracing
 import ai.koog.agents.features.tracing.writer.TraceFeatureMessageLogWriter
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.model.PromptExecutor
-import ai.koog.prompt.message.Message
 import io.github.oshai.kotlinlogging.KotlinLogging
-import kotlinx.collections.immutable.PersistentList
-import kotlinx.collections.immutable.toPersistentList
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.serializer
-import kotlinx.serialization.json.Json
 import org.example.project.domain.order.OrderService
 import org.example.project.domain.shared.CharacterId
 import org.example.project.koog.tools.AskQuestionTool
@@ -24,37 +18,11 @@ import org.example.project.koog.tools.ReadOrderTools
 import org.example.project.koog.tools.UpdateOrderTools
 import kotlin.uuid.Uuid
 
-@Serializable
-private data class ToolMessage(val message: String)
-
 class ChatAgent(
     private val executor: PromptExecutor,
     private val orderService: OrderService,
-    val history: ChatHistoryProvider,
+    private val chatHistoryProvider: ChatHistoryProvider,
 ) {
-    suspend fun loadChat(sessionId: Uuid): PersistentList<ChatUi.Message> {
-        val history = history.load(sessionId.toString())
-        return history.mapNotNull { message ->
-            when (message) {
-                is Message.User -> ChatUi.Message.User(message.content)
-                is Message.Assistant -> ChatUi.Message.CustomerSupport(message.content)
-                is Message.Reasoning -> ChatUi.Message.CustomerSupport(message.content)
-                is Message.System -> ChatUi.Message.CustomerSupport(message.content)
-
-                is Message.Tool.Call if message.tool == "askQuestion" -> {
-                    val message = Json.decodeFromString<ToolMessage>(message.parts.single().text).message
-                    ChatUi.Message.CustomerSupport(message)
-                }
-
-                is Message.Tool.Result if message.tool == "askQuestion" ->
-                    ChatUi.Message.User(Json.decodeFromString(String.serializer(), message.content))
-
-                is Message.Tool.Result,
-                is Message.Tool.Call -> null
-            }
-        }.toPersistentList()
-    }
-
     suspend fun sendMessage(
         characterId: CharacterId?,
         sessionId: Uuid,
@@ -74,7 +42,7 @@ class ChatAgent(
             }
         ) {
             install(ChatMemory) {
-                chatHistoryProvider = history
+                this.chatHistoryProvider = this@ChatAgent.chatHistoryProvider
                 windowSize(50)
             }
             install(Tracing) {
@@ -104,7 +72,7 @@ class ChatAgent(
             }
         ) {
             install(ChatMemory) {
-                chatHistoryProvider = history
+                this.chatHistoryProvider = this@ChatAgent.chatHistoryProvider
                 windowSize(50)
             }
             install(Tracing) {
