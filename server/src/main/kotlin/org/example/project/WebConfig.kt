@@ -1,18 +1,18 @@
 package org.example.project
 
 import org.example.project.domain.shared.*
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.format.FormatterRegistry
-import org.springframework.http.converter.HttpMessageConverter
 import org.springframework.http.converter.json.KotlinSerializationJsonHttpMessageConverter
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 import kotlin.uuid.Uuid
 
 @Configuration
 class WebConfig : WebMvcConfigurer {
-    @Suppress("OVERRIDE_DEPRECATION")
-    override fun extendMessageConverters(converters: MutableList<HttpMessageConverter<*>>) {
-        converters.add(0, KotlinSerializationJsonHttpMessageConverter())
+    @Bean
+    fun kotlinSerializationJsonHttpMessageConverter(): KotlinSerializationJsonHttpMessageConverter {
+        return KotlinSerializationJsonHttpMessageConverter()
     }
 
     override fun addFormatters(registry: FormatterRegistry) {

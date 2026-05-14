@@ -17,12 +17,11 @@ class ChatController(
     }
 
     @PostMapping("/update")
-    suspend fun updateChat(@RequestBody update: ChatUpdate) {
+    fun updateChat(@RequestBody update: ChatUpdate) {
         chatService.updateChat(update)
     }
 
     @GetMapping("/history/{conversationId}")
-    suspend fun getChatHistory(@PathVariable conversationId: String): List<Message> {
-        return chatService.getChatHistory(conversationId)
-    }
+    suspend fun getChatHistory(@PathVariable conversationId: String): List<Message> =
+        chatService.getChatHistory(conversationId)
 }
