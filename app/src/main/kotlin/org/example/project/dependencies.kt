@@ -30,7 +30,7 @@ fun dependencies(): Dependencies {
 
     val productService = AdminProductService(database)
     val merchantService = AdminMerchantService(httpClient)
-    val orderService = AdminOrderService(database)
+    val orderService = AdminOrderService(httpClient)
     val dashboardService = AdminDashboardService(httpClient)
     val characterService = CharacterService(httpClient)
     val chatService = ChatService(httpClient)

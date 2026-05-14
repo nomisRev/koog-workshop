@@ -1,10 +1,10 @@
 package org.example.project.domain.order
 
-
+import kotlinx.serialization.Serializable
 import kotlin.time.Instant
-import org.example.project.domain.order.OrderStatus
 import org.example.project.domain.shared.*
 
+@Serializable
 data class Order(
     val id: OrderId,
     val characterId: CharacterId,
@@ -15,6 +15,7 @@ data class Order(
     val updatedAt: Instant
 )
 
+@Serializable
 data class SubOrder(
     val id: SubOrderId,
     val orderId: OrderId,
@@ -27,7 +28,7 @@ data class SubOrder(
     val updatedAt: Instant
 )
 
-
+@Serializable
 data class OrderItem(
     val id: OrderItemId,
     val subOrderId: SubOrderId,

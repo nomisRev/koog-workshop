@@ -1,8 +1,7 @@
 package org.example.project.admin.orders.operations
 
-import androidx.compose.runtime.Immutable
+import kotlinx.serialization.Serializable
 import org.example.project.domain.character.Transaction
-import org.example.project.domain.character.TransactionType
 import org.example.project.domain.order.Order
 import org.example.project.domain.order.OrderItem
 import org.example.project.domain.order.OrderStatus
@@ -12,7 +11,7 @@ import org.example.project.domain.shared.OrderId
 import kotlin.math.abs
 import kotlin.time.Instant
 
-@Immutable
+@Serializable
 data class OrderFilter(
     val orderIdQuery: String = "",
     val orderStatus: OrderStatus? = null,
@@ -20,13 +19,13 @@ data class OrderFilter(
     val merchantId: MerchantId? = null
 )
 
-@Immutable
+@Serializable
 data class OrderMerchantOption(
     val id: MerchantId,
     val name: String
 )
 
-@Immutable
+@Serializable
 data class OrderListItem(
     val orderId: OrderId,
     val characterName: String,
@@ -37,7 +36,7 @@ data class OrderListItem(
     val createdAt: Instant
 )
 
-@Immutable
+@Serializable
 data class AdminOrderDetail(
     val order: Order,
     val characterName: String,
@@ -46,7 +45,7 @@ data class AdminOrderDetail(
     val history: List<AdminOrderHistoryEvent>
 )
 
-@Immutable
+@Serializable
 data class AdminSubOrderDetail(
     val subOrder: SubOrder,
     val merchantName: String,
@@ -55,7 +54,7 @@ data class AdminSubOrderDetail(
     val items: List<AdminOrderItemDetail>
 )
 
-@Immutable
+@Serializable
 data class AdminOrderItemDetail(
     val item: OrderItem,
     val productName: String,
@@ -67,11 +66,16 @@ data class AdminOrderItemDetail(
     val subtotal: Long
 )
 
-@Immutable
+@Serializable
 data class AdminOrderHistoryEvent(
     val timestamp: Instant,
     val title: String,
     val description: String
+)
+
+@Serializable
+data class UpdateOrderStatusRequest(
+    val status: OrderStatus
 )
 
 fun buildOrderHistoryEvents(
@@ -136,11 +140,11 @@ fun buildOrderHistoryEvents(
 
         transactions.forEach { transaction ->
             val title = when (transaction.type) {
-                TransactionType.PURCHASE -> "Purchase recorded"
-                TransactionType.REFUND -> "Refund recorded"
-                TransactionType.DEPOSIT -> "Deposit recorded"
-                TransactionType.EXCHANGE_DEBIT -> "Exchange debit recorded"
-                TransactionType.EXCHANGE_CREDIT -> "Exchange credit recorded"
+                org.example.project.domain.character.TransactionType.PURCHASE -> "Purchase recorded"
+                org.example.project.domain.character.TransactionType.REFUND -> "Refund recorded"
+                org.example.project.domain.character.TransactionType.DEPOSIT -> "Deposit recorded"
+                org.example.project.domain.character.TransactionType.EXCHANGE_DEBIT -> "Exchange debit recorded"
+                org.example.project.domain.character.TransactionType.EXCHANGE_CREDIT -> "Exchange credit recorded"
             }
             val description = transaction.description
                 ?: "${transaction.type.name.lowercase().replace('_', ' ')} of ${abs(transaction.amount)} $currencyCode."
