@@ -8,11 +8,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.sse.sse
+import io.ktor.client.request.forms.submitForm
+import io.ktor.http.Parameters
+import io.ktor.http.parameters
+import io.ktor.sse.ServerSentEvent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -24,6 +29,7 @@ import org.example.project.domain.chat.ChatService
 import org.example.project.domain.chat.ChatUpdate
 import org.example.project.koog.ChatAgentProvider
 import org.example.project.koog.tracking.AgentExecutionTraceEvent
+import org.example.project.shared.ChatMessage
 import kotlin.reflect.KClass
 import kotlin.uuid.Uuid
 
@@ -34,9 +40,8 @@ class ChatViewModel(
     private val character: Character,
     initialConversationId: String,
     initialMessages: List<Message>?,
-    private val chatAgentProvider: ChatAgentProvider,
     private val chatService: ChatService,
-    private val historyProvider: ChatHistoryProvider,
+    private val httpClient: HttpClient,
     private val onNavigateBack: () -> Unit,
 ) : ViewModel() {
     val uiState: StateFlow<ChatUiState>
@@ -51,7 +56,6 @@ class ChatViewModel(
         )
 
     private var sessionId: String = initialConversationId
-    private var agent: AIAgent<String, String>? = null
 
     fun onEvent(event: ChatUiEvents) {
         viewModelScope.launch {
@@ -141,18 +145,46 @@ class ChatViewModel(
     private suspend fun runAgent(userInput: String) {
         withContext(Dispatchers.Default) {
             try {
-                val currentAgent = agent ?: createAgent().also { agent = it }
-                val result = currentAgent.run(userInput, sessionId)
+                httpClient.sse(
+                    urlString = "http://localhost:8080/chat",
+                    request = {
+                        val formParameters = parameters {
+                            append("characterId", character.id.value.toString())
+                            append("input", userInput)
+                            append("sessionId", sessionId)
+                        }
+                        url {
+                            formParameters.forEach { key, values ->
+                                values.forEach { value ->
+                                    parameters.append(key, value)
+                                }
+                            }
+                        }
+                        method = io.ktor.http.HttpMethod.Post
+                    }
+                ) {
+                    incoming.collect { event ->
+                        val data = event.data ?: return@collect
+                        println("Received SSE event: $data")
+                        val chatMessage = try {
+                            Json.decodeFromString<ChatMessage>(data)
+                        } catch (e: Exception) {
+                            println("Failed to decode ChatMessage: ${e.message}")
+                            null
+                        } ?: return@collect
+                        println("Decoded ChatMessage: $chatMessage")
+                        uiState.update {
+                            it.copy(
+                                chatMessages = it.chatMessages + chatMessage,
+                                isInputEnabled = chatMessage is ChatMessage.AgentMessage || chatMessage is ChatMessage.ErrorMessage || chatMessage is ChatMessage.AskQuestion,
+                                isLoading = chatMessage !is ChatMessage.AgentMessage && chatMessage !is ChatMessage.ErrorMessage && chatMessage !is ChatMessage.AskQuestion,
+                                userResponseRequested = chatMessage is ChatMessage.AskQuestion
+                            )
+                        }
+                    }
+                }
                 // Write that a new chat was created
                 chatService.updateChat(ChatUpdate(character.id, sessionId))
-
-                uiState.update {
-                    it.copy(
-                        chatMessages = it.chatMessages + ChatMessage.AgentMessage(result),
-                        isInputEnabled = true,
-                        isLoading = false,
-                    )
-                }
             } catch (e: Exception) {
                 uiState.update {
                     it.copy(
@@ -165,77 +197,8 @@ class ChatViewModel(
         }
     }
 
-    private fun createAgent(): AIAgent<String, String> {
-        val onToolCallEvent: suspend (String, Map<String, String>) -> Unit = { toolName, args ->
-            uiState.update {
-                it.copy(chatMessages = it.chatMessages + ChatMessage.ToolCallMessage(toolName, args))
-            }
-        }
-        val onErrorEvent: suspend (String) -> Unit = { errorMessage ->
-            uiState.update {
-                it.copy(
-                    chatMessages = it.chatMessages + ChatMessage.ErrorMessage(errorMessage),
-                    isInputEnabled = true,
-                    isLoading = false,
-                )
-            }
-        }
-        val onLLMCallEvent: suspend (List<Message>, List<ToolDescriptor>) -> Unit =
-            { messages, tools ->
-                uiState.update {
-                    it.copy(
-                        chatMessages = it.chatMessages + ChatMessage.LLMCallMessage(
-                            LlmCallData(
-                                messageHistory = messages.toHistoryItems(),
-                                availableTools = tools.toToolData()
-                            )
-                        ),
-                    )
-                }
-            }
-        val onExecutionTraceEvent: suspend (AgentExecutionTraceEvent) -> Unit = { event ->
-            val item = when (event) {
-                is AgentExecutionTraceEvent.Node -> ExecutionTraceItem.Node(event.name)
-                is AgentExecutionTraceEvent.Subgraph -> ExecutionTraceItem.Subgraph(event.name)
-            }
-            uiState.update {
-                it.copy(chatMessages = it.chatMessages + ChatMessage.ExecutionTraceMessage(item))
-            }
-        }
-        val onAssistantMessage: suspend (String) -> String = { message ->
-            uiState.update {
-                it.copy(
-                    chatMessages = it.chatMessages + ChatMessage.AgentMessage(message),
-                    isInputEnabled = true,
-                    isLoading = false,
-                    userResponseRequested = true,
-                )
-            }
-
-            val userResponse = uiState
-                .first { it.currentUserResponse != null }
-                .currentUserResponse
-                ?: error("User response is null")
-
-            uiState.update { it.copy(currentUserResponse = null) }
-
-            userResponse
-        }
-
-        return chatAgentProvider.provideAgent(
-            characterId = character.id,
-            historyProvider = historyProvider,
-            onToolCallEvent = onToolCallEvent,
-            onLLMCallEvent = onLLMCallEvent,
-            onErrorEvent = onErrorEvent,
-            onExecutionTraceEvent = onExecutionTraceEvent,
-            onAssistantMessage = onAssistantMessage,
-        )
-    }
-
     private fun restartChat() {
         sessionId = Uuid.random().toString()
-        agent = null
         uiState.update {
             ChatUiState(
                 title = character.name,
@@ -251,9 +214,8 @@ class ChatViewModel(
             character: Character,
             conversationId: String,
             initialMessages: List<Message>?,
-            chatAgentProvider: ChatAgentProvider,
             chatService: ChatService,
-            historyProvider: ChatHistoryProvider,
+            httpClient: HttpClient,
             onNavigateBack: () -> Unit,
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
@@ -263,9 +225,8 @@ class ChatViewModel(
                         character = character,
                         initialConversationId = conversationId,
                         initialMessages = initialMessages,
-                        chatAgentProvider = chatAgentProvider,
                         chatService = chatService,
-                        historyProvider = historyProvider,
+                        httpClient = httpClient,
                         onNavigateBack = onNavigateBack,
                     ) as T
                 }

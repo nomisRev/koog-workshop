@@ -47,7 +47,7 @@ class ChatAgentProvider(
 
         return AIAgent(
             promptExecutor = executor,
-            strategy = orderCustomerSupportStrategy(tools),
+//            strategy = orderCustomerSupportStrategy(tools),
             systemPrompt = """
                 | You are a helpful Fantasy Store assistant. Help customers with products, orders, and general inquiries.
                 | Use the askQuestion in case you're unsure or there is any missing data for solve the issue.
@@ -56,13 +56,13 @@ class ChatAgentProvider(
             toolRegistry = ToolRegistry.Companion {
                 tools(askQuestionTool)
                 tools(readOrderTools)
-                tools(updateOrderTools)
+//                tools(updateOrderTools)
             },
         ) {
-            install(ChatMemory) {
-                chatHistoryProvider = historyProvider
-                windowSize(50)
-            }
+//            install(ChatMemory) {
+//                chatHistoryProvider = historyProvider
+//                windowSize(50)
+//            }
             install(OpenTelemetry) {
                 setServiceInfo("customer-support", "0.0.1")
                 addLangfuseExporter(langfuseUrl, langfusePublicKey, langfuseSecretKey)

@@ -1,8 +1,7 @@
 package org.example.project.screens.chat
 
-import ai.koog.agents.core.tools.ToolDescriptor
-import ai.koog.prompt.message.Message
-import kotlinx.serialization.Serializable
+import org.example.project.shared.ChatMessage
+import org.example.project.shared.ExecutionTraceItem
 
 data class ChatUiState(
     val title: String = "Chat",
@@ -61,103 +60,20 @@ enum class ChatMessageType {
     Task,
 }
 
-@Serializable
-sealed class ChatMessage {
-    @Serializable
-    data class UserMessage(val text: String) : ChatMessage()
-
-    @Serializable
-    data class AgentMessage(val text: String) : ChatMessage()
-
-    @Serializable
-    data class SystemMessage(val text: String) : ChatMessage()
-
-    @Serializable
-    data class ErrorMessage(val text: String) : ChatMessage()
-
-    @Serializable
-    data class ToolCallMessage(val toolName: String, val args: Map<String, String>) : ChatMessage()
-
-    @Serializable
-    data class LLMCallMessage(val data: LlmCallData) : ChatMessage()
-
-    @Serializable
-    data class ExecutionTraceMessage(val item: ExecutionTraceItem) : ChatMessage()
-}
 
 val ChatMessage.type: ChatMessageType
     get() =
         when (this) {
             is ChatMessage.UserMessage -> ChatMessageType.User
+            is ChatMessage.AskQuestion -> ChatMessageType.Agent
             is ChatMessage.AgentMessage -> ChatMessageType.Agent
             is ChatMessage.SystemMessage -> ChatMessageType.System
             is ChatMessage.ErrorMessage -> ChatMessageType.Error
             is ChatMessage.ToolCallMessage -> ChatMessageType.ToolCall
             is ChatMessage.LLMCallMessage -> ChatMessageType.LlmCall
             is ChatMessage.ExecutionTraceMessage -> when (item) {
-                is ExecutionTraceItem.Node -> ChatMessageType.Node
+                is
+                ExecutionTraceItem.Node -> ChatMessageType.Node
                 is ExecutionTraceItem.Subgraph -> ChatMessageType.Task
             }
         }
-
-@Serializable
-sealed interface ExecutionTraceItem {
-    val name: String
-
-    data class Node(override val name: String) : ExecutionTraceItem
-    data class Subgraph(override val name: String) : ExecutionTraceItem
-}
-
-@Serializable
-data class LlmCallData(
-    val messageHistory: List<LlmCallHistoryItem>,
-    val availableTools: List<LlmCallToolData>,
-)
-
-@Serializable
-sealed interface LlmCallHistoryItem {
-    val text: String
-
-    @Serializable
-    data class System(override val text: String) : LlmCallHistoryItem
-    @Serializable
-    data class User(override val text: String) : LlmCallHistoryItem
-    @Serializable
-    data class Assistant(override val text: String) : LlmCallHistoryItem
-    @Serializable
-    data class Reasoning(override val text: String) : LlmCallHistoryItem
-
-    @Serializable
-    data class ToolCall(val toolName: String, override val text: String) : LlmCallHistoryItem
-
-    @Serializable
-    data class ToolResult(val toolName: String, override val text: String) : LlmCallHistoryItem
-}
-
-@Serializable
-data class LlmCallToolData(
-    val name: String,
-    val requiredParameters: List<String>,
-    val optionalParameters: List<String>,
-)
-
-fun List<Message>.toHistoryItems(): List<LlmCallHistoryItem> =
-    map { message ->
-        when (message) {
-            is Message.System -> LlmCallHistoryItem.System(message.content)
-            is Message.User -> LlmCallHistoryItem.User(message.content)
-            is Message.Assistant -> LlmCallHistoryItem.Assistant(message.content)
-            is Message.Reasoning -> LlmCallHistoryItem.Reasoning(message.content)
-            is Message.Tool.Call -> LlmCallHistoryItem.ToolCall(message.tool, message.content)
-            is Message.Tool.Result -> LlmCallHistoryItem.ToolResult(message.tool, message.content)
-        }
-    }
-
-fun List<ToolDescriptor>.toToolData(): List<LlmCallToolData> =
-    map { tool ->
-        LlmCallToolData(
-            name = tool.name,
-            requiredParameters = tool.requiredParameters.map { it.name },
-            optionalParameters = tool.optionalParameters.map { it.name }
-        )
-    }

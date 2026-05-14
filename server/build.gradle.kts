@@ -21,12 +21,14 @@ tasks.withType<KotlinCompile>().configureEach {
 }
 
 dependencies {
+    implementation(project(":shared"))
     implementation("ai.koog:koog-spring-ai-starter-model-chat:0.8.0")
     implementation("ai.koog:koog-spring-ai-starter-chat-memory:0.8.0")
     implementation("ai.koog:agents-features-persistence-jdbc:0.8.0")
     implementation("ai.koog:agents-features-opentelemetry:0.8.0")
 
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation(libs.kotlinx.serialization.json)
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework.ai:spring-ai-starter-model-chat-memory-repository-jdbc:2.0.0-M5")
