@@ -96,7 +96,7 @@ enum class ConfirmationOutcome {
     CANCELLED,
 }
 
-fun homeServicesSchedulingStrategy(
+fun homeServicesStrategy(
     askUserTool: AskUserTool,
     findAvailableSlotTools: HomeServicesFindSlotTools,
     bookTools: HomeServicesBookTools,

@@ -20,7 +20,7 @@ import com.jetbrains.koog.workshop.agents.homeservices.EvaluationCriteria.refuse
 import com.jetbrains.koog.workshop.agents.homeservices.basic.CONVERSATION_END_MARKER
 import com.jetbrains.koog.workshop.agents.homeservices.basic.homeServicesBasicSystemPrompt
 import com.jetbrains.koog.workshop.agents.homeservices.graph.HomeServicesPrompts
-import com.jetbrains.koog.workshop.agents.homeservices.graph.homeServicesSchedulingStrategy
+import com.jetbrains.koog.workshop.agents.homeservices.graph.homeServicesStrategy
 import com.jetbrains.koog.workshop.agents.util.AskUserTool
 import dev.dokimos.core.JudgeLM
 import dev.dokimos.core.conversation.ConversationTrajectory
@@ -599,7 +599,7 @@ class HomeServicesGraphConversationSimulation : HomeServicesConversationSimulati
                 model = OpenAIModels.Chat.GPT4o,
                 maxAgentIterations = 200
             ),
-            strategy = homeServicesSchedulingStrategy(askUserTool, findTools, bookTools),
+            strategy = homeServicesStrategy(askUserTool, findTools, bookTools),
             toolRegistry = ToolRegistry {
                 tools(askUserTool)
                 tools(findTools)

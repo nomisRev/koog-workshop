@@ -132,7 +132,7 @@ object HomeServicesPrompts {
 
         Agent state: $state
 
-        Customer details:
+        Customer issue details:
         - Customer: ${issueDetails.customerName}
         - Service type: ${issueDetails.serviceType}
         - Issue: ${issueDetails.issueSummary}

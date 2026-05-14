@@ -49,17 +49,17 @@ internal class HomeServicesSchedulingAgentProvider(
             maxAgentIterations = 200
         )
 
-        return AIAgent.Companion(
+        return AIAgent(
             promptExecutor = executor,
             agentConfig = agentConfig,
-            strategy = homeServicesSchedulingStrategy(askUserTool, findTools, bookTools),
-            toolRegistry = ToolRegistry.Companion {
+            strategy = homeServicesStrategy(askUserTool, findTools, bookTools),
+            toolRegistry = ToolRegistry {
                 tools(askUserTool)
                 tools(findTools)
                 tools(bookTools)
             },
         ) {
-            install(ChatMemory.Feature) {
+            install(ChatMemory) {
                 chatHistoryProvider = historyProvider
             }
             trackEvents(onToolCallEvent, onErrorEvent, onLLMCallEvent, onExecutionTraceEvent)

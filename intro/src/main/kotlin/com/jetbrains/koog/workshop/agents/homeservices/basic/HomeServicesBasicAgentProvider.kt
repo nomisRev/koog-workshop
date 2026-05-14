@@ -35,8 +35,8 @@ internal class HomeServicesBasicAgentProvider(
         val (llmClient, model) = provideLLMClient.invoke()
         val executor = MultiLLMPromptExecutor(llmClient)
         val schedule = HomeServicesSchedule()
-        val findTools = HomeServicesFindSlotTools(schedule)
-        val bookTools = HomeServicesBookTools(schedule)
+        val findSlotTool = HomeServicesFindSlotTools(schedule)
+        val bookAppointmentTool = HomeServicesBookTools(schedule)
 
         val agentConfig = AIAgentConfig(
             prompt = prompt("home-services-basic") {
@@ -50,8 +50,8 @@ internal class HomeServicesBasicAgentProvider(
             promptExecutor = executor,
             agentConfig = agentConfig,
             toolRegistry = ToolRegistry {
-                tools(findTools)
-                tools(bookTools)
+                tools(findSlotTool)
+                tools(bookAppointmentTool)
             },
         ) {
             install(ChatMemory) {
