@@ -8,6 +8,7 @@ import org.example.project.domain.catalog.Rarity
 import org.example.project.domain.shared.MerchantId
 import org.example.project.domain.shared.ProductId
 
+@Serializable
 enum class ProductActiveFilter {
     ALL,
     ACTIVE,
@@ -15,6 +16,7 @@ enum class ProductActiveFilter {
 }
 
 
+@Serializable
 data class ProductFilter(
     val nameQuery: String = "",
     val category: ProductCategory? = null,
