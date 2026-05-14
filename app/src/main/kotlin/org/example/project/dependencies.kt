@@ -14,6 +14,7 @@ import org.example.project.admin.orders.operations.AdminOrderService
 import org.example.project.admin.products.AdminProductService
 import org.example.project.domain.character.CharacterService
 import org.example.project.domain.chat.ChatService
+import org.example.project.domain.order.OrderService
 
 fun dependencies(): Dependencies {
     val dataSource = createDataSource()
@@ -30,13 +31,14 @@ fun dependencies(): Dependencies {
 
     val productService = AdminProductService(httpClient)
     val merchantService = AdminMerchantService(httpClient)
-    val orderService = AdminOrderService(httpClient)
+    val adminOrderService = AdminOrderService(httpClient)
+    val orderService = OrderService(httpClient)
     val dashboardService = AdminDashboardService(httpClient)
     val characterService = CharacterService(httpClient)
     val chatService = ChatService(httpClient)
 
     return Dependencies(
-        storeServices = Dependencies.StoreServices(productService, merchantService, orderService, dashboardService),
+        storeServices = Dependencies.StoreServices(productService, merchantService, adminOrderService, orderService, dashboardService),
         characterServices = Dependencies.CharacterServices(characterService, chatService),
         httpClient = httpClient,
     )
@@ -50,7 +52,8 @@ class Dependencies(
     class StoreServices(
         val productService: AdminProductService,
         val merchantService: AdminMerchantService,
-        val orderService: AdminOrderService,
+        val adminOrderService: AdminOrderService,
+        val orderService: OrderService,
         val dashboardService: AdminDashboardService,
     )
 
