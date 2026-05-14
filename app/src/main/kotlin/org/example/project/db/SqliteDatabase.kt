@@ -11,7 +11,6 @@ import org.example.project.domain.catalog.Scrolls
 import org.example.project.domain.catalog.Weapons
 import org.example.project.domain.character.Characters
 import org.example.project.domain.character.Transactions
-import org.example.project.domain.chat.Chats
 import org.example.project.domain.currency.Currencies
 import org.example.project.domain.currency.CurrencyConversions
 import org.example.project.domain.order.OrderItems
@@ -87,7 +86,6 @@ fun schemaTables(): List<Table> = listOf(
     SubOrders,
     OrderItems,
     Reviews,
-    Chats,
 )
 
 fun Database.createTables(): Database = apply {

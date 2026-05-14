@@ -13,7 +13,7 @@ import org.example.project.domain.character.Character
 import org.example.project.domain.shared.Page
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
-import org.jetbrains.exposed.v1.core.Transaction
+import org.jetbrains.exposed.v1.core.Transaction as ExposedTransaction
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.select
@@ -24,15 +24,15 @@ import kotlin.uuid.ExperimentalUuidApi
 @OptIn(ExperimentalUuidApi::class)
 class CharacterRepository {
 
-    context(_: Transaction)
+    context(_: ExposedTransaction)
     fun listCharacters(): List<Character> =
         Characters.selectAll().map(::mapToCharacter)
 
-    context(_: Transaction)
+    context(_: ExposedTransaction)
     fun getCharacterOrNull(id: CharacterId): Character? =
         Characters.findByIdOrNull(id.value, ::mapToCharacter)
 
-    context(_: Transaction)
+    context(_: ExposedTransaction)
     fun createCharacter(name: String): CharacterId =
         CharacterId(
             Characters.insertAndGetId {
@@ -40,7 +40,7 @@ class CharacterRepository {
             }.value
         )
 
-    context(_: Transaction)
+    context(_: ExposedTransaction)
     fun getWalletBalance(characterId: CharacterId): Map<CurrencyId, Long> =
         Transactions.select(Transactions.currency, Transactions.amount)
             .where { Transactions.character eq characterId.value }
@@ -49,17 +49,17 @@ class CharacterRepository {
                 CurrencyId(entry.key) to entry.value.sumOf { row -> row[Transactions.amount] }
             }.toMap()
 
-    context(_: Transaction)
+    context(_: ExposedTransaction)
     fun updateCharacter(id: CharacterId, name: String): Boolean =
         Characters.update(id.value) {
             it[Characters.name] = name
         } > 0
 
-    context(_: Transaction)
+    context(_: ExposedTransaction)
     fun deleteCharacter(id: CharacterId): Boolean =
         Characters.deleteById(id.value)
 
-    context(_: Transaction)
+    context(_: ExposedTransaction)
     fun addTransaction(
         characterId: CharacterId,
         currencyId: CurrencyId,
@@ -81,8 +81,8 @@ class CharacterRepository {
             }.value
         )
 
-    context(_: Transaction)
-    fun getTransactionHistory(characterId: CharacterId, offset: Long, limit: Long): Page<org.example.project.domain.character.Transaction> {
+    context(_: ExposedTransaction)
+    fun getTransactionHistory(characterId: CharacterId, offset: Long, limit: Long): Page<Transaction> {
         val query = Transactions.selectAll().where { Transactions.character eq characterId.value }
             .orderBy(Transactions.createdAt, SortOrder.DESC)
         val items = query.copy()

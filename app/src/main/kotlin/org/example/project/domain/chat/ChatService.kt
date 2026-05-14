@@ -1,40 +1,37 @@
 package org.example.project.domain.chat
 
-import ai.koog.agents.chatMemory.feature.ChatHistoryProvider
 import ai.koog.prompt.message.Message
-import org.example.project.db.suspendTransaction
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import org.example.project.domain.shared.CharacterId
-import org.jetbrains.exposed.v1.jdbc.Database
 
 class ChatService(
-    private val database: Database,
-    private val chatHistoryProvider: ChatHistoryProvider,
-    private val chatRepository: ChatRepository = ChatRepository(),
+    private val httpClient: HttpClient,
+    private val baseUrl: String = "http://localhost:8080"
 ) {
     /**
      * Fetch all chats for the current user with the chat history
      */
     suspend fun getCharacterChatDetails(characterId: CharacterId): List<ChatDetails> {
-        val chats = database.suspendTransaction {
-            chatRepository.getCharacterChats(characterId)
-        }
-
-        return chats.map {
-            ChatDetails(
-                characterId = it.characterId,
-                conversationId = it.conversationId,
-                messages = chatHistoryProvider.load(it.conversationId)
-            )
-        }
+        return httpClient.get("$baseUrl/chats/character/${characterId.value}").body()
     }
 
     /**
      * Create new character <-> conversation relationship or notify that it was updated (e.g. new messages)
      */
-    suspend fun updateChat(update: ChatUpdate) = database.suspendTransaction {
-        chatRepository.updateChat(update)
+    suspend fun updateChat(update: ChatUpdate) {
+        httpClient.post("$baseUrl/chats/update") {
+            contentType(ContentType.Application.Json)
+            setBody(update)
+        }
     }
 
-    suspend fun getChatHistory(conversationId: String): List<Message> =
-        chatHistoryProvider.load(conversationId)
+    suspend fun getChatHistory(conversationId: String): List<Message> {
+        return httpClient.get("$baseUrl/chats/history/$conversationId").body()
+    }
 }

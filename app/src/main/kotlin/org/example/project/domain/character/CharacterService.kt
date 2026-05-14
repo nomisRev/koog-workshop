@@ -1,37 +1,43 @@
 package org.example.project.domain.character
 
-import org.example.project.domain.character.CharacterRepository
-import org.example.project.db.suspendTransaction
-import org.example.project.domain.character.TransactionType
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.*
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import kotlinx.serialization.Serializable
 import org.example.project.domain.shared.CharacterId
 import org.example.project.domain.shared.CurrencyId
-import org.example.project.domain.shared.TransactionId
-import org.example.project.domain.character.Character
 import org.example.project.domain.shared.Page
-import org.example.project.domain.character.Transaction
-import org.jetbrains.exposed.v1.jdbc.Database
+import org.example.project.domain.shared.TransactionId
 
 class CharacterService(
-    private val database: Database,
-    private val characterRepository: CharacterRepository = CharacterRepository()
+    private val httpClient: HttpClient,
+    private val baseUrl: String = "http://localhost:8080"
 ) {
     suspend fun listCharacters(): List<Character> =
-        database.suspendTransaction { characterRepository.listCharacters() }
+        httpClient.get("$baseUrl/characters").body()
 
     suspend fun getCharacterOrNull(id: CharacterId): Character? =
-        database.suspendTransaction { characterRepository.getCharacterOrNull(id) }
+        httpClient.get("$baseUrl/characters/${id.value}").body()
 
     suspend fun createCharacter(name: String): CharacterId =
-        database.suspendTransaction { characterRepository.createCharacter(name) }
+        httpClient.post("$baseUrl/characters") {
+            contentType(ContentType.Application.Json)
+            setBody(CreateCharacterRequest(name))
+        }.body()
 
     suspend fun updateCharacter(id: CharacterId, name: String): Boolean =
-        database.suspendTransaction { characterRepository.updateCharacter(id, name) }
+        httpClient.put("$baseUrl/characters/${id.value}") {
+            contentType(ContentType.Application.Json)
+            setBody(UpdateCharacterRequest(name))
+        }.body()
 
     suspend fun deleteCharacter(id: CharacterId): Boolean =
-        database.suspendTransaction { characterRepository.deleteCharacter(id) }
+        httpClient.delete("$baseUrl/characters/${id.value}").body()
 
     suspend fun getWalletBalance(characterId: CharacterId): Map<CurrencyId, Long> =
-        database.suspendTransaction { characterRepository.getWalletBalance(characterId) }
+        httpClient.get("$baseUrl/characters/${characterId.value}/balance").body()
 
     suspend fun deposit(
         characterId: CharacterId,
@@ -40,15 +46,10 @@ class CharacterService(
         description: String? = null
     ): TransactionId {
         require(amount > 0) { "Deposit amount must be positive" }
-        return database.suspendTransaction {
-            characterRepository.addTransaction(
-                characterId = characterId,
-                currencyId = currencyId,
-                amount = amount,
-                type = TransactionType.DEPOSIT,
-                description = description
-            )
-        }
+        return httpClient.post("$baseUrl/characters/${characterId.value}/deposit") {
+            contentType(ContentType.Application.Json)
+            setBody(DepositRequest(currencyId, amount, description))
+        }.body()
     }
 
     suspend fun getTransactionHistory(
@@ -56,7 +57,8 @@ class CharacterService(
         offset: Long = 0,
         limit: Long = 50
     ): Page<Transaction> =
-        database.suspendTransaction {
-            characterRepository.getTransactionHistory(characterId, offset, limit)
-        }
+        httpClient.get("$baseUrl/characters/${characterId.value}/history") {
+            parameter("offset", offset)
+            parameter("limit", limit)
+        }.body()
 }

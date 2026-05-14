@@ -11,7 +11,9 @@ import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
+@Transactional
 @Service
 class ChatRepository {
     

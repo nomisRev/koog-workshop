@@ -1,16 +1,15 @@
 package org.example.project.admin.dashboard
 
-import androidx.compose.runtime.Immutable
-import kotlin.time.Instant
+import kotlinx.serialization.Serializable
 import org.example.project.domain.order.OrderStatus
 import org.example.project.domain.shared.OrderId
 
-@Immutable
+@Serializable
 data class RecentOrderSummary(
     val orderId: OrderId,
     val status: OrderStatus,
     val characterName: String,
     val totalPrice: Long,
     val totalCurrencyCode: String,
-    val createdAt: Instant
+    val createdAt: kotlin.time.Instant
 )
