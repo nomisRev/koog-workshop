@@ -78,7 +78,7 @@ private fun StartScreenContent(
                     Spacer(modifier = Modifier.height(AppDimension.spacingExtraSmall))
                     Text(
                         text = "Learn how to build agents in Kotlin with Koog",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -178,14 +178,14 @@ private fun AgentCard(
                     .fillMaxSize()
                     .padding(AppDimension.spacingLarge),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Top
             ) {
                 if (card.imageRes != null) {
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 0.dp),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.BottomCenter
                     ) {
                         Image(
                             painter = painterResource(card.imageRes),
@@ -195,8 +195,6 @@ private fun AgentCard(
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(AppDimension.spacingSmall))
 
                 Text(
                     text = card.title,
@@ -212,12 +210,14 @@ private fun AgentCard(
 
                 Text(
                     text = card.description,
-                    style = MaterialTheme.typography.bodyMedium.copy(
+                    style = MaterialTheme.typography.bodyLarge.copy(
                         lineHeight = 20.sp
                     ),
                     color = colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
+
+                Spacer(modifier = Modifier.height(AppDimension.spacingXXXXLarge))
             }
         }
     }
