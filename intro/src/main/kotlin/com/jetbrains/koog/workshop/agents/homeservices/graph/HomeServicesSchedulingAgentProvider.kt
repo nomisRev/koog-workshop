@@ -22,9 +22,9 @@ import com.jetbrains.koog.workshop.agents.homeservices.HomeServicesSchedule
 internal class HomeServicesSchedulingAgentProvider(
     private val provideLLMClient: suspend () -> Pair<LLMClient, LLModel>,
 ) : TaskAgentProvider {
-    override val title: String = "Home Services Scheduling (Graph)"
+    override val title: String = "Home Services Scheduling"
     override val description: String =
-        "Hi! I'm the home services scheduling assistant (graph strategy). I can gather the details and book a service visit for you."
+        "Hi! I'm the home services scheduling assistant. I can gather the details and book a service visit for you."
 
     override suspend fun provideAgent(
         historyProvider: ChatHistoryProvider,
