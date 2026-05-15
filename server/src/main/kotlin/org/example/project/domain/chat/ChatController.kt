@@ -7,19 +7,7 @@ import kotlin.uuid.Uuid
 
 @RestController
 @RequestMapping("/chats")
-class ChatController(
-    private val chatService: ChatService,
-    private val askQuestionRepository: AskQuestionRepository
-) {
-
-    @PostMapping("/answer")
-    suspend fun answerQuestion(
-        @RequestParam characterId: String,
-        @RequestParam sessionId: String,
-        @RequestParam answer: String
-    ) {
-        askQuestionRepository.answerQuestion(CharacterId(Uuid.parse(characterId)), sessionId, answer)
-    }
+class ChatController(private val chatService: ChatService) {
 
     @GetMapping("/character/{characterId}")
     suspend fun getCharacterChatDetails(@PathVariable characterId: String): List<ChatDetails> {

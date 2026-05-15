@@ -51,6 +51,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,12 +69,25 @@ import com.mikepenz.markdown.m3.markdownTypography
 import org.example.project.AppDimension
 import org.example.project.shared.ChatMessage
 import org.example.project.shared.ExecutionTraceItem
+import org.slf4j.LoggerFactory
+import kotlin.uuid.Uuid
 
 internal const val MAX_BUBBLE_WIDTH_FRACTION = 0.85f
 
+private val logger = LoggerFactory.getLogger(ChatViewModel::class.java)
+
 @Composable
-fun ChatScreen(viewModel: ChatViewModel) {
+fun ChatScreen(viewModel: ChatViewModel, id: Uuid) {
     val uiState by viewModel.uiState.collectAsState()
+
+    logger.info("ChatScreen created for id: $id")
+    LaunchedEffect(id) {
+        viewModel.resumeIfRunning()
+    }
+
+    DisposableEffect(viewModel) {
+        onDispose { viewModel.closeSession() }
+    }
 
     ChatScreenContent(
         title = uiState.title,

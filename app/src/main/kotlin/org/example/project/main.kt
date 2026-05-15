@@ -22,6 +22,7 @@ import org.example.project.screens.chat.ChatScreen
 import org.example.project.screens.chat.ChatViewModel
 import org.example.project.domain.character.Character
 import org.example.project.screens.login.LoginScreen
+import kotlin.uuid.Uuid
 
 private sealed interface Screen {
     @Immutable
@@ -34,8 +35,10 @@ private sealed interface Screen {
     data class Chat(
         val character: Character,
         val conversationId: String,
-        val initialMessages: List<Message>?,
-    ) : Screen
+        val initialMessages: List<Message>?
+    ) : Screen {
+        val id: Uuid = Uuid.generateV7()
+    }
 }
 
 fun main() {
@@ -97,7 +100,7 @@ fun main() {
                                 onNavigateBack = { screen = Screen.ChatList(current.character) },
                             )
                         )
-                        ChatScreen(viewModel = chatViewModel)
+                        ChatScreen(viewModel = chatViewModel, current.id)
                     }
                 }
 
