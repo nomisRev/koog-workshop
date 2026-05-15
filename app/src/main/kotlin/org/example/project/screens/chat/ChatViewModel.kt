@@ -90,7 +90,7 @@ class ChatViewModel(
                         uiState.update {
                             it.copy(
                                 isLoading = true,
-                                isInputEnabled = lastMessage is ChatMessage.AskQuestion
+                                isInputEnabled = true
                             )
                         }
                         runAgent("")
@@ -239,7 +239,8 @@ class ChatViewModel(
                             uiState.update { state ->
                                 val isAgentMessage =
                                     message is ChatMessage.AgentMessage || message is ChatMessage.ErrorMessage
-                                val isAskQuestion = message is ChatMessage.AskQuestion
+                                val isAskQuestion =
+                                    message is ChatMessage.AskQuestion || (message is ChatMessage.ToolCallMessage && message.toolName == "askQuestion")
                                 state.copy(
                                     chatMessages = state.chatMessages + message,
                                     isInputEnabled = isAgentMessage || isAskQuestion,

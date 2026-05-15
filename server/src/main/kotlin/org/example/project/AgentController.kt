@@ -62,7 +62,7 @@ class AgentController(
         @RequestParam(required = false) input: String?,
         @RequestParam sessionId: String,
     ): SseEmitter {
-        val jobScope = CoroutineScope(sseScope.coroutineContext[Job]!!)
+        val jobScope = CoroutineScope(Dispatchers.IO + sseScope.coroutineContext[Job]!!)
         val emitter = SseEmitter(Long.MAX_VALUE)
 
         logger.info { "Creating SseEmitter for session: $sessionId, character: $characterId" }
