@@ -225,7 +225,7 @@ class ChatViewModel(
                 ) {
                     incoming
                         .mapNotNull { it.data }
-                        .onEach { logger.debug("Received SSE event data: {}", it) }
+                        .onEach { logger.info("Received SSE event data: {}", it) }
                         .map { Json.decodeFromString<ChatMessage>(it) }
                         .onEach { logger.debug("Decoded ChatMessage: {}", it) }
                         .filterNot { it is ChatMessage.Heartbeat }

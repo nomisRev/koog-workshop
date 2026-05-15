@@ -10,7 +10,7 @@ exposed = "1.2.0"
 sqlite = "3.45.1.0"
 junit = "4.13.2"
 koin-bom = "4.2.1"
-koog = "0.8.0"
+koog = "0.8.0-develop-20260515-0203"
 kotlin = "2.3.20"
 kotlinx-coroutines = "1.10.2"
 kotlinx-datetime = "0.7.1-0.6.x-compat"
@@ -52,6 +52,10 @@ koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
 koin-compose = { module = "io.insert-koin:koin-compose" }
 koog-agents = { module = "ai.koog:koog-agents", version.ref = "koog" }
 koog-memory = { module = "ai.koog:agents-features-memory", version.ref = "koog" }
+koog-spring-ai-starter-chat = { module = "ai.koog:koog-spring-ai-starter-model-chat", version.ref = "koog" }
+koog-spring-ai-starter-memory = { module = "ai.koog:koog-spring-ai-starter-chat-memory", version.ref = "koog" }
+koog-persistence-jdbc = { module = "ai.koog:agents-features-persistence-jdbc", version.ref = "koog" }
+koog-opentelemetry = { module = "ai.koog:agents-features-opentelemetry", version.ref = "koog" }
 lifecycle-viewmodel-navigation3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
 navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
 sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite" }

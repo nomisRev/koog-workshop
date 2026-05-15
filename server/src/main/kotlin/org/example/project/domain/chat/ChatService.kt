@@ -2,9 +2,11 @@ package org.example.project.domain.chat
 
 import ai.koog.agents.chatMemory.feature.ChatHistoryProvider
 import ai.koog.agents.features.persistence.jdbc.JdbcPersistenceStorageProvider
+import ai.koog.agents.snapshot.providers.PersistenceUtils
 import ai.koog.prompt.message.Message
 
 import org.example.project.domain.shared.CharacterId
+import org.example.project.shared.AgentState
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Service
@@ -47,4 +49,11 @@ class ChatService(
 
     fun answerQuestion(characterId: CharacterId, sessionId: String, answer: String) =
         askQuestionRepository.answerQuestion(characterId, sessionId, answer)
+
+    fun getAgentState(sessionId: String): AgentState =
+        when (persistenceStorageProvider.getLatestCheckpointBlocking(sessionId)?.nodePath) {
+            null -> AgentState.None
+            PersistenceUtils.TOMBSTONE_CHECKPOINT_NAME -> AgentState.Completed
+            else -> AgentState.Failed
+        }
 }

@@ -7,6 +7,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.example.project.domain.chat.AskQuestionRepository
 import org.example.project.domain.shared.CharacterId
+import org.example.project.koog.tracking.sendChatMessage
+import org.example.project.shared.ChatMessage
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 
 // FIXME similar to "intro", the class name is confusing since it doesn't define a tool, but a set of tools.
 //  Rename to smth like "CommunicationTools" or convert to a class-based tool.
@@ -14,11 +17,13 @@ class AskQuestionTool(
     private val characterId: CharacterId,
     private val sessionId: String,
     private val repository: AskQuestionRepository,
-    private val onAskMessage: (String) -> Unit
+    private val emitter: SseEmitter
 ) : ToolSet {
     @Tool
     @LLMDescription("Ask a question to customer of the Fantasy Store assistant.")
     suspend fun askQuestion(message: String): String = withContext(Dispatchers.IO) {
-        repository.askQuestion(characterId, sessionId, message, onAskMessage).await()
+        repository.askQuestion(characterId, sessionId, message) { message ->
+            emitter.sendChatMessage(ChatMessage.AskQuestion(message))
+        }.await()
     }
 }
