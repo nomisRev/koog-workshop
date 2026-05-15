@@ -50,7 +50,7 @@ class ChatViewModel(
             // Entire SSE request should not time out
             requestTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
             // Server sends heartbeat every 15 seconds
-            socketTimeoutMillis = 30.seconds.inWholeSeconds
+            socketTimeoutMillis = 30.seconds.inWholeMilliseconds
         }
     }
     val uiState: StateFlow<ChatUiState>

@@ -65,10 +65,10 @@ class ChatAgentProvider(
                 chatHistoryProvider = historyProvider
                 windowSize(50)
             }
-            install(OpenTelemetry) {
-                setServiceInfo("customer-support", "0.0.1")
-                addLangfuseExporter(langfuseUrl, langfusePublicKey, langfuseSecretKey)
-            }
+//            install(OpenTelemetry) {
+//                setServiceInfo("customer-support", "0.0.1")
+//                addLangfuseExporter(langfuseUrl, langfusePublicKey, langfuseSecretKey)
+//            }
             install(Tracing) {
                 addMessageProcessor(TraceFeatureMessageLogWriter(KotlinLogging.logger {}))
             }
