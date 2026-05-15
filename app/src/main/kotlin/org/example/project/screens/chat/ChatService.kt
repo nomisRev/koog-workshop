@@ -12,6 +12,7 @@ import io.ktor.http.contentType
 import org.example.project.domain.chat.ChatDetails
 import org.example.project.domain.chat.ChatUpdate
 import org.example.project.domain.shared.CharacterId
+import org.example.project.shared.AgentState
 
 class ChatService(
     private val httpClient: HttpClient,
@@ -39,10 +40,15 @@ class ChatService(
     }
 
     suspend fun answerQuestion(characterId: CharacterId, sessionId: String, answer: String) {
-        httpClient.post("$baseUrl/chats/answer") {
+        httpClient.post("$baseUrl/chat/answer") {
             parameter("characterId", characterId.value.toString())
             parameter("sessionId", sessionId)
             parameter("answer", answer)
         }
     }
+
+    suspend fun getAgentState(sessionId: String): AgentState =
+        httpClient.get("$baseUrl/chat/state") {
+            parameter("sessionId", sessionId)
+        }.body()
 }

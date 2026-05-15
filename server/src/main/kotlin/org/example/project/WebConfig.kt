@@ -1,19 +1,26 @@
 package org.example.project
 
+import ai.koog.agents.features.persistence.jdbc.JdbcPersistenceStorageProvider
+import ai.koog.agents.features.persistence.jdbc.PostgresJdbcPersistenceSchemaMigrator
+import ai.koog.agents.features.sql.providers.SQLPersistenceSchemaMigrator
+import kotlinx.serialization.json.Json
+import org.example.project.db.SqlliteJdbcPersistenceStorageProvider
 import org.example.project.domain.shared.*
+import org.jetbrains.exposed.v1.core.Table
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.format.FormatterRegistry
 import org.springframework.http.converter.json.KotlinSerializationJsonHttpMessageConverter
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
+import java.util.UUID
+import javax.sql.DataSource
 import kotlin.uuid.Uuid
 
 @Configuration
 class WebConfig : WebMvcConfigurer {
     @Bean
-    fun kotlinSerializationJsonHttpMessageConverter(): KotlinSerializationJsonHttpMessageConverter {
-        return KotlinSerializationJsonHttpMessageConverter()
-    }
+    fun kotlinSerializationJsonHttpMessageConverter(): KotlinSerializationJsonHttpMessageConverter =
+        KotlinSerializationJsonHttpMessageConverter()
 
     override fun addFormatters(registry: FormatterRegistry) {
         registry.addConverter(String::class.java, Uuid::class.java) { Uuid.parse(it) }
@@ -26,4 +33,8 @@ class WebConfig : WebMvcConfigurer {
         registry.addConverter(String::class.java, TransactionId::class.java) { TransactionId(Uuid.parse(it)) }
         registry.addConverter(String::class.java, CurrencyId::class.java) { CurrencyId(Uuid.parse(it)) }
     }
+
+    @Bean
+    fun persistence(dataSource: DataSource): JdbcPersistenceStorageProvider =
+        SqlliteJdbcPersistenceStorageProvider(dataSource)
 }

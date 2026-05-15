@@ -22,10 +22,10 @@ tasks.withType<KotlinCompile>().configureEach {
 
 dependencies {
     implementation(project(":shared"))
-    implementation("ai.koog:koog-spring-ai-starter-model-chat:0.8.0")
-    implementation("ai.koog:koog-spring-ai-starter-chat-memory:0.8.0")
-    implementation("ai.koog:agents-features-persistence-jdbc:0.8.0")
-    implementation("ai.koog:agents-features-opentelemetry:0.8.0")
+    implementation(libs.koog.spring.ai.starter.chat)
+    implementation(libs.koog.spring.ai.starter.memory)
+    implementation(libs.koog.persistence.jdbc)
+    implementation(libs.koog.opentelemetry)
 
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation(libs.kotlinx.serialization.json)
@@ -49,8 +49,4 @@ dependencies {
     testImplementation(libs.kotlin.test)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
-}
-
-repositories {
-    mavenCentral()
 }
