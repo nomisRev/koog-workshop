@@ -7,7 +7,7 @@ data class SettingsUiState(
     val openAiToken: String = "",
     val anthropicToken: String = "",
     val geminiToken: String = "",
-    val selectedOption: SelectedOption = SelectedOption.OpenAI,
+    val selectedOption: SelectedOption = SelectedOption.Anthropic,
     val appearanceMode: AppearanceMode = AppearanceMode.Auto,
     val isLoading: Boolean = true,
 )

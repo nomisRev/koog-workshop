@@ -19,8 +19,8 @@ data class AppSettingsData(
 )
 
 sealed class SelectedOption(val title: String) {
-    data object OpenAI : SelectedOption("OpenAI")
     data object Anthropic : SelectedOption("Anthropic")
+    data object OpenAI : SelectedOption("OpenAI")
     data object Gemini : SelectedOption("Gemini")
 }
 

@@ -48,7 +48,7 @@ internal class DataStoreAppSettings(prefPathProvider: PrefPathProvider) : AppSet
                     SelectedOption.OpenAI.title -> SelectedOption.OpenAI
                     SelectedOption.Anthropic.title -> SelectedOption.Anthropic
                     SelectedOption.Gemini.title -> SelectedOption.Gemini
-                    else -> SelectedOption.OpenAI
+                    else -> SelectedOption.Anthropic
                 },
                 appearanceMode = when (preferences[APPEARANCE_MODE_KEY]) {
                     AppearanceMode.Light.label -> AppearanceMode.Light

@@ -51,8 +51,8 @@ private fun SettingsScreenContent(
     onEvent: (SettingsUiEvents) -> Unit,
 ) {
     val options = listOf(
-        SelectedOption.OpenAI,
         SelectedOption.Anthropic,
+        SelectedOption.OpenAI,
         SelectedOption.Gemini,
     )
 
@@ -189,7 +189,7 @@ private fun SettingsScreenContent(
 fun SettingsScreenContentPreview() {
     AppTheme {
         SettingsScreenContent(
-            uiState = SettingsUiState(selectedOption = SelectedOption.OpenAI),
+            uiState = SettingsUiState(selectedOption = SelectedOption.Anthropic),
             onEvent = {},
         )
     }
