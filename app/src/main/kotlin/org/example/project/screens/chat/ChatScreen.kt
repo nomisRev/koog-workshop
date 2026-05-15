@@ -164,6 +164,7 @@ private fun ChatScreenContent(
                         is ChatMessage.ToolCallMessage -> ToolCallMessageItem(message.toolName, message.args)
                         is ChatMessage.LLMCallMessage -> LLMCallMessageItem(message.data)
                         is ChatMessage.ExecutionTraceMessage -> ExecutionTraceMessageItem(message.item)
+                        ChatMessage.Heartbeat -> {}
                     }
                 }
 

@@ -18,6 +18,9 @@ sealed class ChatMessage {
     data class SystemMessage(val text: String) : ChatMessage()
 
     @Serializable
+    data object Heartbeat: ChatMessage()
+
+    @Serializable
     data class ErrorMessage(val text: String) : ChatMessage()
 
     @Serializable

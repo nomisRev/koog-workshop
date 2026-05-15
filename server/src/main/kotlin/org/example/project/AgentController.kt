@@ -3,9 +3,13 @@ package org.example.project
 import ai.koog.agents.chatMemory.feature.ChatHistoryProvider
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.prompt.message.Message
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.example.project.domain.shared.CharacterId
@@ -21,6 +25,7 @@ import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 @Controller
@@ -28,6 +33,7 @@ class AgentController(
     private val provider: ChatAgentProvider,
     private val chat: ChatHistoryProvider,
 ) {
+    private val logger = KotlinLogging.logger {}
     private val sseScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val json = Json {
         classDiscriminator = "type"
@@ -45,7 +51,20 @@ class AgentController(
         @RequestParam input: String,
         @RequestParam sessionId: String,
     ): SseEmitter {
-        val emitter = SseEmitter()
+        val emitter = SseEmitter(Long.MAX_VALUE)
+        logger.info { "Creating SseEmitter for session: $sessionId, character: $characterId" }
+
+        emitter.onCompletion {
+            logger.info { "SseEmitter completed for session: $sessionId" }
+        }
+        emitter.onTimeout {
+            logger.warn { "SseEmitter timed out for session: $sessionId" }
+            emitter.complete()
+        }
+        emitter.onError {
+            logger.error(it) { "SseEmitter error for session: $sessionId: ${it.message}" }
+        }
+
         val agent = provider.provideAgent(
             characterId = CharacterId(Uuid.parse(characterId)),
             sessionId = sessionId,
@@ -80,17 +99,33 @@ class AgentController(
                 emitter.sendChatMessage(ChatMessage.AskQuestion(message))
             }
         )
+
+        val heartbeatJob = sseScope.launch {
+            try {
+                while (isActive) {
+                    delay(15.seconds)
+                    emitter.sendChatMessage(ChatMessage.Heartbeat)
+                }
+            } catch (e: Exception) {
+                logger.debug { "Heartbeat failed for session $sessionId: ${e.message}" }
+            }
+        }
+
         sseScope.launch {
             try {
+                logger.info { "Running agent for session: $sessionId" }
                 val response = agent.run(input, sessionId)
+                logger.info { "Agent finished for session: $sessionId" }
                 emitter.sendChatMessage(ChatMessage.AgentMessage(response))
-                emitter.complete()
             } catch (e: Exception) {
-                e.printStackTrace()
+                logger.error(e) { "Error running agent for session: $sessionId" }
                 emitter.sendChatMessage(ChatMessage.ErrorMessage(e.message ?: "Unknown error occurred"))
+            } finally {
+                heartbeatJob.cancelAndJoin()
                 emitter.complete()
             }
         }
+
         return emitter
     }
 }

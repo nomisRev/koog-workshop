@@ -58,6 +58,7 @@ enum class ChatMessageType {
     LlmCall,
     Node,
     Task,
+    Heartbeat,
 }
 
 
@@ -76,4 +77,6 @@ val ChatMessage.type: ChatMessageType
                 ExecutionTraceItem.Node -> ChatMessageType.Node
                 is ExecutionTraceItem.Subgraph -> ChatMessageType.Task
             }
+
+            ChatMessage.Heartbeat -> ChatMessageType.Heartbeat
         }

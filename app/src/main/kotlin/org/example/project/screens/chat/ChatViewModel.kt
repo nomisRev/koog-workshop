@@ -6,11 +6,20 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.HttpTimeoutConfig
+import io.ktor.client.plugins.sse.SSE
 import io.ktor.client.plugins.sse.sse
+import io.ktor.http.HttpMethod
 import io.ktor.http.parameters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filterNot
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -21,6 +30,7 @@ import org.example.project.domain.character.Character
 import org.example.project.domain.chat.ChatUpdate
 import org.example.project.shared.ChatMessage
 import kotlin.reflect.KClass
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 @Serializable
@@ -31,9 +41,18 @@ class ChatViewModel(
     initialConversationId: String,
     initialMessages: List<Message>?,
     private val chatService: ChatService,
-    private val httpClient: HttpClient,
+    httpClient: HttpClient,
     private val onNavigateBack: () -> Unit,
 ) : ViewModel() {
+    private val httpClient = httpClient.config {
+        install(SSE)
+        install(HttpTimeout) {
+            // Entire SSE request should not time out
+            requestTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
+            // Server sends heartbeat every 15 seconds
+            socketTimeoutMillis = 30.seconds.inWholeSeconds
+        }
+    }
     val uiState: StateFlow<ChatUiState>
         field = MutableStateFlow(
             ChatUiState(
@@ -163,34 +182,33 @@ class ChatViewModel(
                                 }
                             }
                         }
-                        method = io.ktor.http.HttpMethod.Post
+                        method = HttpMethod.Post
                     }
                 ) {
-                    incoming.collect { event ->
-                        val data = event.data ?: return@collect
-                        println("Received SSE event: $data")
-                        val chatMessage = try {
-                            Json.decodeFromString<ChatMessage>(data)
-                        } catch (e: Exception) {
-                            println("Failed to decode ChatMessage: ${e.message}")
-                            null
-                        } ?: return@collect
-                        println("Decoded ChatMessage: $chatMessage")
-                        uiState.update {
-                            val isAgentMessage = chatMessage is ChatMessage.AgentMessage || chatMessage is ChatMessage.ErrorMessage
-                            val isAskQuestion = chatMessage is ChatMessage.AskQuestion
-                            it.copy(
-                                chatMessages = it.chatMessages + chatMessage,
-                                isInputEnabled = isAgentMessage || isAskQuestion,
-                                isLoading = !isAgentMessage && !isAskQuestion,
-                                userResponseRequested = isAskQuestion
-                            )
+                    incoming
+                        .mapNotNull { it.data }
+                        .onEach { println("Received SSE event data: $it") }
+                        .map { Json.decodeFromString<ChatMessage>(it) }
+                        .onEach { println("Decoded ChatMessage: $it") }
+                        .filterNot { it is ChatMessage.Heartbeat }
+                        .collect { message ->
+                            uiState.update { state ->
+                                val isAgentMessage =
+                                    message is ChatMessage.AgentMessage || message is ChatMessage.ErrorMessage
+                                val isAskQuestion = message is ChatMessage.AskQuestion
+                                state.copy(
+                                    chatMessages = state.chatMessages + message,
+                                    isInputEnabled = isAgentMessage || isAskQuestion,
+                                    isLoading = !isAgentMessage && !isAskQuestion,
+                                    userResponseRequested = isAskQuestion
+                                )
+                            }
                         }
-                    }
                 }
                 // Write that a new chat was created
                 chatService.updateChat(ChatUpdate(character.id, sessionId))
             } catch (e: Exception) {
+                e.printStackTrace()
                 uiState.update {
                     it.copy(
                         chatMessages = it.chatMessages + ChatMessage.ErrorMessage("Error: ${e.message}"),

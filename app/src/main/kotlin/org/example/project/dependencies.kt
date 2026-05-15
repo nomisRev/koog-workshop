@@ -1,6 +1,8 @@
 package org.example.project
 
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.HttpTimeoutConfig
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.sse.SSE
 import io.ktor.serialization.kotlinx.json.json
@@ -10,16 +12,11 @@ import org.example.project.admin.orders.operations.AdminOrderService
 import org.example.project.admin.products.AdminProductService
 import org.example.project.screens.chat.ChatService
 import org.example.project.screens.chatlist.CharacterService
+import kotlin.time.Duration.Companion.seconds
 
 fun dependencies(): Dependencies {
     val httpClient = HttpClient {
-        install(SSE)
-        install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys = true
-                coerceInputValues = true
-            })
-        }
+        install(ContentNegotiation) { json() }
     }
 
     val productService = AdminProductService(httpClient)
