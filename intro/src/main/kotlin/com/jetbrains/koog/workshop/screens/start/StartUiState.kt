@@ -6,12 +6,14 @@ data class StartUiState(
     val demoCards: List<CardItem> = listOf(
         CardItem(
             title = "Weather Forecast",
-            description = "A weather agent that can provide forecasts for any location. Ask about weather conditions, dates, and more.",
+            description = "Get forecasts, conditions, and weather insights for any location.",
+            imageRes = "images/weatherAgent.png",
             agentDemoRoute = NavRoute.AgentDemoRoute.WeatherScreen
         ),
         CardItem(
             title = "Home Services",
-            description = "Schedule plumbing, electrical, HVAC, or handyman service using a multi-phase graph strategy with gated tools.",
+            description = "Schedule plumbing, electrical, HVAC, or handyman service.",
+            imageRes = "images/homeServicesAgent.png",
             agentDemoRoute = NavRoute.AgentDemoRoute.HomeServicesScreen
         ),
     )
@@ -20,5 +22,6 @@ data class StartUiState(
 data class CardItem(
     val title: String,
     val description: String,
+    val imageRes: String? = null,
     val agentDemoRoute: NavRoute.AgentDemoRoute? = null,
 )

@@ -8,8 +8,8 @@ import java.awt.Dimension
 
 fun main() = application {
     Window(
-        title = "Koog Demo App",
-        state = rememberWindowState(width = 800.dp, height = 600.dp),
+        title = "Koog Agents Workshop",
+        state = rememberWindowState(width = 1200.dp, height = 800.dp),
         onCloseRequest = ::exitApplication,
     ) {
         window.minimumSize = Dimension(350, 600)
