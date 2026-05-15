@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -34,6 +35,9 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.math.log
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
@@ -51,87 +55,92 @@ class AgentController(
         encodeDefaults = true
     }
 
-    private fun SseEmitter.sendChatMessage(message: ChatMessage) {
-        val data = json.encodeToString(ChatMessage.serializer(), message)
-        send(data, MediaType.APPLICATION_JSON)
-    }
-
+    @OptIn(ExperimentalAtomicApi::class)
     @PostMapping("chat")
     fun chat(
         @RequestParam characterId: String,
         @RequestParam(required = false) input: String?,
         @RequestParam sessionId: String,
     ): SseEmitter {
-        val jobScope = CoroutineScope(Dispatchers.IO + sseScope.coroutineContext[Job]!!)
-        val emitter = SseEmitter(Long.MAX_VALUE)
+        val job = Job(sseScope.coroutineContext[Job])
+        val scope = CoroutineScope(Dispatchers.IO + job)
+        val heartbeatJob = Job(job)
+        val heartbeatScope = CoroutineScope(Dispatchers.IO + heartbeatJob)
+        val isActive = AtomicBoolean(true)
 
-        logger.info { "Creating SseEmitter for session: $sessionId, character: $characterId" }
-
-        // Create chat if needed
-        val charId = CharacterId(Uuid.parse(characterId))
-        chatService.updateChat(ChatUpdate(charId, sessionId))
-
-        emitter.onCompletion {
-            logger.info { "SseEmitter completed going to close agent scope: $sessionId" }
-            runBlocking { jobScope.coroutineContext[Job]!!.cancelAndJoin() }
-            logger.info { "SseEmitter completed for session: $sessionId" }
-        }
-        emitter.onTimeout {
-            logger.warn { "SseEmitter timed out for session: $sessionId" }
-            emitter.complete()
-        }
-        emitter.onError {
-            logger.error(it) { "SseEmitter error for session: $sessionId: ${it.message}" }
+        fun SseEmitter.sendChatMessage(message: ChatMessage) = if (isActive.load()) {
+            val data = json.encodeToString(ChatMessage.serializer(), message)
+            send(data, MediaType.APPLICATION_JSON)
+        } else {
+            logger.info { "SseEmitter is inactive, skipping message $message for session: $sessionId" }
         }
 
-        val agent = provider.provideAgent(
-            characterId = charId,
-            sessionId = sessionId,
-            historyProvider = chat,
-            onToolCallEvent = { toolName, args ->
-                emitter.sendChatMessage(ChatMessage.ToolCallMessage(toolName, args))
-            },
-            onLLMCallEvent = { messages, tools ->
-                emitter.sendChatMessage(
-                    ChatMessage.LLMCallMessage(
-                        LlmCallData(
-                            messageHistory = messages.toHistoryItems(),
-                            availableTools = tools.toToolData()
-                        )
-                    )
-                )
-            },
-            onErrorEvent = { error ->
-                emitter.sendChatMessage(ChatMessage.ErrorMessage(error))
-            },
-            onExecutionTraceEvent = { trace ->
-                emitter.sendChatMessage(
-                    ChatMessage.ExecutionTraceMessage(
-                        when (trace) {
-                            is AgentExecutionTraceEvent.Node -> ExecutionTraceItem.Node(trace.name)
-                            is AgentExecutionTraceEvent.Subgraph -> ExecutionTraceItem.Subgraph(trace.name)
-                        }
-                    )
-                )
-            },
-            onAskMessage = { message ->
-                emitter.sendChatMessage(ChatMessage.AskQuestion(message))
-            },
-            persistence = persistence
-        )
-
-        val heartbeatJob = jobScope.launch {
-            try {
-                while (isActive) {
-                    delay(5.seconds)
-                    emitter.sendChatMessage(ChatMessage.Heartbeat)
-                }
-            } catch (e: Exception) {
-                logger.debug { "Heartbeat failed for session $sessionId: ${e.message}" }
+        val emitter = SseEmitter(Long.MAX_VALUE).apply {
+            onCompletion {
+                logger.info { "SseEmitter completed going to close agent scope: $sessionId" }
+                isActive.compareAndSet(true, false)
+                heartbeatJob.cancel()
+                logger.info { "SseEmitter completed for session: $sessionId" }
+            }
+            onTimeout { logger.warn { "SseEmitter timed out for session: $sessionId" } }
+            onError {
+                logger.error(it) { "SseEmitter error for session: $sessionId: ${it.message}" }
             }
         }
 
-        jobScope.launch {
+        logger.info { "Created SseEmitter for session: $sessionId, character: $characterId" }
+
+        scope.launch {
+            val charId = CharacterId(Uuid.parse(characterId))
+            chatService.updateChat(ChatUpdate(charId, sessionId))
+
+            val agent = provider.provideAgent(
+                characterId = charId,
+                sessionId = sessionId,
+                historyProvider = chat,
+                onToolCallEvent = { toolName, args ->
+                    emitter.sendChatMessage(ChatMessage.ToolCallMessage(toolName, args))
+                },
+                onLLMCallEvent = { messages, tools ->
+                    emitter.sendChatMessage(
+                        ChatMessage.LLMCallMessage(
+                            LlmCallData(
+                                messageHistory = messages.toHistoryItems(),
+                                availableTools = tools.toToolData()
+                            )
+                        )
+                    )
+                },
+                onErrorEvent = { error ->
+                    emitter.sendChatMessage(ChatMessage.ErrorMessage(error))
+                },
+                onExecutionTraceEvent = { trace ->
+                    emitter.sendChatMessage(
+                        ChatMessage.ExecutionTraceMessage(
+                            when (trace) {
+                                is AgentExecutionTraceEvent.Node -> ExecutionTraceItem.Node(trace.name)
+                                is AgentExecutionTraceEvent.Subgraph -> ExecutionTraceItem.Subgraph(trace.name)
+                            }
+                        )
+                    )
+                },
+                onAskMessage = { message ->
+                    emitter.sendChatMessage(ChatMessage.AskQuestion(message))
+                },
+                persistence = persistence
+            )
+
+            heartbeatScope.launch {
+                try {
+                    while (currentCoroutineContext().isActive) {
+                        delay(5.seconds)
+                        emitter.sendChatMessage(ChatMessage.Heartbeat)
+                    }
+                } catch (e: Exception) {
+                    logger.debug { "Heartbeat failed for session $sessionId: ${e.message}" }
+                }
+            }
+
             try {
                 logger.info { "Running agent for session: $sessionId" }
                 val response = agent.run(input ?: "", sessionId)

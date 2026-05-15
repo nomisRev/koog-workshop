@@ -87,12 +87,7 @@ class ChatViewModel(
                     AgentState.Failed -> {
                         val lastMessage = uiState.value.chatMessages.lastOrNull()
                         logger.info("Agent is running for sessionId: $sessionId, resuming... askQuestion: $lastMessage")
-                        uiState.update {
-                            it.copy(
-                                isLoading = true,
-                                isInputEnabled = true
-                            )
-                        }
+                        uiState.update { it.copy(isLoading = true, isInputEnabled = true) }
                         runAgent("")
                     }
                 }
