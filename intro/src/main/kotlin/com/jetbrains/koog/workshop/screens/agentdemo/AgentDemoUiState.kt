@@ -2,10 +2,11 @@ package com.jetbrains.koog.workshop.screens.agentdemo
 
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.prompt.message.Message
+import org.jetbrains.compose.resources.DrawableResource
 
-// Define UI state for the agent demo screen
 data class AgentDemoUiState(
     val title: String = "Agent Demo",
+    val agentAvatarRes: DrawableResource? = null,
     val chatMessages: List<ChatMessage> = listOf(ChatMessage.SystemMessage("Hi, I'm an agent that can help you")),
     val debugView: DebugView = DebugView(),
     val inputText: String = "",

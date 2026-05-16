@@ -4,10 +4,12 @@ import ai.koog.agents.chatMemory.feature.ChatHistoryProvider
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.prompt.message.Message
+import org.jetbrains.compose.resources.DrawableResource
 
 sealed interface AgentProvider {
     val title: String
     val description: String
+    val avatarRes: DrawableResource
 }
 
 sealed interface AgentExecutionTraceEvent {

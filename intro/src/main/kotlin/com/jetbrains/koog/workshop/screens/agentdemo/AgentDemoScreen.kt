@@ -1,5 +1,6 @@
 package com.jetbrains.koog.workshop.screens.agentdemo
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -21,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -32,6 +34,11 @@ import com.jetbrains.koog.workshop.theme.AppTheme
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
 import com.mikepenz.markdown.m3.markdownTypography
+import koog_workshop.intro.generated.resources.Res
+import koog_workshop.intro.generated.resources.user
+import koog_workshop.intro.generated.resources.weatherAgent
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
 
 internal const val MAX_BUBBLE_WIDTH_FRACTION = 0.85f
 
@@ -41,6 +48,7 @@ fun AgentDemoScreen(viewModel: AgentDemoViewModel) {
 
     AgentDemoScreenContent(
         title = uiState.title,
+        agentAvatarRes = uiState.agentAvatarRes,
         chatMessages = uiState.chatMessages,
         debugView = uiState.debugView,
         inputText = uiState.inputText,
@@ -54,6 +62,7 @@ fun AgentDemoScreen(viewModel: AgentDemoViewModel) {
 @Composable
 private fun AgentDemoScreenContent(
     title: String,
+    agentAvatarRes: DrawableResource?,
     chatMessages: List<ChatMessage>,
     debugView: DebugView,
     inputText: String,
@@ -117,8 +126,8 @@ private fun AgentDemoScreenContent(
                 items(visibleMessages) { message ->
                     when (message) {
                         is ChatMessage.UserMessage -> UserMessageBubble(message.text)
-                        is ChatMessage.AgentMessage -> AgentMessageBubble(message.text)
-                        is ChatMessage.ResultMessage -> AgentMessageBubble(message.text)
+                        is ChatMessage.AgentMessage -> AgentMessageBubble(message.text, agentAvatarRes)
+                        is ChatMessage.ResultMessage -> AgentMessageBubble(message.text, agentAvatarRes)
                         is ChatMessage.SystemMessage -> SystemMessageItem(message.text)
                         is ChatMessage.ErrorMessage -> ErrorMessageItem(message.text)
                         is ChatMessage.ToolCallMessage -> ToolCallMessageItem(message.toolName, message.args)
@@ -207,14 +216,25 @@ private fun DebugViewSelector(
     }
 }
 
+private val AVATAR_SIZE = AppDimension.iconButtonSizeExtraLarge
+
 @Composable
 private fun UserMessageBubble(text: String) {
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val maxBubbleWidth = maxWidth * MAX_BUBBLE_WIDTH_FRACTION
+        val maxBubbleWidth = maxWidth - AVATAR_SIZE - AppDimension.spacingSmall
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.Top
         ) {
+            Image(
+                painter = painterResource(Res.drawable.user),
+                contentDescription = "User",
+                modifier = Modifier
+                    .size(AVATAR_SIZE),
+                contentScale = ContentScale.Fit
+            )
+            Spacer(modifier = Modifier.width(AppDimension.spacingSmall))
             Box(
                 modifier = Modifier
                     .widthIn(max = maxBubbleWidth)
@@ -233,13 +253,25 @@ private fun UserMessageBubble(text: String) {
 }
 
 @Composable
-private fun AgentMessageBubble(text: String) {
+private fun AgentMessageBubble(text: String, avatarRes: DrawableResource?) {
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val maxBubbleWidth = maxWidth * MAX_BUBBLE_WIDTH_FRACTION
+        val avatarSpace = if (avatarRes != null) AVATAR_SIZE + AppDimension.spacingSmall else 0.dp
+        val maxBubbleWidth = maxWidth - avatarSpace
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.Top
         ) {
+            if (avatarRes != null) {
+                Image(
+                    painter = painterResource(avatarRes),
+                    contentDescription = "Agent",
+                    modifier = Modifier
+                        .size(AVATAR_SIZE),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.width(AppDimension.spacingSmall))
+            }
             Box(
                 modifier = Modifier
                     .widthIn(max = maxBubbleWidth)
@@ -533,6 +565,7 @@ fun AgentDemoScreenPreview() {
     AppTheme {
         AgentDemoScreenContent(
             title = "Agent Demo",
+            agentAvatarRes = Res.drawable.weatherAgent,
             chatMessages = listOf(
                 ChatMessage.SystemMessage("Hi, I'm an agent that can help you"),
                 ChatMessage.UserMessage("Hello!"),
@@ -574,6 +607,7 @@ fun AgentDemoScreenEndedPreview() {
     AppTheme {
         AgentDemoScreenContent(
             title = "Agent Demo",
+            agentAvatarRes = Res.drawable.weatherAgent,
             chatMessages = listOf(
                 ChatMessage.SystemMessage("Hi, I'm an agent that can help you"),
                 ChatMessage.UserMessage("Hello!"),

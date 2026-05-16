@@ -14,6 +14,9 @@ import ai.koog.prompt.message.Message
 import com.jetbrains.koog.workshop.agents.util.AgentExecutionTraceEvent
 import com.jetbrains.koog.workshop.agents.util.ChatAgentProvider
 import com.jetbrains.koog.workshop.agents.util.trackEvents
+import koog_workshop.intro.generated.resources.Res
+import koog_workshop.intro.generated.resources.weatherAgent
+import org.jetbrains.compose.resources.DrawableResource
 import kotlin.time.ExperimentalTime
 
 /**
@@ -25,6 +28,7 @@ internal class WeatherAgentProvider(
 ) : ChatAgentProvider {
     override val title: String = "Weather Forecast"
     override val description: String = "Hi, I'm a weather agent. I can provide weather forecasts for any location."
+    override val avatarRes: DrawableResource = Res.drawable.weatherAgent
 
     override suspend fun provideAgent(
         historyProvider: ChatHistoryProvider,

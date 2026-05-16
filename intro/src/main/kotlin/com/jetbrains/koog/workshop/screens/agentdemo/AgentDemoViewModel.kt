@@ -28,6 +28,7 @@ class AgentDemoViewModel(
     private val _uiState = MutableStateFlow(
         AgentDemoUiState(
             title = agentProvider.title,
+            agentAvatarRes = agentProvider.avatarRes,
             chatMessages = listOf(ChatMessage.SystemMessage(agentProvider.description))
         )
     )
@@ -222,6 +223,7 @@ class AgentDemoViewModel(
         _uiState.update {
             AgentDemoUiState(
                 title = agentProvider.title,
+                agentAvatarRes = agentProvider.avatarRes,
                 chatMessages = listOf(ChatMessage.SystemMessage(agentProvider.description))
             )
         }

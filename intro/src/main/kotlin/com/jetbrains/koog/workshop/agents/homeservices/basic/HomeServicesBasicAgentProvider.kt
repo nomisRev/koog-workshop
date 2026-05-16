@@ -14,6 +14,9 @@ import ai.koog.prompt.message.Message
 import com.jetbrains.koog.workshop.agents.util.AgentExecutionTraceEvent
 import com.jetbrains.koog.workshop.agents.util.ChatAgentProvider
 import com.jetbrains.koog.workshop.agents.util.trackEvents
+import koog_workshop.intro.generated.resources.Res
+import koog_workshop.intro.generated.resources.homeServicesAgent
+import org.jetbrains.compose.resources.DrawableResource
 import com.jetbrains.koog.workshop.agents.homeservices.HomeServicesBookTools
 import com.jetbrains.koog.workshop.agents.homeservices.HomeServicesFindSlotTools
 import com.jetbrains.koog.workshop.agents.homeservices.HomeServicesSchedule
@@ -24,6 +27,7 @@ internal class HomeServicesBasicAgentProvider(
     override val title: String = "Home Services Scheduling (Basic)"
     override val description: String =
         "Hi! I'm the home services scheduling assistant. I can gather the details and book a service visit for you."
+    override val avatarRes: DrawableResource = Res.drawable.homeServicesAgent
 
     override suspend fun provideAgent(
         historyProvider: ChatHistoryProvider,
