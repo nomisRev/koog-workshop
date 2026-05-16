@@ -23,12 +23,7 @@ internal class DataStoreAppSettings(prefPathProvider: PrefPathProvider) : AppSet
         }
     }
 
-    // Define keys for the preferences
     companion object {
-        val OPENAI_TOKEN_KEY = stringPreferencesKey("openai_token")
-        val ANTHROPIC_TOKEN_KEY = stringPreferencesKey("anthropic_token")
-        val GEMINI_TOKEN_KEY = stringPreferencesKey("gemini_token")
-        val SELECTED_PROVIDER_KEY = stringPreferencesKey("selected_provider")
         val APPEARANCE_MODE_KEY = stringPreferencesKey("appearance_mode")
     }
 
@@ -41,15 +36,6 @@ internal class DataStoreAppSettings(prefPathProvider: PrefPathProvider) : AppSet
     override suspend fun getCurrentSettings(): AppSettingsData {
         val data = dataStore.data.map { preferences ->
             AppSettingsData(
-                openAiToken = preferences[OPENAI_TOKEN_KEY].orEmpty(),
-                anthropicToken = preferences[ANTHROPIC_TOKEN_KEY].orEmpty(),
-                geminiToken = preferences[GEMINI_TOKEN_KEY].orEmpty(),
-                selectedOption = when (preferences[SELECTED_PROVIDER_KEY]) {
-                    SelectedOption.OpenAI.title -> SelectedOption.OpenAI
-                    SelectedOption.Anthropic.title -> SelectedOption.Anthropic
-                    SelectedOption.Gemini.title -> SelectedOption.Gemini
-                    else -> SelectedOption.Anthropic
-                },
                 appearanceMode = when (preferences[APPEARANCE_MODE_KEY]) {
                     AppearanceMode.Light.label -> AppearanceMode.Light
                     AppearanceMode.Dark.label -> AppearanceMode.Dark
@@ -64,10 +50,6 @@ internal class DataStoreAppSettings(prefPathProvider: PrefPathProvider) : AppSet
     override suspend fun setCurrentSettings(settings: AppSettingsData) {
         _appearanceModeFlow.value = settings.appearanceMode
         dataStore.edit { preferences ->
-            preferences[OPENAI_TOKEN_KEY] = settings.openAiToken
-            preferences[ANTHROPIC_TOKEN_KEY] = settings.anthropicToken
-            preferences[GEMINI_TOKEN_KEY] = settings.geminiToken
-            preferences[SELECTED_PROVIDER_KEY] = settings.selectedOption.title
             preferences[APPEARANCE_MODE_KEY] = settings.appearanceMode.label
         }
     }

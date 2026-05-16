@@ -3,21 +3,21 @@ package com.jetbrains.koog.workshop
 import ai.koog.prompt.executor.clients.LLMClient
 import ai.koog.prompt.executor.clients.anthropic.AnthropicLLMClient
 import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
-import ai.koog.prompt.executor.clients.google.GoogleLLMClient
-import ai.koog.prompt.executor.clients.google.GoogleModels
-import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.llm.LLModel
 import androidx.compose.runtime.Composable
-import com.jetbrains.koog.workshop.agents.util.AgentProvider
-import com.jetbrains.koog.workshop.agents.homeservices.graph.HomeServicesSchedulingAgentProvider
 import com.jetbrains.koog.workshop.agents.homeservices.basic.HomeServicesBasicAgentProvider
+import com.jetbrains.koog.workshop.agents.homeservices.graph.HomeServicesSchedulingAgentProvider
+import com.jetbrains.koog.workshop.agents.util.AgentProvider
 import com.jetbrains.koog.workshop.agents.weather.WeatherAgentProvider
 import com.jetbrains.koog.workshop.screens.agentdemo.AgentDemoViewModel
 import com.jetbrains.koog.workshop.screens.settings.SettingsViewModel
 import com.jetbrains.koog.workshop.screens.start.StartViewModel
+import com.jetbrains.koog.workshop.settings.ApiKeyService
 import com.jetbrains.koog.workshop.settings.AppSettings
-import com.jetbrains.koog.workshop.settings.SelectedOption
+import com.jetbrains.koog.workshop.settings.DataStoreAppSettings
+import com.jetbrains.koog.workshop.settings.PrefPathProvider
+import okio.Path
+import okio.Path.Companion.toPath
 import org.koin.compose.KoinMultiplatformApplication
 import org.koin.core.annotation.KoinExperimentalAPI
 import org.koin.core.module.Module
@@ -25,10 +25,6 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.KoinConfiguration
 import org.koin.dsl.module
 import java.io.File
-import com.jetbrains.koog.workshop.settings.DataStoreAppSettings
-import com.jetbrains.koog.workshop.settings.PrefPathProvider
-import okio.Path
-import okio.Path.Companion.toPath
 
 
 @OptIn(KoinExperimentalAPI::class)
@@ -40,25 +36,7 @@ fun KoinApp() = KoinMultiplatformApplication(
             module {
                 factory<suspend () -> Pair<LLMClient, LLModel>> {
                     {
-                        val appSettings: AppSettings = get()
-                        val currentSettings = appSettings.getCurrentSettings()
-                        when (currentSettings.selectedOption) {
-                            SelectedOption.OpenAI -> {
-                                val openAiToken = appSettings.getCurrentSettings().openAiToken
-                                require(openAiToken.isNotEmpty()) { "OpenAI token is not configured." }
-                                Pair(OpenAILLMClient(openAiToken), OpenAIModels.Chat.GPT4o)
-                            }
-                            SelectedOption.Anthropic -> {
-                                val anthropicToken = appSettings.getCurrentSettings().anthropicToken
-                                require(anthropicToken.isNotEmpty()) { "Anthropic token is not configured." }
-                                Pair(AnthropicLLMClient(anthropicToken), AnthropicModels.Sonnet_4)
-                            }
-                            SelectedOption.Gemini -> {
-                                val geminiToken = appSettings.getCurrentSettings().geminiToken
-                                require(geminiToken.isNotEmpty()) { "Gemini token is not configured." }
-                                Pair(GoogleLLMClient(geminiToken), GoogleModels.Gemini2_5FlashLite)
-                            }
-                        }
+                        Pair(AnthropicLLMClient(ApiKeyService.anthropicApiKey), AnthropicModels.Sonnet_4)
                     }
                 }
                 single<AgentProvider>(named("weather")) { WeatherAgentProvider(provideLLMClient = get()) }
@@ -66,7 +44,6 @@ fun KoinApp() = KoinMultiplatformApplication(
                 single<AgentProvider>(named("home-services-basic")) { HomeServicesBasicAgentProvider(provideLLMClient = get()) }
                 factory { params ->
                     StartViewModel(
-                        appSettings = get(),
                         navigationCallback = params[0],
                     )
                 }

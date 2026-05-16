@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,6 +33,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jetbrains.koog.workshop.theme.AppDimension
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -51,101 +53,107 @@ private fun StartScreenContent(
     isApiKeyConfigured: Boolean,
     onEvent: (StartUiEvents) -> Unit,
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        Column(
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background,
+    ) { paddingValues ->
+        Box(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(paddingValues)
                 .padding(AppDimension.spacingExtraLarge),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column {
-                    Text(
-                        text = "Koog Agents Workshop",
-                        style = MaterialTheme.typography.headlineLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 28.sp,
-                            letterSpacing = (-0.5).sp
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Spacer(modifier = Modifier.height(AppDimension.spacingExtraSmall))
-                    Text(
-                        text = "Learn how to build agents in Kotlin with Koog",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                if (isApiKeyConfigured) {
-                    IconButton(
-                        onClick = { onEvent.invoke(StartUiEvents.Settings) },
-                        modifier = Modifier
-                            .size(AppDimension.iconButtonSizeMedium)
-                            .clip(CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column {
+                        Text(
+                            text = "Koog Agents Workshop",
+                            style = MaterialTheme.typography.headlineLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 28.sp,
+                                letterSpacing = (-0.5).sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Spacer(modifier = Modifier.height(AppDimension.spacingExtraSmall))
+                        Text(
+                            text = "Learn how to build agents in Kotlin with Koog",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                } else {
-                    Surface(
-                        onClick = { onEvent.invoke(StartUiEvents.Settings) },
-                        shape = RoundedCornerShape(AppDimension.radiusMedium),
-                        color = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(AppDimension.spacingSmall),
                     ) {
-                        Row(
-                            modifier = Modifier.padding(
-                                horizontal = AppDimension.spacingMedium,
-                                vertical = AppDimension.spacingSmall,
-                            ),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(AppDimension.spacingSmall),
+                        if (!isApiKeyConfigured) {
+                            Surface(
+                                shape = RoundedCornerShape(AppDimension.radiusMedium),
+                                color = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                            ) {
+                                Text(
+                                    text = "Configure API key in APIKeyService.kt",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    modifier = Modifier.padding(
+                                        horizontal = AppDimension.spacingMedium,
+                                        vertical = AppDimension.spacingSmall,
+                                    ),
+                                )
+                            }
+                        }
+                        IconButton(
+                            onClick = { onEvent.invoke(StartUiEvents.Settings) },
+                            modifier = Modifier
+                                .size(AppDimension.iconButtonSizeMedium)
+                                .clip(CircleShape)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Settings,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Text(
-                                text = "No API key configured — tap to set up",
-                                style = MaterialTheme.typography.labelLarge,
+                                contentDescription = "Settings",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(AppDimension.spacingLarge))
+                Spacer(modifier = Modifier.height(AppDimension.spacingLarge))
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(AppDimension.spacingLarge),
-            ) {
-                cards.forEach { card ->
-                    AgentCard(
-                        card = card,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                        onClick = {
-                            card.agentDemoRoute?.let { demoRoute ->
-                                onEvent.invoke(StartUiEvents.AgentDemo(demoRoute))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(AppDimension.spacingLarge),
+                ) {
+                    cards.forEach { card ->
+                        AgentCard(
+                            card = card,
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            onClick = {
+                                if (!isApiKeyConfigured) {
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("Please configure your API key first in the ApiKeyService.kt file.")
+                                    }
+                                } else {
+                                    card.agentDemoRoute?.let { demoRoute ->
+                                        onEvent.invoke(StartUiEvents.AgentDemo(demoRoute))
+                                    }
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
