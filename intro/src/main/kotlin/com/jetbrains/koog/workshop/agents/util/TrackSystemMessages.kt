@@ -25,7 +25,7 @@ fun GraphAIAgent.FeatureContext.trackEvents(
         }
 
         onAgentExecutionFailed { ctx ->
-            onErrorEvent("${ctx.throwable.message}")
+            onErrorEvent("${ctx.error.message}")
         }
 
         onLLMCallStarting { ctx ->
