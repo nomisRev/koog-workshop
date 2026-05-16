@@ -67,7 +67,7 @@ internal fun LLMCallMessageItem(data: LlmCallData) {
                 contentAlignment = Alignment.TopCenter
             ) {
                 Text(
-                    text = "LLM\nCall",
+                    text = "Request\nto LLM",
                     color = MaterialTheme.colorScheme.outline,
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontFamily = FontFamily.Monospace,
