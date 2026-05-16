@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -54,32 +55,39 @@ internal fun LLMCallMessageItem(data: LlmCallData) {
     )
 
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val maxBubbleWidth = maxWidth * MAX_BUBBLE_WIDTH_FRACTION
-        val toolNameCellWidth = remember(formattedMessages, maxBubbleWidth, density, toolNameTextStyle) {
-            calculateToolNameCellWidth(formattedMessages, textMeasurer, toolNameTextStyle, density, maxBubbleWidth)
+        val maxContentWidth = maxWidth - AppDimension.messageTitleColumnWidth - AppDimension.spacingSmall
+        val toolNameCellWidth = remember(formattedMessages, maxContentWidth, density, toolNameTextStyle) {
+            calculateToolNameCellWidth(formattedMessages, textMeasurer, toolNameTextStyle, density, maxContentWidth)
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.Top
         ) {
-            Column(modifier = Modifier.widthIn(max = maxBubbleWidth)) {
+            Box(
+                modifier = Modifier.size(AppDimension.messageTitleColumnWidth),
+                contentAlignment = Alignment.TopCenter
+            ) {
                 Text(
-                    text = "LLM CALL",
+                    text = "LLM\nCall",
                     color = MaterialTheme.colorScheme.outline,
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold
                     ),
-                    modifier = Modifier.padding(start = AppDimension.spacingSmall, bottom = 2.dp)
+                    modifier = Modifier.padding(top = AppDimension.spacingExtraSmall)
                 )
-                Column(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .border(1.dp, borderColor, RoundedCornerShape(6.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(AppDimension.spacingMedium),
-                    verticalArrangement = Arrangement.spacedBy(AppDimension.spacingExtraSmall)
-                ) {
+            }
+            Spacer(modifier = Modifier.width(AppDimension.spacingSmall))
+            Column(
+                modifier = Modifier
+                    .widthIn(max = maxContentWidth)
+                    .clip(RoundedCornerShape(AppDimension.radiusMedium))
+                    .border(1.dp, borderColor, RoundedCornerShape(AppDimension.radiusMedium))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(AppDimension.spacingMedium),
+                verticalArrangement = Arrangement.spacedBy(AppDimension.spacingExtraSmall)
+            ) {
                     if (formattedMessages.isNotEmpty()) {
                         Text(
                             text = "Messages",
@@ -115,9 +123,9 @@ internal fun LLMCallMessageItem(data: LlmCallData) {
                             formattedTools.forEach { tool ->
                                 Box(
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(4.dp))
+                                        .clip(RoundedCornerShape(AppDimension.radiusSmall))
                                         .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
-                                        .border(1.dp, borderColor, RoundedCornerShape(4.dp))
+                                        .border(1.dp, borderColor, RoundedCornerShape(AppDimension.radiusSmall))
                                         .padding(horizontal = AppDimension.spacingSmall, vertical = 2.dp)
                                 ) {
                                     Text(
@@ -131,7 +139,6 @@ internal fun LLMCallMessageItem(data: LlmCallData) {
                                 }
                             }
                         }
-                    }
                 }
             }
         }
@@ -170,8 +177,8 @@ private fun LlmCallMessageRow(
         modifier = Modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
-            .clip(RoundedCornerShape(4.dp))
-            .border(1.dp, borderColor, RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(AppDimension.radiusSmall))
+            .border(1.dp, borderColor, RoundedCornerShape(AppDimension.radiusSmall))
             .background(MaterialTheme.colorScheme.primaryContainer),
         verticalAlignment = Alignment.CenterVertically
     ) {

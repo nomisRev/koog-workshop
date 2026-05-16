@@ -216,12 +216,11 @@ private fun DebugViewSelector(
     }
 }
 
-private val AVATAR_SIZE = AppDimension.iconButtonSizeExtraLarge
 
 @Composable
 private fun UserMessageBubble(text: String) {
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val maxBubbleWidth = maxWidth - AVATAR_SIZE - AppDimension.spacingSmall
+        val maxBubbleWidth = maxWidth - AppDimension.messageTitleColumnWidth - AppDimension.spacingSmall
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Start,
@@ -231,7 +230,7 @@ private fun UserMessageBubble(text: String) {
                 painter = painterResource(Res.drawable.user),
                 contentDescription = "User",
                 modifier = Modifier
-                    .size(AVATAR_SIZE),
+                    .size(AppDimension.messageTitleColumnWidth),
                 contentScale = ContentScale.Fit
             )
             Spacer(modifier = Modifier.width(AppDimension.spacingSmall))
@@ -255,7 +254,7 @@ private fun UserMessageBubble(text: String) {
 @Composable
 private fun AgentMessageBubble(text: String, avatarRes: DrawableResource?) {
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val avatarSpace = if (avatarRes != null) AVATAR_SIZE + AppDimension.spacingSmall else 0.dp
+        val avatarSpace = if (avatarRes != null) AppDimension.messageTitleColumnWidth + AppDimension.spacingSmall else 0.dp
         val maxBubbleWidth = maxWidth - avatarSpace
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -267,7 +266,7 @@ private fun AgentMessageBubble(text: String, avatarRes: DrawableResource?) {
                     painter = painterResource(avatarRes),
                     contentDescription = "Agent",
                     modifier = Modifier
-                        .size(AVATAR_SIZE),
+                        .size(AppDimension.messageTitleColumnWidth),
                     contentScale = ContentScale.Crop
                 )
                 Spacer(modifier = Modifier.width(AppDimension.spacingSmall))
@@ -308,33 +307,36 @@ private fun SystemMessageItem(text: String) {
 @Composable
 private fun ErrorMessageItem(text: String) {
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val maxBubbleWidth = maxWidth * MAX_BUBBLE_WIDTH_FRACTION
+        val maxBubbleWidth = maxWidth - AppDimension.messageTitleColumnWidth - AppDimension.spacingSmall
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.Top
         ) {
-            Column(
-                modifier = Modifier
-                    .widthIn(max = maxBubbleWidth)
+            Box(
+                modifier = Modifier.size(AppDimension.messageTitleColumnWidth),
+                contentAlignment = Alignment.TopCenter
             ) {
                 Text(
                     text = "Error",
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.padding(start = AppDimension.spacingSmall)
+                    modifier = Modifier.padding(top = AppDimension.spacingMedium)
                 )
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(AppDimension.radiusExtraLarge))
-                        .background(MaterialTheme.colorScheme.errorContainer)
-                        .padding(AppDimension.spacingMedium)
-                ) {
-                    Text(
-                        text = text,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
+            }
+            Spacer(modifier = Modifier.width(AppDimension.spacingSmall))
+            Box(
+                modifier = Modifier
+                    .widthIn(max = maxBubbleWidth)
+                    .clip(RoundedCornerShape(AppDimension.radiusExtraLarge))
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .padding(AppDimension.spacingMedium)
+            ) {
+                Text(
+                    text = text,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    style = MaterialTheme.typography.bodyLarge
+                )
             }
         }
     }
@@ -345,75 +347,79 @@ private fun ErrorMessageItem(text: String) {
 private fun ToolCallMessageItem(toolName: String, args: Map<String, String>) {
     val borderColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f)
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val maxBubbleWidth = maxWidth * MAX_BUBBLE_WIDTH_FRACTION
+        val maxContentWidth = maxWidth - AppDimension.messageTitleColumnWidth - AppDimension.spacingSmall
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.Top
         ) {
-            Column(modifier = Modifier.widthIn(max = maxBubbleWidth)) {
+            Box(
+                modifier = Modifier.size(AppDimension.messageTitleColumnWidth),
+                contentAlignment = Alignment.TopCenter
+            ) {
                 Text(
-                    text = "TOOL CALL",
+                    text = "Tool\nCall",
                     color = MaterialTheme.colorScheme.tertiary,
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold
                     ),
-                    modifier = Modifier.padding(start = AppDimension.spacingSmall, bottom = 2.dp)
+                    modifier = Modifier.padding(top = 4.dp)
                 )
-                FlowRow(
+            }
+            Spacer(modifier = Modifier.width(AppDimension.spacingSmall))
+            FlowRow(
+                modifier = Modifier
+                    .widthIn(max = maxContentWidth)
+                    .clip(RoundedCornerShape(6.dp))
+                    .border(1.dp, borderColor, RoundedCornerShape(6.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(AppDimension.spacingSmall),
+                horizontalArrangement = Arrangement.spacedBy(AppDimension.spacingSmall),
+                verticalArrangement = Arrangement.spacedBy(AppDimension.spacingSmall)
+            ) {
+                Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .border(1.dp, borderColor, RoundedCornerShape(6.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(AppDimension.spacingSmall),
-                    horizontalArrangement = Arrangement.spacedBy(AppDimension.spacingSmall),
-                    verticalArrangement = Arrangement.spacedBy(AppDimension.spacingSmall)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f))
+                        .border(1.dp, borderColor, RoundedCornerShape(4.dp))
+                        .padding(horizontal = AppDimension.spacingSmall, vertical = 2.dp)
                 ) {
-                    // Tool name chip
-                    Box(
+                    Text(
+                        text = toolName,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                }
+                args.forEach { (key, value) ->
+                    Row(
                         modifier = Modifier
                             .clip(RoundedCornerShape(4.dp))
-                            .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f))
                             .border(1.dp, borderColor, RoundedCornerShape(4.dp))
-                            .padding(horizontal = AppDimension.spacingSmall, vertical = 2.dp)
+                            .padding(horizontal = AppDimension.spacingSmall, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = toolName,
-                            color = MaterialTheme.colorScheme.tertiary,
+                            text = key,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontFamily = FontFamily.Monospace,
                                 fontWeight = FontWeight.Bold
                             )
                         )
-                    }
-                    // Argument chips
-                    args.forEach { (key, value) ->
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .border(1.dp, borderColor, RoundedCornerShape(4.dp))
-                                .padding(horizontal = AppDimension.spacingSmall, vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = key,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    fontFamily = FontFamily.Monospace,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                            Text(
-                                text = ": ",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
-                            )
-                            Text(
-                                text = value,
-                                color = MaterialTheme.colorScheme.tertiary,
-                                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
-                            )
-                        }
+                        Text(
+                            text = ": ",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
+                        )
+                        Text(
+                            text = value,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
+                        )
                     }
                 }
             }
@@ -431,54 +437,74 @@ private fun ExecutionTraceMessageItem(item: ExecutionTraceItem) {
 
 @Composable
 private fun NodeExecutionTraceItem(name: String) {
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val maxBubbleWidth = maxWidth * MAX_BUBBLE_WIDTH_FRACTION
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Start,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier.width(AppDimension.messageTitleColumnWidth),
+            contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "NODE: $name",
+                text = "Node",
                 color = MaterialTheme.colorScheme.outline,
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold
-                ),
-                modifier = Modifier
-                    .widthIn(max = maxBubbleWidth)
-                    .padding(start = AppDimension.spacingSmall, bottom = 2.dp)
+                )
             )
         }
+        Spacer(modifier = Modifier.width(AppDimension.spacingSmall))
+        Text(
+            text = name,
+            color = MaterialTheme.colorScheme.outline,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold
+            )
+        )
     }
 }
 
 @Composable
 private fun SubgraphExecutionTraceItem(name: String) {
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val maxBubbleWidth = maxWidth * MAX_BUBBLE_WIDTH_FRACTION
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Start,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier.width(AppDimension.messageTitleColumnWidth),
+            contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "TASK: $name",
+                text = "Task",
                 color = MaterialTheme.colorScheme.secondary,
-                style = MaterialTheme.typography.labelMedium.copy(
+                style = MaterialTheme.typography.labelSmall.copy(
                     fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.ExtraBold
-                ),
-                modifier = Modifier
-                    .widthIn(max = maxBubbleWidth)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f))
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.35f),
-                        shape = RoundedCornerShape(4.dp)
-                    )
-                    .padding(horizontal = AppDimension.spacingSmall, vertical = 2.dp)
+                    fontWeight = FontWeight.Bold
+                )
             )
         }
+        Spacer(modifier = Modifier.width(AppDimension.spacingSmall))
+        Text(
+            text = name,
+            color = MaterialTheme.colorScheme.secondary,
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.ExtraBold
+            ),
+            modifier = Modifier
+                .clip(RoundedCornerShape(4.dp))
+                .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f))
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.35f),
+                    shape = RoundedCornerShape(4.dp)
+                )
+                .padding(horizontal = AppDimension.spacingSmall, vertical = 2.dp)
+        )
     }
 }
 

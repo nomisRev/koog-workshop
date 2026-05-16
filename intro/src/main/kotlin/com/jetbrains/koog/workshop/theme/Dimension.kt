@@ -45,4 +45,7 @@ object AppDimension {
     val iconButtonSizeMedium = 40.dp
     val iconButtonSizeLarge = 48.dp
     val iconButtonSizeExtraLarge = 56.dp
+
+    // Chat message layout
+    val messageTitleColumnWidth = 64.dp
 }
