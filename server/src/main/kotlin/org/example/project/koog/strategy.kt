@@ -1,13 +1,17 @@
 package org.example.project.koog
 
+import ai.koog.agents.core.agent.context.DetachedPromptExecutorAPI
 import ai.koog.agents.core.agent.context.agentInput
+import ai.koog.agents.core.dsl.builder.node
 import ai.koog.agents.core.dsl.builder.strategy
-import ai.koog.agents.core.dsl.extension.nodeLLMModerateMessage
 import ai.koog.agents.ext.agent.CriticResult
 import ai.koog.agents.ext.agent.subgraphWithTask
 import ai.koog.agents.ext.agent.subgraphWithVerification
+import ai.koog.prompt.dsl.ModerationResult
+import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.message.Message
+import ai.koog.prompt.message.MessagePart
 import ai.koog.prompt.message.RequestMetaInfo
 import kotlinx.serialization.Serializable
 import org.example.project.domain.order.OrderStatus
@@ -26,17 +30,29 @@ data class OrderDetails(
 @Serializable
 data class IssueSolution(val actionsTaken: String)
 
+
+// TODO: DELETE
+@Serializable
+public data class ModeratedMessage(val message: Message, val moderationResult: ModerationResult)
+
 // FIXME I see a problem with how this strategy works with ChatMemory feature.
 //  ChatMemory only persists messages in the agent's prompt when the strategy finishes.
 //  Strategy outputs (like a String message in this case) are not persisted.
 //  So if we want the strategy result to be some message, let's make the return type Message.Assistant
 //  and make sure to add it to the agent's prompt at the end of the strategy, e.g. with a custom node.
+@OptIn(DetachedPromptExecutorAPI::class)
 fun orderCustomerSupportStrategy(tools: CustomerSupportTools) = strategy<String, String>("order-customer-support") {
     // TODO add context gathering custom node?
 
-    val moderate by nodeLLMModerateMessage(
-        moderatingModel = OpenAIModels.Moderation.Omni
-    )
+    val moderate by node<Message, ModeratedMessage> { message ->
+        val moderationPrompt = prompt("single-message-moderation") { message(message) }
+        val moderationResult = llm.promptExecutor.moderate(moderationPrompt, OpenAIModels.Moderation.Omni)
+        ModeratedMessage(message, moderationResult)
+    }
+//    TODO:
+//    nodeLLMModerateMessage(
+//        moderatingModel = OpenAIModels.Moderation.Omni
+//    )
 
     val summarize by subgraphWithTask<String, OrderDetails>(tools = tools.askQuestionTool + tools.readOrderTools) { input ->
         """
@@ -72,7 +88,10 @@ fun orderCustomerSupportStrategy(tools: CustomerSupportTools) = strategy<String,
     }
 
     edge(nodeStart forwardTo moderate transformed { Message.User(it, RequestMetaInfo.Empty) })
-    edge(moderate forwardTo summarize onCondition { !it.moderationResult.isHarmful } transformed { it.message.content })
+    edge(moderate forwardTo summarize onCondition { !it.moderationResult.isHarmful } transformed {
+        // TODO: parts.textContent()
+        it.message.parts.filterIsInstance<MessagePart.Text>().joinToString(separator = "\n") { it.text }
+    })
     edge(
         moderate forwardTo nodeFinish
                 onCondition { it.moderationResult.isHarmful }

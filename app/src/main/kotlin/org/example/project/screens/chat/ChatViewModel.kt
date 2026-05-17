@@ -1,6 +1,7 @@
 package org.example.project.screens.chat
 
 import ai.koog.prompt.message.Message
+import ai.koog.prompt.message.MessagePart
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -12,22 +13,18 @@ import io.ktor.client.plugins.sse.SSE
 import io.ktor.client.plugins.sse.sse
 import io.ktor.client.request.parameter
 import io.ktor.http.HttpMethod
-import io.ktor.http.parameters
 import kotlinx.coroutines.CancellationException
 import org.slf4j.LoggerFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filterNot
-import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
@@ -35,7 +32,6 @@ import org.example.project.domain.character.Character
 import org.example.project.domain.chat.ChatUpdate
 import org.example.project.shared.AgentState
 import org.example.project.shared.ChatMessage
-import kotlin.math.log
 import kotlin.reflect.KClass
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
@@ -68,7 +64,7 @@ class ChatViewModel(
                 title = character.name,
                 chatMessages = buildList {
                     add(ChatMessage.SystemMessage("Hi ${character.name}! I'm the Fantasy Store assistant. How can I help?"))
-                    initialMessages?.mapNotNull(::toChatMessage)?.let { addAll(it) }
+                    initialMessages?.flatMap(::toChatMessages)?.let { addAll(it) }
                 }
             )
         )
@@ -110,26 +106,43 @@ class ChatViewModel(
         }
     }
 
-    private fun toChatMessage(message: Message): ChatMessage? = when (message) {
-        is Message.User -> ChatMessage.UserMessage(message.content)
-        is Message.Assistant -> ChatMessage.AgentMessage(message.content)
-        is Message.Reasoning -> null
-        is Message.System -> null
+    private fun toChatMessages(message: Message): List<ChatMessage> = when (message) {
+        is Message.System -> message.parts.map { ChatMessage.UserMessage(it.text) }
+        is Message.User -> message.parts.mapNotNull { part ->
+            when (part) {
+                is MessagePart.Text -> ChatMessage.UserMessage(part.text)
+                is MessagePart.Tool.Result -> ChatMessage.UserMessage(
+                    Json.decodeFromString(
+                        String.serializer(),
+                        part.output
+                    )
+                )
 
-        is Message.Tool.Call if message.tool == "askQuestion" -> {
-            val text = Json.decodeFromString<ToolMessage>(message.parts.single().text).message
-            ChatMessage.AgentMessage(text)
+                is MessagePart.Attachment -> null
+            }
         }
 
-        is Message.Tool.Result if message.tool == "askQuestion" ->
-            ChatMessage.UserMessage(Json.decodeFromString(String.serializer(), message.content))
+        is Message.Assistant -> message.parts.mapNotNull { part ->
+            when (part) {
+                is MessagePart.Text -> ChatMessage.AgentMessage(part.text)
+                is MessagePart.Reasoning -> null
+                is MessagePart.Tool.Call -> {
+                    if (part.tool == "askQuestion") {
+                        ChatMessage.AgentMessage(
+                            Json.decodeFromString(
+                                ToolMessage.serializer(),
+                                part.args
+                            ).message
+                        )
+                    } else ChatMessage.ToolCallMessage(
+                        toolName = part.tool,
+                        args = mapOf("args" to part.args)
+                    )
+                }
 
-        is Message.Tool.Call -> ChatMessage.ToolCallMessage(
-            toolName = message.tool,
-            args = mapOf("args" to message.content)
-        )
-
-        is Message.Tool.Result -> null
+                else -> null
+            }
+        }
     }
 
     override fun onCleared() {

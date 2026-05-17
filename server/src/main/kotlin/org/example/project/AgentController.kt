@@ -2,6 +2,7 @@ package org.example.project
 
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.prompt.message.Message
+import ai.koog.prompt.message.MessagePart
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -15,8 +16,8 @@ import org.example.project.koog.sse
 import org.example.project.koog.tools.AskQuestionTool
 import org.example.project.koog.tracking.SseEmitterEventHandler
 import org.example.project.koog.tracking.sendChatMessage
-import org.example.project.shared.ChatMessage
 import org.example.project.shared.AgentState
+import org.example.project.shared.ChatMessage
 import org.example.project.shared.LlmCallHistoryItem
 import org.example.project.shared.LlmCallToolData
 import org.springframework.stereotype.Controller
@@ -78,14 +79,25 @@ class AgentController(
 }
 
 fun List<Message>.toHistoryItems(): List<LlmCallHistoryItem> =
-    map { message ->
+    flatMap { message ->
         when (message) {
-            is Message.System -> LlmCallHistoryItem.System(message.content)
-            is Message.User -> LlmCallHistoryItem.User(message.content)
-            is Message.Assistant -> LlmCallHistoryItem.Assistant(message.content)
-            is Message.Reasoning -> LlmCallHistoryItem.Reasoning(message.content)
-            is Message.Tool.Call -> LlmCallHistoryItem.ToolCall(message.tool, message.content)
-            is Message.Tool.Result -> LlmCallHistoryItem.ToolResult(message.tool, message.content)
+            is Message.System -> message.parts.map { LlmCallHistoryItem.System(it.text) }
+            is Message.User -> message.parts.mapNotNull { part ->
+                when (part) {
+                    is MessagePart.Text -> LlmCallHistoryItem.User(part.text)
+                    is MessagePart.Tool.Result -> LlmCallHistoryItem.ToolResult(part.tool, part.output)
+                    is MessagePart.Attachment -> null
+                }
+            }
+
+            is Message.Assistant -> message.parts.mapNotNull { part ->
+                when (part) {
+                    is MessagePart.Text -> LlmCallHistoryItem.Assistant(part.text)
+                    is MessagePart.Reasoning -> LlmCallHistoryItem.Reasoning(part.content.joinToString(""))
+                    is MessagePart.Tool.Call -> LlmCallHistoryItem.ToolCall(part.tool, part.args)
+                    else -> null
+                }
+            }
         }
     }
 

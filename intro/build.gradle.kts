@@ -33,6 +33,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.koog.agents)
+    implementation(libs.koog.agents.additions)
     implementation(libs.koog.memory)
     implementation(ktorLibs.client.okhttp)
     implementation(libs.logback.classic)

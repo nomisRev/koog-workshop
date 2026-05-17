@@ -1,35 +1,17 @@
 package org.example.project.screens.chatlist
 
 import ai.koog.prompt.message.Message
+import ai.koog.prompt.message.MessagePart
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -123,15 +105,22 @@ private fun ChatListContent(
     }
 }
 
+private data class MessageDescriptor(val message: Message, val part: MessagePart)
+private data class TextMessageDescriptor(val message: Message, val part: MessagePart.Text)
+
 @Composable
 private fun ChatItem(chat: ChatDetails, onClick: () -> Unit) {
-    val lastVisibleMessage = chat.messages.lastOrNull { it is Message.User || it is Message.Assistant }
-    val preview = when (lastVisibleMessage) {
-        is Message.User -> lastVisibleMessage.content
-        is Message.Assistant -> lastVisibleMessage.content
+    val lastVisibleMessage = chat.messages
+        .flatMap { msg -> msg.parts.map { MessageDescriptor(msg, it) } }
+        .lastOrNull { it.part is MessagePart.Text }
+        ?.let { TextMessageDescriptor(it.message, it.part as MessagePart.Text) }
+
+    val preview = when (lastVisibleMessage?.message) {
+        is Message.User -> lastVisibleMessage.part.text
+        is Message.Assistant -> lastVisibleMessage.part.text
         else -> "No messages"
     }
-    val timeText = lastVisibleMessage?.metaInfo?.timestamp?.let { timestamp ->
+    val timeText = lastVisibleMessage?.message?.metaInfo?.timestamp?.let { timestamp ->
         val javaInstant = Instant.ofEpochMilli(timestamp.toEpochMilliseconds())
         val zone = ZoneId.systemDefault()
         val dateTime = LocalDateTime.ofInstant(javaInstant, zone)
