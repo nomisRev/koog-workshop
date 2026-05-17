@@ -2,7 +2,7 @@ spring:
   application:
     name: devoxxuk-26-koog
   datasource:
-    url: jdbc:sqlite:server/.agent-fantasy-store/agent-fantasy-store.db
+    url: jdbc:sqlite:.agent-fantasy-store/agent-fantasy-store.db
     driver-class-name: org.sqlite.JDBC
   ai:
     openai:
