@@ -1,5 +1,10 @@
-package com.jetbrains.koog.workshop.agents.homeservices
+package com.jetbrains.koog.workshop.agents.homeservices.tools
 
+import com.jetbrains.koog.workshop.agents.homeservices.Booking
+import com.jetbrains.koog.workshop.agents.homeservices.HomeServicesFindSlotTools
+import com.jetbrains.koog.workshop.agents.homeservices.HomeServicesSchedule
+import com.jetbrains.koog.workshop.agents.homeservices.ServiceType
+import com.jetbrains.koog.workshop.agents.homeservices.SpecialistType
 import java.time.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertContains

@@ -1,4 +1,4 @@
-package com.jetbrains.koog.workshop.agents.homeservices
+package com.jetbrains.koog.workshop.agents.homeservices.conversation
 
 import ai.koog.agents.chatMemory.feature.ChatMemory
 import ai.koog.agents.chatMemory.feature.InMemoryChatHistoryProvider
@@ -7,28 +7,26 @@ import ai.koog.agents.core.agent.config.AIAgentConfig
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.clients.LLMClient
-import ai.koog.prompt.executor.clients.anthropic.AnthropicLLMClient
-import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
-import ai.koog.prompt.executor.clients.google.GoogleLLMClient
-import ai.koog.prompt.executor.clients.google.GoogleModels
-import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.MultiLLMPromptExecutor
 import ai.koog.prompt.llm.LLModel
-import com.jetbrains.koog.workshop.agents.homeservices.EvaluationCriteria.appointmentScheduled
-import com.jetbrains.koog.workshop.agents.homeservices.EvaluationCriteria.cancelsNonrelevantRequest
-import com.jetbrains.koog.workshop.agents.homeservices.EvaluationCriteria.emergencyReferral
-import com.jetbrains.koog.workshop.agents.homeservices.EvaluationCriteria.gracefulCancellation
-import com.jetbrains.koog.workshop.agents.homeservices.EvaluationCriteria.immediatelyCancelsOnWeekendOnly
-import com.jetbrains.koog.workshop.agents.homeservices.EvaluationCriteria.noRedundantQuestions
-import com.jetbrains.koog.workshop.agents.homeservices.EvaluationCriteria.refusesOffTopicQuestions
+import com.jetbrains.koog.workshop.agents.homeservices.Booking
+import com.jetbrains.koog.workshop.agents.homeservices.HomeServicesBookTools
+import com.jetbrains.koog.workshop.agents.homeservices.HomeServicesFindSlotTools
+import com.jetbrains.koog.workshop.agents.homeservices.HomeServicesSchedule
+import com.jetbrains.koog.workshop.agents.homeservices.ServiceType
+import com.jetbrains.koog.workshop.agents.homeservices.conversation.EvaluationCriteria.appointmentScheduled
+import com.jetbrains.koog.workshop.agents.homeservices.conversation.EvaluationCriteria.cancelsNonrelevantRequest
+import com.jetbrains.koog.workshop.agents.homeservices.conversation.EvaluationCriteria.emergencyReferral
+import com.jetbrains.koog.workshop.agents.homeservices.conversation.EvaluationCriteria.gracefulCancellation
+import com.jetbrains.koog.workshop.agents.homeservices.conversation.EvaluationCriteria.immediatelyCancelsOnWeekendOnly
+import com.jetbrains.koog.workshop.agents.homeservices.conversation.EvaluationCriteria.noRedundantQuestions
+import com.jetbrains.koog.workshop.agents.homeservices.conversation.EvaluationCriteria.refusesOffTopicQuestions
 import com.jetbrains.koog.workshop.agents.homeservices.basic.CONVERSATION_END_MARKER
 import com.jetbrains.koog.workshop.agents.homeservices.basic.homeServicesBasicSystemPrompt
 import com.jetbrains.koog.workshop.agents.homeservices.graph.HomeServicesPrompts
 import com.jetbrains.koog.workshop.agents.homeservices.graph.homeServicesStrategy
 import com.jetbrains.koog.workshop.agents.util.AskUserTool
 import com.jetbrains.koog.workshop.settings.ApiKeyService
-import com.jetbrains.koog.workshop.settings.ApiKeyService.ServiceProvider
 import dev.dokimos.core.JudgeLM
 import dev.dokimos.core.conversation.ConversationTrajectory
 import dev.dokimos.core.conversation.EvaluationCriterion
@@ -118,7 +116,7 @@ abstract class HomeServicesConversationSimulationBase {
     protected lateinit var model: LLModel
     protected lateinit var judge: JudgeLM
 
-    protected open val writeToFile = true
+    protected open val writeToFile = false
     protected abstract val logSubDir: String
 
     /**

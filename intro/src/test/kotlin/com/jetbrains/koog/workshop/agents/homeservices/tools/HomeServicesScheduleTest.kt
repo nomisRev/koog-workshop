@@ -1,5 +1,9 @@
-package com.jetbrains.koog.workshop.agents.homeservices
+package com.jetbrains.koog.workshop.agents.homeservices.tools
 
+import com.jetbrains.koog.workshop.agents.homeservices.Booking
+import com.jetbrains.koog.workshop.agents.homeservices.HomeServicesSchedule
+import com.jetbrains.koog.workshop.agents.homeservices.SpecialistType
+import com.jetbrains.koog.workshop.agents.homeservices.TimeWindow
 import java.time.DayOfWeek
 import kotlin.test.Test
 import kotlin.test.assertEquals
