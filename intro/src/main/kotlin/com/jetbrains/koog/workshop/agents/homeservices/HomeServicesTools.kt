@@ -12,6 +12,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
+@Suppress("unused")
 enum class Workday(val dayOfWeek: DayOfWeek) {
     monday(DayOfWeek.MONDAY),
     tuesday(DayOfWeek.TUESDAY),
@@ -24,6 +25,7 @@ enum class ServiceType {
     plumbing, electrical, hvac, handyman
 }
 
+@Suppress("unused")
 enum class UrgencyLevel {
     urgent,
     standard,
