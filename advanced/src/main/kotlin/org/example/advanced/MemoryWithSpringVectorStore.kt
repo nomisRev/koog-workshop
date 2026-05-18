@@ -1,14 +1,8 @@
 package org.example.advanced
 
-import ai.koog.agents.core.agent.AIAgent
-import ai.koog.agents.core.agent.config.AIAgentConfig
-import ai.koog.agents.longtermmemory.model.MemoryRecord
-import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.MultiLLMPromptExecutor
 import ai.koog.prompt.llm.LLMProvider
-import ai.koog.rag.base.storage.search.SearchRequest
 import ai.koog.rag.base.storage.search.SimilaritySearchRequest
 import ai.koog.spring.ai.vectorstore.SpringAiKoogVectorStore
 import kotlinx.coroutines.Dispatchers
@@ -20,7 +14,6 @@ import org.springframework.ai.vectorstore.pgvector.PgVectorStore
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.datasource.DriverManagerDataSource
 import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
 suspend fun main() {
