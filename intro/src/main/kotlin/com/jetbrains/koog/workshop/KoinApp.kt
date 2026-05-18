@@ -34,7 +34,7 @@ fun KoinApp() = KoinMultiplatformApplication(
             module {
                 factory<suspend () -> Pair<LLMClient, LLModel>> {
                     {
-                        ApiKeyService.getClientAndModel()
+                        ApiKeyService.getDefaultClientAndModel()
                     }
                 }
                 single<AgentProvider>(named("weather")) { WeatherAgentProvider(provideLLMClient = get()) }

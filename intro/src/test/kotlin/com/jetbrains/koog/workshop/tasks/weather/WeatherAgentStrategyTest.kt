@@ -5,7 +5,6 @@ import ai.koog.agents.core.agent.config.AIAgentConfig
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.clients.LLMClient
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.MultiLLMPromptExecutor
 import ai.koog.prompt.llm.LLModel
 import com.jetbrains.koog.workshop.agents.weather.WeatherPrompts
@@ -32,7 +31,7 @@ class WeatherAgentStrategyTest {
 
     @Before
     fun setup() {
-        val clientAndModel = ApiKeyService.getClientAndModel()
+        val clientAndModel = ApiKeyService.getDefaultClientAndModel()
         llmClient = clientAndModel.first
         model = clientAndModel.second
         val executor = MultiLLMPromptExecutor(llmClient)

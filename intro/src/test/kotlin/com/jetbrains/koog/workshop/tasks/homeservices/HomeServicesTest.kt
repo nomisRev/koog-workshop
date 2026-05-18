@@ -35,7 +35,7 @@ class HomeServicesTest {
 
     @Before
     fun setup() {
-        val clientAndModel = ApiKeyService.getClientAndModel()
+        val clientAndModel = ApiKeyService.getDefaultClientAndModel()
         llmClient = clientAndModel.first
         model = clientAndModel.second
         val executor = MultiLLMPromptExecutor(llmClient)

@@ -3,7 +3,6 @@ package com.jetbrains.koog.workshop.tasks.weather
 import ai.koog.agents.chatMemory.feature.InMemoryChatHistoryProvider
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.prompt.executor.clients.LLMClient
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.MultiLLMPromptExecutor
 import ai.koog.prompt.llm.LLModel
 import com.jetbrains.koog.workshop.agents.weather.WeatherAgentProvider
@@ -26,7 +25,7 @@ class WeatherAgentToolsTest {
 
     @Before
     fun setup() {
-        val clientAndModel = ApiKeyService.getClientAndModel()
+        val clientAndModel = ApiKeyService.getDefaultClientAndModel()
         llmClient = clientAndModel.first
         model = clientAndModel.second
         val executor = MultiLLMPromptExecutor(llmClient)
@@ -43,7 +42,7 @@ class WeatherAgentToolsTest {
 
     @Test
     fun `agent provides actual weather forecast`() {
-        val provider = WeatherAgentProvider { ApiKeyService.getClientAndModel() }
+        val provider = WeatherAgentProvider { ApiKeyService.getDefaultClientAndModel() }
         val agent = runBlocking {
             provider.provideAgent(
                 historyProvider = InMemoryChatHistoryProvider(),
