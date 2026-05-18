@@ -41,8 +41,6 @@ import koog_workshop.intro.generated.resources.weatherAgent
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 
-internal const val MAX_BUBBLE_WIDTH_FRACTION = 0.85f
-
 @Composable
 fun AgentDemoScreen(viewModel: AgentDemoViewModel) {
     val uiState by viewModel.uiState.collectAsState()
@@ -360,7 +358,7 @@ private fun ToolCallMessageItem(toolName: String, args: Map<String, String>) {
             verticalAlignment = Alignment.Top
         ) {
             Box(
-                modifier = Modifier.size(AppDimension.messageTitleColumnWidth),
+                modifier = Modifier.width(AppDimension.messageTitleColumnWidth),
                 contentAlignment = Alignment.TopCenter
             ) {
                 Text(
