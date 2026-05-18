@@ -16,10 +16,8 @@ import org.springframework.ai.openai.OpenAiEmbeddingModel
 import org.springframework.ai.openai.OpenAiEmbeddingOptions
 import org.springframework.ai.openai.api.OpenAiApi
 import org.springframework.ai.document.MetadataMode
-import com.pgvector.PGvector
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore
 import org.springframework.jdbc.core.JdbcTemplate
-import org.springframework.jdbc.datasource.DelegatingDataSource
 import org.springframework.jdbc.datasource.DriverManagerDataSource
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -31,17 +29,11 @@ suspend fun main() {
     MultiLLMPromptExecutor(
         LLMProvider.OpenAI to OpenAILLMClient(openaiApiKey)
     ).use { promptExecutor ->
-        val dataSource = object : DelegatingDataSource(DriverManagerDataSource().apply {
+        val dataSource = DriverManagerDataSource().apply {
             setDriverClassName("org.postgresql.Driver")
             url = "jdbc:postgresql://localhost:5432/postgres"
             username = "postgres"
             password = "postgres"
-        }) {
-            override fun getConnection() =
-                super.getConnection().also(PGvector::addVectorType)
-
-            override fun getConnection(u: String, p: String) =
-                super.getConnection(u, p).also(PGvector::addVectorType)
         }
 
         val embeddingModel = OpenAiEmbeddingModel(
