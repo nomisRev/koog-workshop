@@ -50,6 +50,15 @@ suspend fun main() {
     }
 }
 
+/*
+ * AUTOMATIC STRUCTURED OUTPUT
+ *
+ * The simplest path: nodeLLMRequestStructuredWithUserText<T>() with no explicit config.
+ * Koog auto-generates the JSON schema from the @Serializable/@LLMDescription annotations on T
+ * and selects the output mode based on what the active model supports:
+ *   • If the model has a native JSON mode → StructuredRequest.Native (schema via parameter)
+ *   • Otherwise → StructuredRequest.Manual (schema injected as a user message)
+ */
 private suspend fun runAutomaticAgent(promptExecutor: MultiLLMPromptExecutor, reviewText: String) {
     val strategy = strategy<String, MovieReview>("structured-native") {
         val nodeExtract by nodeLLMRequestStructuredWithUserText<MovieReview>()
