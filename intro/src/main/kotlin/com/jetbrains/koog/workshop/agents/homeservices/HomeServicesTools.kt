@@ -325,21 +325,14 @@ class HomeServicesFindSlotTools(private val schedule: HomeServicesSchedule) : To
     }
 }
 
-/**
- * Tool set for booking an appointment. Separated from [HomeServicesFindSlotTools]
- * so the strategy can gate access: the LLM can only book after confirmation.
- */
-class HomeServicesBookTools(private val schedule: HomeServicesSchedule) : ToolSet {
-
-    @Tool
-    @LLMDescription("Book a home service appointment into a specific slot. Fails if the slot is already BOOKED or if the specialist cannot handle the requested service.")
+class HomeServicesBookingProvider(private val schedule: HomeServicesSchedule) {
     fun bookAppointment(
-        @LLMDescription("Customer's full name") customerName: String,
-        @LLMDescription("Service type: PLUMBING, ELECTRICAL, HVAC, or HANDYMAN") serviceType: ServiceType,
-        @LLMDescription("Slot ID from getAvailableSlots, e.g. svc_shk_0428_2") slotId: String,
-        @LLMDescription("Service address") address: String,
-        @LLMDescription("Brief description of the issue to be resolved") issueDescription: String,
-        @LLMDescription("Access notes such as gate code, pet, parking, or buzzer instructions") notes: String = "",
+        customerName: String,
+        serviceType: ServiceType,
+        slotId: String,
+        address: String,
+        issueDescription: String,
+        notes: String = "",
     ): String {
         val slot = schedule.slots.find { it.id == slotId }
             ?: return "Error: Unknown slot ID '$slotId'."
@@ -375,5 +368,31 @@ class HomeServicesBookTools(private val schedule: HomeServicesSchedule) : ToolSe
             println(it)
             println("==============")
         }
+    }
+}
+
+/**
+ * Tool set for booking an appointment. Used in HomeServicesBasicAgent.
+ */
+class HomeServicesBookTools(schedule: HomeServicesSchedule) : ToolSet {
+    private val bookingProvider = HomeServicesBookingProvider(schedule)
+
+    @Tool
+    @LLMDescription("Book a home service appointment into a specific slot. Fails if the slot is already BOOKED or if the specialist cannot handle the requested service.")
+    fun bookAppointment(
+        @LLMDescription("Customer's full name")
+        customerName: String,
+        @LLMDescription("Service type: PLUMBING, ELECTRICAL, HVAC, or HANDYMAN")
+        serviceType: ServiceType,
+        @LLMDescription("Slot ID from getAvailableSlots, e.g. svc_shk_0428_2")
+        slotId: String,
+        @LLMDescription("Service address")
+        address: String,
+        @LLMDescription("Brief description of the issue to be resolved")
+        issueDescription: String,
+        @LLMDescription("Access notes such as gate code, pet, parking, or buzzer instructions")
+        notes: String = "",
+    ): String {
+        return bookingProvider.bookAppointment(customerName, serviceType, slotId, address, issueDescription, notes)
     }
 }

@@ -11,6 +11,7 @@ import ai.koog.prompt.executor.llms.MultiLLMPromptExecutor
 import ai.koog.prompt.llm.LLModel
 import com.jetbrains.koog.workshop.agents.homeservices.Booking
 import com.jetbrains.koog.workshop.agents.homeservices.HomeServicesBookTools
+import com.jetbrains.koog.workshop.agents.homeservices.HomeServicesBookingProvider
 import com.jetbrains.koog.workshop.agents.homeservices.HomeServicesFindSlotTools
 import com.jetbrains.koog.workshop.agents.homeservices.HomeServicesSchedule
 import com.jetbrains.koog.workshop.agents.homeservices.ServiceType
@@ -587,14 +588,14 @@ class HomeServicesGraphConversationSimulation : HomeServicesConversationSimulati
         addMessage: (role: String, content: String) -> Unit,
         simulateUserResponse: suspend () -> String,
     ) {
-        val findTools = HomeServicesFindSlotTools(schedule)
-        val bookTools = HomeServicesBookTools(schedule)
+        val findTools = HomeServicesFindSlotTools(schedule).asTools()
+        val bookingProvider = HomeServicesBookingProvider(schedule)
         val communicationTools = CommunicationTools { question ->
             addMessage("Assistant", question)
             val userResponse = simulateUserResponse()
             addMessage("User", userResponse)
             userResponse
-        }
+        }.asTools()
         val agent = AIAgent(
             promptExecutor = MultiLLMPromptExecutor(llmClient),
             agentConfig = AIAgentConfig(
@@ -604,11 +605,10 @@ class HomeServicesGraphConversationSimulation : HomeServicesConversationSimulati
                 model = model,
                 maxAgentIterations = 200
             ),
-            strategy = homeServicesStrategy(communicationTools, findTools, bookTools),
+            strategy = homeServicesStrategy(communicationTools, findTools, bookingProvider),
             toolRegistry = ToolRegistry {
                 tools(communicationTools)
                 tools(findTools)
-                tools(bookTools)
             }
         )
         val result = agent.run(case.initialMessage)

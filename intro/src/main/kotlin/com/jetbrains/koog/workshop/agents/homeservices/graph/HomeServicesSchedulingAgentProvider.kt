@@ -18,7 +18,7 @@ import com.jetbrains.koog.workshop.agents.util.trackEvents
 import koog_workshop.intro.generated.resources.Res
 import koog_workshop.intro.generated.resources.homeServicesAgent
 import org.jetbrains.compose.resources.DrawableResource
-import com.jetbrains.koog.workshop.agents.homeservices.HomeServicesBookTools
+import com.jetbrains.koog.workshop.agents.homeservices.HomeServicesBookingProvider
 import com.jetbrains.koog.workshop.agents.homeservices.HomeServicesFindSlotTools
 import com.jetbrains.koog.workshop.agents.homeservices.HomeServicesSchedule
 
@@ -40,10 +40,10 @@ internal class HomeServicesSchedulingAgentProvider(
     ): AIAgent<String, String> {
         val (llmClient, model) = provideLLMClient.invoke()
         val executor = MultiLLMPromptExecutor(llmClient)
-        val communicationTools = CommunicationTools(onAssistantMessage)
+        val communicationTools = CommunicationTools(onAssistantMessage).asTools()
         val schedule = HomeServicesSchedule()
-        val findTools = HomeServicesFindSlotTools(schedule)
-        val bookTools = HomeServicesBookTools(schedule)
+        val findTools = HomeServicesFindSlotTools(schedule).asTools()
+        val bookingProvider = HomeServicesBookingProvider(schedule)
 
         val agentConfig = AIAgentConfig(
             prompt = prompt("home-services-scheduling") {
@@ -56,11 +56,10 @@ internal class HomeServicesSchedulingAgentProvider(
         return AIAgent(
             promptExecutor = executor,
             agentConfig = agentConfig,
-            strategy = homeServicesStrategy(communicationTools, findTools, bookTools),
+            strategy = homeServicesStrategy(communicationTools, findTools, bookingProvider),
             toolRegistry = ToolRegistry {
                 tools(communicationTools)
                 tools(findTools)
-                tools(bookTools)
             },
         ) {
             install(ChatMemory) {
