@@ -7,8 +7,8 @@ import ai.koog.agents.core.dsl.builder.node
 import ai.koog.agents.core.dsl.builder.strategy
 import ai.koog.agents.core.tools.Tool
 import ai.koog.agents.ext.agent.subgraphWithTask
-import ai.koog.prompt.message.MessagePart
 import com.jetbrains.koog.workshop.agents.homeservices.HomeServicesBookingProvider
+import com.jetbrains.koog.workshop.agents.util.textContent
 
 fun homeServicesStrategy(
     communicationTools: List<Tool<*, *>>,
@@ -74,8 +74,7 @@ fun homeServicesStrategy(
     val handleCancellation by node<String, String> { _ ->
         llm.writeSession {
             appendPrompt { user(HomeServicesPrompts.handleCancellationInstructions) }
-            // FIXME replace with textContent()
-            requestLLM().parts.filterIsInstance<MessagePart.Text>().joinToString(separator = "\n") { it.text }
+            requestLLM().textContent()
         }
     }
 
@@ -83,8 +82,7 @@ fun homeServicesStrategy(
     val handleEmergency by node<String, String> { justification ->
         llm.writeSession {
             appendPrompt { user(HomeServicesPrompts.respondToEmergencyInstructions(justification)) }
-            // FIXME replace with textContent()
-            requestLLM().parts.filterIsInstance<MessagePart.Text>().joinToString(separator = "\n") { it.text }
+            requestLLM().textContent()
         }
     }
 
