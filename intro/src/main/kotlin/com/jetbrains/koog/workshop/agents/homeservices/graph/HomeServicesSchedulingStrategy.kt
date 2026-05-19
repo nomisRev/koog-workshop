@@ -120,12 +120,6 @@ fun homeServicesStrategy(
     ) { _ ->
         HomeServicesPrompts.collectIssueDetailsInstructions(agentInput<String>())
     }
-    val storeIssueDetails by node<IssueDetails, String> { details ->
-        storage.set(issueDetailsKey, details)
-        "Issue details stored; proceeding to slot selection."
-    }
-
-    val compressHistory by nodeLLMCompressHistory<String>()
 
     // Phase 2: select a slot — find availability and let the user pick
     val selectSlot by subgraphWithTask<String, SlotSelectionOutcome>(
@@ -133,10 +127,6 @@ fun homeServicesStrategy(
     ) { state ->
         val issueDetails = storage.getValue(issueDetailsKey)
         HomeServicesPrompts.selectSlotInstructions(issueDetails, state)
-    }
-    val storeSelectedSlot by node<SelectedSlot, String> { slot ->
-        storage.set(selectedSlotKey, slot)
-        "Slot selected and stored for booking."
     }
 
     // Phase 3: confirm appointment — review details with the customer before booking
@@ -192,16 +182,19 @@ fun homeServicesStrategy(
     edge(triageEmergency forwardTo handleCancellation onCondition { it.status == TriageOutcome.cancelled } transformed { "Cancelled" })
     edge(triageEmergency forwardTo handleEmergency onCondition { it.status == TriageOutcome.emergency_detected } transformed { it.justification ?: "Emergency situation detected" })
 
-    edge(collectIssueDetails forwardTo storeIssueDetails onCondition { it.success() } transformed { it.collected!! })
+    edge(collectIssueDetails forwardTo selectSlot onCondition { it.success() } transformed { outcome ->
+        val details = outcome.collected!!
+        storage.set(issueDetailsKey, details)
+        "Issue details collected"
+    })
     edge(collectIssueDetails forwardTo handleCancellation onCondition { !it.success() } transformed { "Cancelled" })
 
-    storeIssueDetails then compressHistory
-    compressHistory then selectSlot
-
-    edge(selectSlot forwardTo storeSelectedSlot onCondition { it.success() } transformed { it.selected!! })
+    edge(selectSlot forwardTo confirmAppointment onCondition { it.success() }  transformed { outcome ->
+        val slot = outcome.selected!!
+        storage.set(selectedSlotKey, slot)
+        "Slot selected"
+    })
     edge(selectSlot forwardTo handleCancellation onCondition { !it.success() } transformed { "Cancelled" })
-
-    storeSelectedSlot then confirmAppointment
 
     edge(confirmAppointment forwardTo selectSlot onCondition { it == ConfirmationOutcome.change_requested } transformed { "Slot was selected, but the change was requested." })
     edge(confirmAppointment forwardTo handleCancellation onCondition { it == ConfirmationOutcome.cancelled } transformed { "Cancelled" })
