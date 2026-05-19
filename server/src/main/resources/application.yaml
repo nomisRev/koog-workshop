@@ -6,7 +6,7 @@ spring:
     driver-class-name: org.sqlite.JDBC
   ai:
     openai:
-      api-key: ${OPENAI_API_KEY:sk-test}
+      api-key: ${KOOG_WORKSHOP_OPENAI_API_KEY:sk-test}
     model:
       chat: openai
     chat:

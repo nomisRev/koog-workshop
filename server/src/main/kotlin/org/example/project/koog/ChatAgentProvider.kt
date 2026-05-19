@@ -8,13 +8,13 @@ import ai.koog.agents.features.eventHandler.feature.EventHandler
 import ai.koog.agents.features.persistence.jdbc.JdbcPersistenceStorageProvider
 import ai.koog.agents.features.tracing.feature.Tracing
 import ai.koog.agents.features.tracing.writer.TraceFeatureMessageLogWriter
-import ai.koog.agents.snapshot.feature.Persistence
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.model.PromptExecutor
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.example.project.domain.order.OrderService
 import org.example.project.domain.shared.CharacterId
 import org.example.project.koog.tools.CommunicationTools
+import org.example.project.koog.tools.CustomerSupportTools
 import org.example.project.koog.tools.ReadOrderTools
 import org.example.project.koog.tools.UpdateOrderTools
 import org.example.project.koog.tracking.SseEmitterEventHandler
@@ -38,7 +38,7 @@ class ChatAgentProvider(
     ): AIAgent<String, String> {
         val readOrderTools = ReadOrderTools(characterId, orderService)
         val updateOrderTools = UpdateOrderTools(characterId, orderService)
-//        val tools = CustomerSupportTools(askQuestionTool, readOrderTools, updateOrderTools)
+//        val tools = CustomerSupportTools(communicationTools, readOrderTools, updateOrderTools)
 
         return AIAgent(
             promptExecutor = executor,
@@ -58,14 +58,9 @@ class ChatAgentProvider(
                 chatHistoryProvider = historyProvider
                 windowSize(50)
             }
-            install(Persistence) {
-                enableAutomaticPersistence = true
-                storage = persistence
-            }
-//            install(OpenTelemetry) {
-//                setServiceInfo("customer-support", "0.0.1")
-//                addLangfuseExporter(langfuseUrl, langfusePublicKey, langfuseSecretKey)
-//            }
+            // TODO:
+            //   Install Persistence plugin
+            //   Test in app that you can close a chat, and resume the agent from its last checkpoint
             install(Tracing) {
                 addMessageProcessor(TraceFeatureMessageLogWriter(KotlinLogging.logger {}))
             }

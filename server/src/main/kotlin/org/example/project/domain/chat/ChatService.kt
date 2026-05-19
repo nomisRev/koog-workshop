@@ -7,9 +7,7 @@ import ai.koog.prompt.message.Message
 
 import org.example.project.domain.shared.CharacterId
 import org.example.project.shared.AgentState
-import org.jetbrains.exposed.v1.jdbc.Database
 import org.springframework.stereotype.Component
-import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Component
@@ -51,7 +49,7 @@ class ChatService(
         askQuestionRepository.answerQuestion(characterId, sessionId, answer)
 
     fun getAgentState(sessionId: String): AgentState =
-        when (persistenceStorageProvider.getLatestCheckpointBlocking(sessionId)?.nodePath) {
+        when (persistenceStorageProvider.getLatestCheckpointBlocking(sessionId)?.graphProperties?.nodePath) {
             null -> AgentState.None
             PersistenceUtils.TOMBSTONE_CHECKPOINT_NAME -> AgentState.Completed
             else -> AgentState.Failed
