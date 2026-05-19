@@ -12,6 +12,12 @@ fun basicSingleRunStrategyByHand() = strategy<String, String>("single-run-strate
     val nodeCallLLM: AIAgentNodeBase<Message.User, Message.Assistant> by nodeLLMSendMessage()
     val nodeExecuteTools: AIAgentNodeBase<ToolCalls, ReceivedToolResults> by nodeExecuteTools()
 
-    // TODO: Replace the following with the default strategy implementation:
-    edge(nodeStart forwardTo nodeFinish)
+    // Replace the following with the default strategy implementation:
+//    edge(nodeStart forwardTo nodeFinish)
+
+    // Solution:
+    edge(nodeStart forwardTo nodeCallLLM asUserMessage { it })
+    edge(nodeCallLLM forwardTo nodeExecuteTools onToolCalls { true })
+    edge(nodeExecuteTools forwardTo nodeCallLLM)
+    edge(nodeCallLLM forwardTo nodeFinish onTextMessage { true })
 }
