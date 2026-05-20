@@ -21,9 +21,6 @@ tasks.withType<KotlinCompile>().configureEach {
 
 dependencies {
     implementation(project(":shared"))
-//    implementation(libs.koog.spring.ai.starter.chat)
-//    implementation(libs.koog.spring.ai.starter.memory)
-
     implementation(libs.koog.spring.boot.starter)
     implementation(libs.koog.persistence.jdbc)
     implementation(libs.koog.chathistory.jdbc)
@@ -32,8 +29,6 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation(libs.kotlinx.serialization.json)
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-//    implementation("org.springframework.ai:spring-ai-starter-model-chat-memory-repository-jdbc:2.0.0-M5")
-//    implementation("org.springframework.ai:spring-ai-starter-model-openai:2.0.0-M5")
 
     implementation("org.xerial:sqlite-jdbc")
     implementation("org.jetbrains.exposed:exposed-spring-boot4-starter:1.2.0")
