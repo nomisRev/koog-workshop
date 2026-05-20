@@ -4,7 +4,7 @@ import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.config.AIAgentConfig
 import ai.koog.agents.core.dsl.builder.node
 import ai.koog.agents.core.dsl.builder.strategy
-import ai.koog.agents.core.dsl.extension.nodeLLMRequestStructuredWithUserText
+import ai.koog.agents.core.dsl.extension.nodeLLMRequestStructured
 import ai.koog.agents.core.tools.annotations.LLMDescription
 import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
@@ -61,7 +61,7 @@ suspend fun main() {
  */
 private suspend fun runAutomaticAgent(promptExecutor: MultiLLMPromptExecutor, reviewText: String) {
     val strategy = strategy<String, MovieReview>("structured-native") {
-        val nodeExtract by nodeLLMRequestStructuredWithUserText<MovieReview>()
+        val nodeExtract by nodeLLMRequestStructured<MovieReview>()
 
         val nodeUnwrap by node<Result<StructuredResponse<MovieReview>>, MovieReview> { result ->
             result.getOrThrow().data
@@ -112,7 +112,7 @@ private suspend fun runNativeAgent(promptExecutor: MultiLLMPromptExecutor, revie
     )
 
     val strategy = strategy<String, MovieReview>("structured-native") {
-        val nodeExtract by nodeLLMRequestStructuredWithUserText(config = config)
+        val nodeExtract by nodeLLMRequestStructured(config = config)
 
         val nodeUnwrap by node<Result<StructuredResponse<MovieReview>>, MovieReview> { result ->
             result.getOrThrow().data
@@ -170,7 +170,7 @@ private suspend fun runManualAgent(promptExecutor: MultiLLMPromptExecutor, revie
     )
 
     val strategy = strategy<String, MovieReview>("structured-manual") {
-        val nodeExtract by nodeLLMRequestStructuredWithUserText(config = config, fixingParser = fixingParser)
+        val nodeExtract by nodeLLMRequestStructured(config = config, fixingParser = fixingParser)
 
         val nodeUnwrap by node<Result<StructuredResponse<MovieReview>>, MovieReview> { result ->
             result.getOrThrow().data

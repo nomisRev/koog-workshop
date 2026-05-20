@@ -1,7 +1,7 @@
 package org.example.advanced.memory
 
 import ai.koog.agents.longtermmemory.retrieval.augmentation.PromptAugmenter
-import ai.koog.prompt.dsl.Prompt
+import ai.koog.prompt.Prompt
 import ai.koog.prompt.message.Message
 import ai.koog.prompt.message.MessagePart
 import ai.koog.rag.base.TextDocument
