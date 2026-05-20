@@ -2,7 +2,7 @@ package org.example.advanced.memory
 
 import ai.koog.agents.core.tools.Tool
 import ai.koog.agents.longtermmemory.retrieval.search.SearchQueryProvider
-import ai.koog.prompt.dsl.Prompt
+import ai.koog.prompt.Prompt
 import ai.koog.prompt.message.Message
 import ai.koog.prompt.message.MessagePart
 

@@ -2,7 +2,7 @@ package org.example.advanced.memory
 
 import ai.koog.agents.longtermmemory.ingestion.extraction.DocumentExtractor
 import ai.koog.agents.longtermmemory.model.MemoryRecord
-import ai.koog.prompt.dsl.Prompt
+import ai.koog.prompt.Prompt
 import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.model.PromptExecutor
