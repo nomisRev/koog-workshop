@@ -4,18 +4,15 @@ spring:
   datasource:
     url: jdbc:sqlite:.agent-fantasy-store/agent-fantasy-store.db
     driver-class-name: org.sqlite.JDBC
-  ai:
-    openai:
-      api-key: ${KOOG_WORKSHOP_OPENAI_API_KEY:sk-test}
-    model:
-      chat: openai
-    chat:
-      memory:
-        repository:
-          jdbc:
-            initialize-schema: always
   exposed:
     generate-ddl: true
+
+ai:
+  koog:
+    openai:
+      api-key:  ${KOOG_WORKSHOP_OPENAI_API_KEY:sk-test}
+    anthropic:
+      api-key:  ${KOOG_WORKSHOP_ANTHROPIC_API_KEY:sk-test}
 
 langfuse:
   url: ${LANGFUSE_BASE_URL:}

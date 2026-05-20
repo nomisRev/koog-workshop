@@ -25,6 +25,7 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
+        maven("https://cache-redirector.jetbrains.com/maven-central")
         maven("https://packages.jetbrains.team/maven/p/grazi/grazie-platform-public")
     }
     versionCatalogs {
