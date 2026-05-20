@@ -24,6 +24,7 @@ dependencyResolutionManagement {
                 includeGroupAndSubgroups("com.google")
             }
         }
+//        maven("https://cache-redirector.jetbrains.com/maven-central")
         mavenCentral()
         maven("https://packages.jetbrains.team/maven/p/grazi/grazie-platform-public")
     }

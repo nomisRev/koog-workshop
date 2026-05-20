@@ -1,4 +1,3 @@
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -22,9 +21,12 @@ tasks.withType<KotlinCompile>().configureEach {
 
 dependencies {
     implementation(project(":shared"))
-    implementation(libs.koog.spring.ai.starter.chat)
-    implementation(libs.koog.spring.ai.starter.memory)
+//    implementation(libs.koog.spring.ai.starter.chat)
+//    implementation(libs.koog.spring.ai.starter.memory)
+
+    implementation(libs.koog.spring.boot.starter)
     implementation(libs.koog.persistence.jdbc)
+    implementation(libs.koog.chathistory.jdbc)
     implementation(libs.koog.opentelemetry)
 
     implementation("org.springframework.boot:spring-boot-starter-web")

@@ -6,7 +6,7 @@ import ai.koog.agents.features.sql.providers.SQLPersistenceSchemaMigrator
 import org.jetbrains.exposed.v1.core.Table
 import javax.sql.DataSource
 
-class SqlliteJdbcPersistenceStorageProvider @JvmOverloads constructor(
+class SqliteJdbcPersistenceStorageProvider @JvmOverloads constructor(
     dataSource: DataSource,
     tableName: String = "agent_checkpoints",
     ttlSeconds: Long? = null,

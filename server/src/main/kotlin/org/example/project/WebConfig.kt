@@ -1,18 +1,15 @@
 package org.example.project
 
+import ai.koog.agents.chatMemory.feature.ChatHistoryProvider
 import ai.koog.agents.features.persistence.jdbc.JdbcPersistenceStorageProvider
-import ai.koog.agents.features.persistence.jdbc.PostgresJdbcPersistenceSchemaMigrator
-import ai.koog.agents.features.sql.providers.SQLPersistenceSchemaMigrator
-import kotlinx.serialization.json.Json
-import org.example.project.db.SqlliteJdbcPersistenceStorageProvider
+import org.example.project.db.SqliteJdbcChatHistoryProvider
+import org.example.project.db.SqliteJdbcPersistenceStorageProvider
 import org.example.project.domain.shared.*
-import org.jetbrains.exposed.v1.core.Table
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.format.FormatterRegistry
 import org.springframework.http.converter.json.KotlinSerializationJsonHttpMessageConverter
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
-import java.util.UUID
 import javax.sql.DataSource
 import kotlin.uuid.Uuid
 
@@ -35,6 +32,10 @@ class WebConfig : WebMvcConfigurer {
     }
 
     @Bean
+    fun chatHistory(dataSource: DataSource): ChatHistoryProvider =
+        SqliteJdbcChatHistoryProvider(dataSource)
+
+    @Bean
     fun persistence(dataSource: DataSource): JdbcPersistenceStorageProvider =
-        SqlliteJdbcPersistenceStorageProvider(dataSource)
+        SqliteJdbcPersistenceStorageProvider(dataSource)
 }
