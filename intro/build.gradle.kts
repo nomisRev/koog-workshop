@@ -52,7 +52,7 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "com.jetbrains.koog.workshop.MainKt"
+        mainClass = "com.jetbrains.koog.workshop.IntroAppMainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
