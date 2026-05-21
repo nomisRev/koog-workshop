@@ -116,9 +116,6 @@ private suspend fun runSimpleAgent(
             model = OpenAIModels.Chat.GPT5_5,
             maxAgentIterations = 100,
         ),
-        toolRegistry = ToolRegistry {
-            tool(sendMessageTool)
-        }
     ) {
         install(LongTermMemory) {
             retrievalSettings = RetrievalSettings(
@@ -158,7 +155,7 @@ private suspend fun runSimpleAgent(
     var userMessage = sendMessage("Hi, how can I help you?")
 
     while (userMessage != "/q") {
-        val result = agent.run(userMessage)
+        val result = agent.run(userMessage, "conversation-1")
         userMessage = sendMessage(result)
     }
 }
@@ -204,7 +201,7 @@ private suspend fun runMemoryToolsAgent(
     var userMessage = sendMessage("Hi, how can I help you?")
 
     while (userMessage != "/q") {
-        val result = agent.run(userMessage)
+        val result = agent.run(userMessage, "conversation-1")
         userMessage = sendMessage(result)
     }
 }
