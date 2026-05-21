@@ -18,6 +18,6 @@ fun basicSingleRunStrategyByHand() = strategy<String, String>("single-run-strate
     // Solution:
     edge(nodeStart forwardTo nodeCallLLM asUserMessage { it })
     edge(nodeCallLLM forwardTo nodeExecuteTools onToolCalls { true })
-    edge(nodeExecuteTools forwardTo nodeCallLLM)
+    edge(nodeExecuteTools forwardTo nodeCallLLM asToolResultMessage { true })
     edge(nodeCallLLM forwardTo nodeFinish onTextMessage { true })
 }
